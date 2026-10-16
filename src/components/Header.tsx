@@ -2,6 +2,8 @@ import { ConnectKitButton } from 'connectkit'
 import { useAccount } from 'wagmi'
 import { Logo } from './Logo'
 import { ACTIVE_CHAIN_ID, IS_MAINNET } from '@/contract'
+import { useTheme } from '@/hooks/useTheme'
+import { Sun, Moon } from 'lucide-react'
 
 interface HeaderProps {
   activeTab: string
@@ -19,70 +21,82 @@ const TABS = [
 export function Header({ activeTab, onTabChange }: HeaderProps) {
   const { chainId, isConnected } = useAccount()
   const wrongChain = isConnected && chainId !== ACTIVE_CHAIN_ID
+  const { isDark, toggle } = useTheme()
 
   return (
     <header
-      className="sticky top-0 z-40"
       style={{
-        background: 'rgba(244,250,248,0.88)',
-        backdropFilter: 'blur(20px)',
-        WebkitBackdropFilter: 'blur(20px)',
+        background: isDark
+          ? 'rgba(11, 22, 34, 0.88)'
+          : 'rgba(255, 255, 255, 0.88)',
+        backdropFilter: 'blur(18px)',
+        WebkitBackdropFilter: 'blur(18px)',
         borderBottom: '1px solid var(--border)',
-        boxShadow: '0 1px 0 rgba(29,171,142,0.06)',
+        position: 'sticky',
+        top: 0,
+        zIndex: 40,
       }}
     >
-      <div className="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between gap-4">
-        {/* Brand */}
+      <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
+        {/* Logo — clickable back to home */}
         <button
           onClick={() => onTabChange('home')}
-          className="flex-shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus)] rounded-lg"
-          aria-label="SeatBack home"
+          className="flex-shrink-0 focus-visible:outline-none"
+          aria-label="Go to home"
         >
           <Logo size="sm" />
         </button>
 
         {/* Desktop nav */}
-        <nav className="hidden sm:flex items-center gap-0.5 flex-1 justify-center" aria-label="Main navigation">
+        <nav
+          className="hidden sm:flex items-center gap-0.5 flex-1 justify-center"
+          aria-label="Main navigation"
+        >
           {TABS.map((tab) => (
             <button
               key={tab.id}
               onClick={() => onTabChange(tab.id)}
-              className={`relative px-4 py-2 rounded-lg text-sm font-medium transition-all duration-150 ${
+              className={`px-3.5 py-2 rounded-lg text-sm font-medium transition-colors ${
                 activeTab === tab.id
-                  ? 'text-[var(--accent)] font-semibold'
-                  : 'text-[var(--muted)] hover:text-[var(--ink)] hover:bg-white/60'
+                  ? 'bg-[var(--accent)] text-white'
+                  : 'text-[var(--muted)] hover:text-[var(--ink)] hover:bg-[var(--surface-muted)]'
               }`}
               aria-current={activeTab === tab.id ? 'page' : undefined}
             >
               {tab.label}
-              {activeTab === tab.id && (
-                <span
-                  className="absolute bottom-0.5 left-3 right-3 h-0.5 rounded-full"
-                  style={{ background: 'var(--accent)' }}
-                />
-              )}
             </button>
           ))}
         </nav>
 
-        {/* Right side */}
+        {/* Right controls */}
         <div className="flex items-center gap-2 flex-shrink-0">
           {/* Network badge */}
-          <span className={`hidden md:inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full border ${
+          <span className={`hidden md:inline-flex text-xs font-semibold px-2.5 py-1 rounded-full border ${
             IS_MAINNET
-              ? 'bg-[var(--accent-light)] text-[var(--accent-hover)] border-[var(--accent)]/30'
-              : 'bg-slate-100 text-slate-500 border-slate-200'
+              ? 'bg-teal-500/10 text-teal-600 border-teal-300/50 dark:text-teal-300 dark:border-teal-500/30'
+              : 'bg-slate-100 text-slate-600 border-slate-200 dark:bg-white/5 dark:text-slate-300 dark:border-white/10'
           }`}>
-            <span className={`w-1.5 h-1.5 rounded-full ${IS_MAINNET ? 'bg-[var(--accent)]' : 'bg-slate-400'}`} />
-            {IS_MAINNET ? 'Mainnet' : 'Testnet'}
+            {IS_MAINNET ? 'Arc Mainnet' : 'Arc Testnet'}
           </span>
 
+          {/* Wrong chain warning */}
           {wrongChain && (
-            <span className="hidden sm:inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 border border-amber-200">
-              <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+            <span className="hidden sm:inline-flex text-xs font-semibold px-2.5 py-1 rounded-full bg-amber-500/10 text-amber-600 border border-amber-300/50">
               Wrong network
             </span>
           )}
+
+          {/* Dark / Light toggle */}
+          <button
+            onClick={toggle}
+            aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+            className="w-9 h-9 rounded-xl flex items-center justify-center transition-colors hover:bg-[var(--surface-muted)] text-[var(--muted)] hover:text-[var(--ink)]"
+          >
+            {isDark
+              ? <Sun size={17} strokeWidth={2.2} />
+              : <Moon size={17} strokeWidth={2.2} />
+            }
+          </button>
 
           <ConnectKitButton />
         </div>
@@ -90,28 +104,22 @@ export function Header({ activeTab, onTabChange }: HeaderProps) {
 
       {/* Mobile tab bar */}
       <nav
-        className="sm:hidden flex border-t border-[var(--border)]"
+        className="sm:hidden flex items-center border-t border-[var(--border)]"
         aria-label="Mobile navigation"
-        style={{ background: 'rgba(244,250,248,0.95)' }}
+        style={{ background: 'var(--surface-strong)' }}
       >
         {TABS.map((tab) => (
           <button
             key={tab.id}
             onClick={() => onTabChange(tab.id)}
-            className={`flex-1 py-2.5 text-xs font-medium transition-colors relative ${
+            className={`flex-1 py-2.5 text-xs font-semibold transition-colors ${
               activeTab === tab.id
-                ? 'text-[var(--accent)]'
+                ? 'text-[var(--accent)] border-b-2 border-[var(--accent)]'
                 : 'text-[var(--muted)]'
             }`}
             aria-current={activeTab === tab.id ? 'page' : undefined}
           >
             {tab.label}
-            {activeTab === tab.id && (
-              <span
-                className="absolute bottom-0 left-2 right-2 h-0.5 rounded-t-full"
-                style={{ background: 'var(--accent)' }}
-              />
-            )}
           </button>
         ))}
       </nav>

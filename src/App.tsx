@@ -5,6 +5,7 @@
  * A selected event ID drives a detail overlay (no URL routing needed for testnet demo).
  */
 import { useState } from 'react'
+import { useTheme } from './hooks/useTheme'
 import { Header } from './components/Header'
 import { Home } from './components/Home'
 import { EventList } from './components/EventList'
@@ -16,6 +17,8 @@ import { OrganizerDashboard } from './components/OrganizerDashboard'
 export type AppTab = 'home' | 'events' | 'create' | 'reservations' | 'organizer'
 
 export default function App() {
+  // Init theme on root mount — applies class to <html> immediately
+  useTheme()
   const [activeTab, setActiveTab] = useState<AppTab>('home')
   const [selectedEventId, setSelectedEventId] = useState<bigint | null>(null)
 

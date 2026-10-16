@@ -44,8 +44,55 @@
   --shadow-lg: 0 12px 40px rgba(15,32,53,0.12), 0 4px 12px rgba(15,32,53,0.07);
 }
 
+/* === Arc Dark tokens === */
+html.dark {
+  /* Canvas */
+  --bg: #0B1622;
+  --bg-gradient: linear-gradient(160deg, #0B1622 0%, #0F1E2E 50%, #0A1A20 100%);
+
+  /* Surfaces */
+  --surface: rgba(255, 255, 255, 0.05);
+  --surface-strong: rgba(255, 255, 255, 0.08);
+  --surface-muted: rgba(255, 255, 255, 0.04);
+
+  /* Ink */
+  --ink: #E8F4F1;
+  --ink-2: #B8D0CB;
+  --muted: #7BA8A0;
+  --subtle: #4A7068;
+
+  /* Borders */
+  --border: rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(255, 255, 255, 0.18);
+
+  /* Brand — slightly brighter teal on dark */
+  --accent: #20C2A0;
+  --accent-hover: #18A888;
+  --accent-light: rgba(32, 194, 160, 0.15);
+  --accent-dark: #E8F4F1;
+  --focus: #6EE7D8;
+
+  /* Semantic */
+  --success: #20C2A0;
+  --success-bg: rgba(32, 194, 160, 0.15);
+  --danger: #F0526A;
+  --danger-bg: rgba(240, 82, 106, 0.15);
+  --warning: #F59E0B;
+  --warning-bg: rgba(245, 158, 11, 0.15);
+
+  /* Shadows — barely visible on dark */
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.30);
+  --shadow-md: 0 4px 16px rgba(0,0,0,0.40);
+  --shadow-lg: 0 12px 40px rgba(0,0,0,0.50);
+}
+
 * {
   box-sizing: border-box;
+}
+
+/* Smooth theme transition on color properties only */
+*, *::before, *::after {
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
 }
 
 body {
@@ -79,13 +126,24 @@ body {
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 3px; }
 
-/* Reduced motion */
+/* Reduced motion — disable animations but keep 0-duration theme transitions */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+/* ── Dark mode: override card backdrop so it stays readable ─── */
+html.dark .card,
+html.dark .card-strong {
+  background: var(--surface-strong);
+  border-color: var(--border);
+}
+
+html.dark .badge-navy {
+  background: rgba(232, 244, 241, 0.10);
 }
 
 /* ── Card & surface helpers ───────────────────────────────────── */
