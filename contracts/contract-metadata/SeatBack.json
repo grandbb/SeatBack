@@ -1,0 +1,1294 @@
+{
+  "contractAddress": "0x807f6bef741e807472e9f07d6d0fbaf061dba6ba",
+  "network": "ARC-TESTNET",
+  "deployerWalletId": "3c2464b2-8369-52e2-a782-800bbeca5396",
+  "contract_code_path": "/home/user/app/contracts/SeatBack.sol",
+  "contract_compiled_code_path": "/home/user/app/contracts/out/SeatBack.sol/SeatBack.json",
+  "contract_network_and_links": {
+    "Arc Testnet": "https://explorer.testnet.arc.io/address/0x807f6bef741e807472e9f07d6d0fbaf061dba6ba"
+  },
+  "contract_deployments": [
+    {
+      "chain": "Arc Testnet",
+      "address": "0x807f6bef741e807472e9f07d6d0fbaf061dba6ba",
+      "explorerUrl": "https://explorer.testnet.arc.io/address/0x807f6bef741e807472e9f07d6d0fbaf061dba6ba",
+      "txHash": "0x03668f1fa0a35c2d4a84454a7b058f5b14d73ad17dbc653cd9be47752c039a53",
+      "deployedAt": "2026-10-16T07:42:39.398Z"
+    }
+  ],
+  "abi": [
+    {
+      "type": "constructor",
+      "inputs": [
+        {
+          "name": "_usdc",
+          "type": "address",
+          "internalType": "address"
+        }
+      ],
+      "stateMutability": "nonpayable"
+    },
+    {
+      "type": "function",
+      "name": "DOMAIN_SEPARATOR",
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "",
+          "type": "bytes32",
+          "internalType": "bytes32"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "MAX_QR_VALIDITY",
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "accounting",
+      "inputs": [
+        {
+          "name": "",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "activeDeposits",
+          "type": "uint256",
+          "internalType": "uint256"
+        },
+        {
+          "name": "outstandingRefunds",
+          "type": "uint256",
+          "internalType": "uint256"
+        },
+        {
+          "name": "organizerCredit",
+          "type": "uint256",
+          "internalType": "uint256"
+        },
+        {
+          "name": "refundsPaid",
+          "type": "uint256",
+          "internalType": "uint256"
+        },
+        {
+          "name": "organizerPaid",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "activeReservationId",
+      "inputs": [
+        {
+          "name": "",
+          "type": "uint256",
+          "internalType": "uint256"
+        },
+        {
+          "name": "",
+          "type": "address",
+          "internalType": "address"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "cancelEvent",
+      "inputs": [
+        {
+          "name": "eventId",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "outputs": [],
+      "stateMutability": "nonpayable"
+    },
+    {
+      "type": "function",
+      "name": "cancelReservation",
+      "inputs": [
+        {
+          "name": "reservationId",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "outputs": [],
+      "stateMutability": "nonpayable"
+    },
+    {
+      "type": "function",
+      "name": "checkIn",
+      "inputs": [
+        {
+          "name": "eventId",
+          "type": "uint256",
+          "internalType": "uint256"
+        },
+        {
+          "name": "attendee",
+          "type": "address",
+          "internalType": "address"
+        }
+      ],
+      "outputs": [],
+      "stateMutability": "nonpayable"
+    },
+    {
+      "type": "function",
+      "name": "checkInWithSig",
+      "inputs": [
+        {
+          "name": "auth",
+          "type": "tuple",
+          "internalType": "struct SeatBack.CheckInAuthorization",
+          "components": [
+            {
+              "name": "eventId",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "reservationId",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "attendee",
+              "type": "address",
+              "internalType": "address"
+            },
+            {
+              "name": "nonce",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "validAfter",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "validUntil",
+              "type": "uint256",
+              "internalType": "uint256"
+            }
+          ]
+        },
+        {
+          "name": "sig",
+          "type": "bytes",
+          "internalType": "bytes"
+        }
+      ],
+      "outputs": [],
+      "stateMutability": "nonpayable"
+    },
+    {
+      "type": "function",
+      "name": "claimRefund",
+      "inputs": [
+        {
+          "name": "reservationId",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "outputs": [],
+      "stateMutability": "nonpayable"
+    },
+    {
+      "type": "function",
+      "name": "createEvent",
+      "inputs": [
+        {
+          "name": "p",
+          "type": "tuple",
+          "internalType": "struct SeatBack.CreateEventParams",
+          "components": [
+            {
+              "name": "payoutWallet",
+              "type": "address",
+              "internalType": "address"
+            },
+            {
+              "name": "title",
+              "type": "string",
+              "internalType": "string"
+            },
+            {
+              "name": "description",
+              "type": "string",
+              "internalType": "string"
+            },
+            {
+              "name": "venue",
+              "type": "string",
+              "internalType": "string"
+            },
+            {
+              "name": "eventStart",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "eventEnd",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "capacity",
+              "type": "uint32",
+              "internalType": "uint32"
+            },
+            {
+              "name": "depositAmount",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "bookingClose",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "refundCutoff",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "checkInStart",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "checkInEnd",
+              "type": "uint256",
+              "internalType": "uint256"
+            }
+          ]
+        }
+      ],
+      "outputs": [
+        {
+          "name": "eventId",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "stateMutability": "nonpayable"
+    },
+    {
+      "type": "function",
+      "name": "eventCount",
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "events",
+      "inputs": [
+        {
+          "name": "",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "organizer",
+          "type": "address",
+          "internalType": "address"
+        },
+        {
+          "name": "payoutWallet",
+          "type": "address",
+          "internalType": "address"
+        },
+        {
+          "name": "title",
+          "type": "string",
+          "internalType": "string"
+        },
+        {
+          "name": "description",
+          "type": "string",
+          "internalType": "string"
+        },
+        {
+          "name": "venue",
+          "type": "string",
+          "internalType": "string"
+        },
+        {
+          "name": "eventStart",
+          "type": "uint256",
+          "internalType": "uint256"
+        },
+        {
+          "name": "eventEnd",
+          "type": "uint256",
+          "internalType": "uint256"
+        },
+        {
+          "name": "capacity",
+          "type": "uint32",
+          "internalType": "uint32"
+        },
+        {
+          "name": "depositAmount",
+          "type": "uint256",
+          "internalType": "uint256"
+        },
+        {
+          "name": "bookingClose",
+          "type": "uint256",
+          "internalType": "uint256"
+        },
+        {
+          "name": "refundCutoff",
+          "type": "uint256",
+          "internalType": "uint256"
+        },
+        {
+          "name": "checkInStart",
+          "type": "uint256",
+          "internalType": "uint256"
+        },
+        {
+          "name": "checkInEnd",
+          "type": "uint256",
+          "internalType": "uint256"
+        },
+        {
+          "name": "cancelled",
+          "type": "bool",
+          "internalType": "bool"
+        },
+        {
+          "name": "checkInOpened",
+          "type": "bool",
+          "internalType": "bool"
+        },
+        {
+          "name": "finalized",
+          "type": "bool",
+          "internalType": "bool"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "finalizeEvent",
+      "inputs": [
+        {
+          "name": "eventId",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "outputs": [],
+      "stateMutability": "nonpayable"
+    },
+    {
+      "type": "function",
+      "name": "getAccounting",
+      "inputs": [
+        {
+          "name": "eventId",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "",
+          "type": "tuple",
+          "internalType": "struct SeatBack.EventAccounting",
+          "components": [
+            {
+              "name": "activeDeposits",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "outstandingRefunds",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "organizerCredit",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "refundsPaid",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "organizerPaid",
+              "type": "uint256",
+              "internalType": "uint256"
+            }
+          ]
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "getActiveReservation",
+      "inputs": [
+        {
+          "name": "eventId",
+          "type": "uint256",
+          "internalType": "uint256"
+        },
+        {
+          "name": "attendee",
+          "type": "address",
+          "internalType": "address"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "reservationId",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "getCheckInDigest",
+      "inputs": [
+        {
+          "name": "auth",
+          "type": "tuple",
+          "internalType": "struct SeatBack.CheckInAuthorization",
+          "components": [
+            {
+              "name": "eventId",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "reservationId",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "attendee",
+              "type": "address",
+              "internalType": "address"
+            },
+            {
+              "name": "nonce",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "validAfter",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "validUntil",
+              "type": "uint256",
+              "internalType": "uint256"
+            }
+          ]
+        }
+      ],
+      "outputs": [
+        {
+          "name": "",
+          "type": "bytes32",
+          "internalType": "bytes32"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "getEvent",
+      "inputs": [
+        {
+          "name": "eventId",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "",
+          "type": "tuple",
+          "internalType": "struct SeatBack.EventInfo",
+          "components": [
+            {
+              "name": "organizer",
+              "type": "address",
+              "internalType": "address"
+            },
+            {
+              "name": "payoutWallet",
+              "type": "address",
+              "internalType": "address"
+            },
+            {
+              "name": "title",
+              "type": "string",
+              "internalType": "string"
+            },
+            {
+              "name": "description",
+              "type": "string",
+              "internalType": "string"
+            },
+            {
+              "name": "venue",
+              "type": "string",
+              "internalType": "string"
+            },
+            {
+              "name": "eventStart",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "eventEnd",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "capacity",
+              "type": "uint32",
+              "internalType": "uint32"
+            },
+            {
+              "name": "depositAmount",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "bookingClose",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "refundCutoff",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "checkInStart",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "checkInEnd",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "cancelled",
+              "type": "bool",
+              "internalType": "bool"
+            },
+            {
+              "name": "checkInOpened",
+              "type": "bool",
+              "internalType": "bool"
+            },
+            {
+              "name": "finalized",
+              "type": "bool",
+              "internalType": "bool"
+            }
+          ]
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "getEventReservations",
+      "inputs": [
+        {
+          "name": "eventId",
+          "type": "uint256",
+          "internalType": "uint256"
+        },
+        {
+          "name": "offset",
+          "type": "uint256",
+          "internalType": "uint256"
+        },
+        {
+          "name": "limit",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "ids",
+          "type": "uint256[]",
+          "internalType": "uint256[]"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "getReservation",
+      "inputs": [
+        {
+          "name": "reservationId",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "",
+          "type": "tuple",
+          "internalType": "struct SeatBack.ReservationInfo",
+          "components": [
+            {
+              "name": "eventId",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "attendee",
+              "type": "address",
+              "internalType": "address"
+            },
+            {
+              "name": "active",
+              "type": "bool",
+              "internalType": "bool"
+            },
+            {
+              "name": "refundable",
+              "type": "bool",
+              "internalType": "bool"
+            },
+            {
+              "name": "refundClaimed",
+              "type": "bool",
+              "internalType": "bool"
+            }
+          ]
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "openCheckIn",
+      "inputs": [
+        {
+          "name": "eventId",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "outputs": [],
+      "stateMutability": "nonpayable"
+    },
+    {
+      "type": "function",
+      "name": "reservationCount",
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "reservations",
+      "inputs": [
+        {
+          "name": "",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "eventId",
+          "type": "uint256",
+          "internalType": "uint256"
+        },
+        {
+          "name": "attendee",
+          "type": "address",
+          "internalType": "address"
+        },
+        {
+          "name": "active",
+          "type": "bool",
+          "internalType": "bool"
+        },
+        {
+          "name": "refundable",
+          "type": "bool",
+          "internalType": "bool"
+        },
+        {
+          "name": "refundClaimed",
+          "type": "bool",
+          "internalType": "bool"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "reserve",
+      "inputs": [
+        {
+          "name": "eventId",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "outputs": [],
+      "stateMutability": "nonpayable"
+    },
+    {
+      "type": "function",
+      "name": "reservedSeats",
+      "inputs": [
+        {
+          "name": "",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "",
+          "type": "uint32",
+          "internalType": "uint32"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "usdc",
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "",
+          "type": "address",
+          "internalType": "contract IERC20"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "usedNonces",
+      "inputs": [
+        {
+          "name": "",
+          "type": "uint256",
+          "internalType": "uint256"
+        },
+        {
+          "name": "",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "",
+          "type": "bool",
+          "internalType": "bool"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "withdrawNoShowProceeds",
+      "inputs": [
+        {
+          "name": "eventId",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "outputs": [],
+      "stateMutability": "nonpayable"
+    },
+    {
+      "type": "event",
+      "name": "CheckInOpened",
+      "inputs": [
+        {
+          "name": "eventId",
+          "type": "uint256",
+          "indexed": true,
+          "internalType": "uint256"
+        }
+      ],
+      "anonymous": false
+    },
+    {
+      "type": "event",
+      "name": "CheckedIn",
+      "inputs": [
+        {
+          "name": "eventId",
+          "type": "uint256",
+          "indexed": true,
+          "internalType": "uint256"
+        },
+        {
+          "name": "reservationId",
+          "type": "uint256",
+          "indexed": true,
+          "internalType": "uint256"
+        },
+        {
+          "name": "attendee",
+          "type": "address",
+          "indexed": true,
+          "internalType": "address"
+        }
+      ],
+      "anonymous": false
+    },
+    {
+      "type": "event",
+      "name": "EventCancelled",
+      "inputs": [
+        {
+          "name": "eventId",
+          "type": "uint256",
+          "indexed": true,
+          "internalType": "uint256"
+        }
+      ],
+      "anonymous": false
+    },
+    {
+      "type": "event",
+      "name": "EventCreated",
+      "inputs": [
+        {
+          "name": "eventId",
+          "type": "uint256",
+          "indexed": true,
+          "internalType": "uint256"
+        },
+        {
+          "name": "organizer",
+          "type": "address",
+          "indexed": true,
+          "internalType": "address"
+        },
+        {
+          "name": "payoutWallet",
+          "type": "address",
+          "indexed": false,
+          "internalType": "address"
+        },
+        {
+          "name": "depositAmount",
+          "type": "uint256",
+          "indexed": false,
+          "internalType": "uint256"
+        },
+        {
+          "name": "capacity",
+          "type": "uint256",
+          "indexed": false,
+          "internalType": "uint256"
+        },
+        {
+          "name": "bookingClose",
+          "type": "uint256",
+          "indexed": false,
+          "internalType": "uint256"
+        },
+        {
+          "name": "refundCutoff",
+          "type": "uint256",
+          "indexed": false,
+          "internalType": "uint256"
+        },
+        {
+          "name": "checkInStart",
+          "type": "uint256",
+          "indexed": false,
+          "internalType": "uint256"
+        },
+        {
+          "name": "checkInEnd",
+          "type": "uint256",
+          "indexed": false,
+          "internalType": "uint256"
+        }
+      ],
+      "anonymous": false
+    },
+    {
+      "type": "event",
+      "name": "EventFinalized",
+      "inputs": [
+        {
+          "name": "eventId",
+          "type": "uint256",
+          "indexed": true,
+          "internalType": "uint256"
+        },
+        {
+          "name": "noShowProceeds",
+          "type": "uint256",
+          "indexed": false,
+          "internalType": "uint256"
+        },
+        {
+          "name": "refundLiability",
+          "type": "uint256",
+          "indexed": false,
+          "internalType": "uint256"
+        }
+      ],
+      "anonymous": false
+    },
+    {
+      "type": "event",
+      "name": "ProceedsWithdrawn",
+      "inputs": [
+        {
+          "name": "eventId",
+          "type": "uint256",
+          "indexed": true,
+          "internalType": "uint256"
+        },
+        {
+          "name": "payoutWallet",
+          "type": "address",
+          "indexed": true,
+          "internalType": "address"
+        },
+        {
+          "name": "amount",
+          "type": "uint256",
+          "indexed": false,
+          "internalType": "uint256"
+        }
+      ],
+      "anonymous": false
+    },
+    {
+      "type": "event",
+      "name": "RefundClaimed",
+      "inputs": [
+        {
+          "name": "eventId",
+          "type": "uint256",
+          "indexed": true,
+          "internalType": "uint256"
+        },
+        {
+          "name": "reservationId",
+          "type": "uint256",
+          "indexed": true,
+          "internalType": "uint256"
+        },
+        {
+          "name": "attendee",
+          "type": "address",
+          "indexed": true,
+          "internalType": "address"
+        },
+        {
+          "name": "amount",
+          "type": "uint256",
+          "indexed": false,
+          "internalType": "uint256"
+        }
+      ],
+      "anonymous": false
+    },
+    {
+      "type": "event",
+      "name": "ReservationCancelled",
+      "inputs": [
+        {
+          "name": "eventId",
+          "type": "uint256",
+          "indexed": true,
+          "internalType": "uint256"
+        },
+        {
+          "name": "reservationId",
+          "type": "uint256",
+          "indexed": true,
+          "internalType": "uint256"
+        },
+        {
+          "name": "attendee",
+          "type": "address",
+          "indexed": true,
+          "internalType": "address"
+        }
+      ],
+      "anonymous": false
+    },
+    {
+      "type": "event",
+      "name": "Reserved",
+      "inputs": [
+        {
+          "name": "eventId",
+          "type": "uint256",
+          "indexed": true,
+          "internalType": "uint256"
+        },
+        {
+          "name": "reservationId",
+          "type": "uint256",
+          "indexed": true,
+          "internalType": "uint256"
+        },
+        {
+          "name": "attendee",
+          "type": "address",
+          "indexed": true,
+          "internalType": "address"
+        },
+        {
+          "name": "depositAmount",
+          "type": "uint256",
+          "indexed": false,
+          "internalType": "uint256"
+        }
+      ],
+      "anonymous": false
+    },
+    {
+      "type": "error",
+      "name": "AlreadyCancelled",
+      "inputs": []
+    },
+    {
+      "type": "error",
+      "name": "AlreadyClaimed",
+      "inputs": []
+    },
+    {
+      "type": "error",
+      "name": "AlreadyFinalized",
+      "inputs": []
+    },
+    {
+      "type": "error",
+      "name": "AlreadyOpened",
+      "inputs": []
+    },
+    {
+      "type": "error",
+      "name": "AlreadyReserved",
+      "inputs": []
+    },
+    {
+      "type": "error",
+      "name": "AttendeeWalletMismatch",
+      "inputs": []
+    },
+    {
+      "type": "error",
+      "name": "BookingClosed",
+      "inputs": []
+    },
+    {
+      "type": "error",
+      "name": "CapacityFull",
+      "inputs": []
+    },
+    {
+      "type": "error",
+      "name": "CheckInNotOpen",
+      "inputs": []
+    },
+    {
+      "type": "error",
+      "name": "CheckInNotStarted",
+      "inputs": []
+    },
+    {
+      "type": "error",
+      "name": "CheckInWindowClosed",
+      "inputs": []
+    },
+    {
+      "type": "error",
+      "name": "EventCancelled_",
+      "inputs": []
+    },
+    {
+      "type": "error",
+      "name": "EventNotCancelled",
+      "inputs": []
+    },
+    {
+      "type": "error",
+      "name": "EventNotFound",
+      "inputs": []
+    },
+    {
+      "type": "error",
+      "name": "InvalidAddress",
+      "inputs": []
+    },
+    {
+      "type": "error",
+      "name": "InvalidCapacity",
+      "inputs": []
+    },
+    {
+      "type": "error",
+      "name": "InvalidDeposit",
+      "inputs": []
+    },
+    {
+      "type": "error",
+      "name": "InvalidMetadata",
+      "inputs": [
+        {
+          "name": "field",
+          "type": "string",
+          "internalType": "string"
+        }
+      ]
+    },
+    {
+      "type": "error",
+      "name": "InvalidSignature",
+      "inputs": []
+    },
+    {
+      "type": "error",
+      "name": "InvalidTimestamps",
+      "inputs": []
+    },
+    {
+      "type": "error",
+      "name": "NoProceeds",
+      "inputs": []
+    },
+    {
+      "type": "error",
+      "name": "NonceAlreadyUsed",
+      "inputs": []
+    },
+    {
+      "type": "error",
+      "name": "NotActive",
+      "inputs": []
+    },
+    {
+      "type": "error",
+      "name": "NotAttendee",
+      "inputs": []
+    },
+    {
+      "type": "error",
+      "name": "NotOrganizer",
+      "inputs": []
+    },
+    {
+      "type": "error",
+      "name": "NotRefundable",
+      "inputs": []
+    },
+    {
+      "type": "error",
+      "name": "QrExpired",
+      "inputs": []
+    },
+    {
+      "type": "error",
+      "name": "QrNotYetValid",
+      "inputs": []
+    },
+    {
+      "type": "error",
+      "name": "QrValidityTooLong",
+      "inputs": []
+    },
+    {
+      "type": "error",
+      "name": "ReentrancyGuardReentrantCall",
+      "inputs": []
+    },
+    {
+      "type": "error",
+      "name": "SafeERC20FailedOperation",
+      "inputs": [
+        {
+          "name": "token",
+          "type": "address",
+          "internalType": "address"
+        }
+      ]
+    },
+    {
+      "type": "error",
+      "name": "TooEarlyToFinalize",
+      "inputs": []
+    }
+  ]
+}

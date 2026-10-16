@@ -1,0 +1,69 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* === Arc Light tokens (SeatBack brand: navy + teal) === */
+:root {
+  --bg: #F7FAF9;
+  --bg-gradient: linear-gradient(180deg, #F7FAF9 0%, #f0f8f6 60%, #e8f5f2 100%);
+  --surface: rgba(255, 255, 255, 0.80);
+  --surface-strong: rgba(255, 255, 255, 0.96);
+  --surface-muted: #edf5f3;
+  --ink: #12243A;
+  --ink-2: #2d4057;
+  --muted: #4b6072;
+  --subtle: #7a9aae;
+  --border: rgba(18, 36, 58, 0.10);
+  --border-strong: rgba(18, 36, 58, 0.30);
+  --accent: #0D9488;
+  --accent-hover: #0a7d73;
+  --accent-dark: #12243A;
+  --focus: #6ee7e2;
+  --success: #0a7d73;
+  --danger: #be123c;
+  --warning: #b45309;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100dvh;
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg);
+  background-image: var(--bg-gradient);
+  background-attachment: fixed;
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+}
+
+.display {
+  font-family: 'Space Grotesk', sans-serif;
+  letter-spacing: -0.03em;
+}
+
+.mono {
+  font-family: 'JetBrains Mono', Menlo, monospace;
+}
+
+/* Focus visible */
+:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 3px; }
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

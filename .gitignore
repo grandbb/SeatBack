@@ -1,0 +1,32 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build outputs
+dist/
+build/
+.vite/
+
+# Environment — NEVER commit these
+.env
+.env.local
+.env.*.local
+.env.production
+
+# Circle / wallet credentials
+.circle/
+recovery_file*.dat
+
+# Forge artifacts (reproducible from source)
+contracts/out/
+contracts/cache/
+broadcast/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+*.sw[op]
