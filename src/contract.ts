@@ -49,7 +49,9 @@ export const CHAIN = requireChain(ACTIVE_CHAIN_ID)
  */
 function resolveAddress(): `0x${string}` | null {
   if (IS_MAINNET) {
-    const v = import.meta.env.VITE_MAINNET_SEATBACK_ADDRESS as string | undefined
+    const v =
+      (import.meta.env.VITE_MAINNET_SEATBACK_ADDRESS as string | undefined) ??
+      '0x5edD40f2817D5ADd1E991dAfa6852521ef19fDA7'
     if (v && /^0x[0-9a-fA-F]{40}$/.test(v)) return v as `0x${string}`
     return null
   }

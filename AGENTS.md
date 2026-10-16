@@ -23,7 +23,7 @@ Organiser-cancelled events and never-opened check-in windows both refund everyon
 Deploy tx: `0x03668f1fa0a35c2d4a84454a7b058f5b14d73ad17dbc653cd9be47752c039a53`
 Deployed: 2026-10-16
 
-| SeatBack | Arc Mainnet | _deploy separately — see docs/mainnet-deploy-checklist.md_ | — |
+| SeatBack | Arc Mainnet | `0x5edD40f2817D5ADd1E991dAfa6852521ef19fDA7` | [View](https://explorer.arc.io/address/0x5edD40f2817D5ADd1E991dAfa6852521ef19fDA7) |
 
 ## Network switching
 
