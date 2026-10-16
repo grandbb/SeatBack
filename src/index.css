@@ -4,24 +4,44 @@
 
 /* === Arc Light tokens (SeatBack brand: navy + teal) === */
 :root {
-  --bg: #F7FAF9;
-  --bg-gradient: linear-gradient(180deg, #F7FAF9 0%, #f0f8f6 60%, #e8f5f2 100%);
-  --surface: rgba(255, 255, 255, 0.80);
-  --surface-strong: rgba(255, 255, 255, 0.96);
-  --surface-muted: #edf5f3;
-  --ink: #12243A;
-  --ink-2: #2d4057;
-  --muted: #4b6072;
-  --subtle: #7a9aae;
-  --border: rgba(18, 36, 58, 0.10);
-  --border-strong: rgba(18, 36, 58, 0.30);
-  --accent: #0D9488;
-  --accent-hover: #0a7d73;
-  --accent-dark: #12243A;
-  --focus: #6ee7e2;
-  --success: #0a7d73;
-  --danger: #be123c;
-  --warning: #b45309;
+  /* Canvas */
+  --bg: #F4FAF8;
+  --bg-gradient: linear-gradient(160deg, #EBF7F3 0%, #F4FAF8 45%, #EAF4FF 100%);
+
+  /* Surfaces */
+  --surface: rgba(255, 255, 255, 0.82);
+  --surface-strong: rgba(255, 255, 255, 0.97);
+  --surface-muted: #E8F5F1;
+
+  /* Ink */
+  --ink: #0F2035;
+  --ink-2: #243D58;
+  --muted: #456070;
+  --subtle: #7B9BAE;
+
+  /* Borders */
+  --border: rgba(15, 32, 53, 0.09);
+  --border-strong: rgba(15, 32, 53, 0.22);
+
+  /* Brand */
+  --accent: #1DAB8E;
+  --accent-hover: #179477;
+  --accent-light: #D0F5EC;
+  --accent-dark: #0F2035;
+  --focus: #6EE7D8;
+
+  /* Semantic */
+  --success: #179477;
+  --success-bg: #D0F5EC;
+  --danger: #C0143F;
+  --danger-bg: #FDEDEF;
+  --warning: #B45309;
+  --warning-bg: #FEF3C7;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 3px rgba(15,32,53,0.08), 0 1px 2px rgba(15,32,53,0.05);
+  --shadow-md: 0 4px 16px rgba(15,32,53,0.10), 0 2px 6px rgba(15,32,53,0.06);
+  --shadow-lg: 0 12px 40px rgba(15,32,53,0.12), 0 4px 12px rgba(15,32,53,0.07);
 }
 
 * {
@@ -66,4 +86,88 @@ body {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+/* ── Card & surface helpers ───────────────────────────────────── */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  box-shadow: var(--shadow-sm);
+  backdrop-filter: blur(12px);
+}
+
+.card-strong {
+  background: var(--surface-strong);
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  box-shadow: var(--shadow-md);
+}
+
+/* ── Button helpers ───────────────────────────────────────────── */
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1.25rem;
+  border-radius: 0.75rem;
+  font-weight: 600;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  transition: background 0.15s, box-shadow 0.15s, transform 0.1s;
+  box-shadow: 0 1px 4px rgba(29,171,142,0.25);
+}
+.btn-primary:hover { background: var(--accent-hover); box-shadow: 0 2px 8px rgba(29,171,142,0.35); }
+.btn-primary:active { transform: scale(0.98); }
+.btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+.btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1.25rem;
+  border-radius: 0.75rem;
+  font-weight: 600;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  background: transparent;
+  color: var(--ink);
+  border: 1.5px solid var(--border-strong);
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+.btn-ghost:hover { background: var(--surface-muted); border-color: var(--accent); }
+.btn-ghost:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ── Badge helpers ────────────────────────────────────────────── */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: 99px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.badge-teal   { background: var(--accent-light); color: var(--accent-hover); }
+.badge-navy   { background: rgba(15,32,53,0.08); color: var(--ink); }
+.badge-green  { background: var(--success-bg);   color: var(--success); }
+.badge-red    { background: var(--danger-bg);    color: var(--danger); }
+.badge-amber  { background: var(--warning-bg);   color: var(--warning); }
+
+/* ── Hero gradient blob (Home page) ──────────────────────────── */
+.hero-blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.35;
+  pointer-events: none;
 }

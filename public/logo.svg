@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" fill="none">
+  <!-- Teal circular arrow -->
+  <path d="M512 80 C271 80 80 271 80 512 C80 753 271 944 512 944 C753 944 944 753 944 512"
+    stroke="#1DAB8E" stroke-width="72" stroke-linecap="round" fill="none"/>
+  <!-- Arrow head (checkmark shape at top-right) -->
+  <path d="M944 512 L870 390 M944 512 L820 450"
+    stroke="#1DAB8E" stroke-width="72" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <!-- Chair back (rounded rectangle) -->
+  <rect x="340" y="300" width="344" height="240" rx="52" fill="#12243A"/>
+  <!-- Chair seat rail -->
+  <rect x="290" y="540" width="444" height="68" rx="34" fill="#12243A"/>
+  <!-- Left leg -->
+  <rect x="290" y="256" width="88" height="284" rx="44" fill="#12243A"/>
+  <!-- Right leg -->
+  <rect x="646" y="256" width="88" height="284" rx="44" fill="#12243A"/>
+  <!-- Front left leg -->
+  <rect x="322" y="608" width="68" height="140" rx="34" fill="#12243A"/>
+  <!-- Front right leg -->
+  <rect x="634" y="608" width="68" height="140" rx="34" fill="#12243A"/>
+</svg>

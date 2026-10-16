@@ -45,40 +45,67 @@ export function Home({ onExplore, onCreateEvent, onSelectEvent }: HomeProps) {
   const isLoading = countLoading || eventsLoading
 
   return (
-    <div className="flex flex-col gap-12">
-      {/* Hero */}
-      <section className="text-center flex flex-col items-center gap-6 py-8">
-        <Logo size="lg" />
-        <div>
+    <div className="flex flex-col gap-14">
+      {/* ── Hero ──────────────────────────────────────────────── */}
+      <section className="relative text-center flex flex-col items-center gap-8 pt-12 pb-6 overflow-hidden">
+        {/* background blobs */}
+        <div className="hero-blob w-80 h-80 -top-20 -left-20" style={{ background: 'var(--accent)', opacity: 0.12 }} />
+        <div className="hero-blob w-64 h-64 top-10 right-0" style={{ background: '#6EE7D8', opacity: 0.15 }} />
+
+        {/* Logo mark — large */}
+        <div className="relative z-10">
+          <img
+            src="/logo.svg"
+            alt="SeatBack"
+            width={96}
+            height={96}
+            style={{
+              width: 96, height: 96,
+              filter: 'drop-shadow(0 8px 24px rgba(29,171,142,0.25))',
+            }}
+          />
+        </div>
+
+        <div className="relative z-10 flex flex-col items-center gap-3 max-w-xl mx-auto px-2">
           <h1
-            className="text-4xl font-bold text-[var(--ink)] tracking-tight leading-tight"
-            style={{ fontFamily: "'Space Grotesk', sans-serif" }}
+            className="text-4xl sm:text-5xl font-bold text-[var(--ink)] leading-tight text-balance"
+            style={{ fontFamily: "'Space Grotesk', sans-serif", letterSpacing: '-0.03em' }}
           >
-            Attendance backed<br />by your deposit.
+            Attendance backed<br className="hidden sm:block" /> by your deposit.
           </h1>
-          <p className="mt-3 text-lg text-[var(--muted)] max-w-lg mx-auto">
-            Reserve a seat with a USDC deposit. Attend and get it back.
-            Cancel in time and get it back. Miss it — the organiser earns it.
+          <p className="text-lg text-[var(--muted)] text-pretty max-w-md">
+            Reserve a seat with USDC. Attend and get it back.
+            Cancel in time — same result. Miss it and the organiser earns it.
           </p>
         </div>
 
-        <div className="flex flex-wrap gap-3 justify-center">
-          <button
-            onClick={onExplore}
-            className="rounded-xl bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-white px-6 py-3 text-sm font-semibold transition-colors"
-          >
+        <div className="relative z-10 flex flex-wrap gap-3 justify-center">
+          <button onClick={onExplore} className="btn-primary px-7 py-3 text-base">
             Explore Events
           </button>
-          <button
-            onClick={onCreateEvent}
-            className="rounded-xl border border-[var(--border-strong)] text-[var(--ink)] hover:bg-[var(--surface-muted)] px-6 py-3 text-sm font-semibold transition-colors"
-          >
+          <button onClick={onCreateEvent} className="btn-ghost px-7 py-3 text-base">
             Create an Event
           </button>
         </div>
+
+        {/* Stats strip */}
+        <div className="relative z-10 flex items-center gap-6 pt-2 text-sm text-[var(--muted)]">
+          <span className="flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-[var(--accent)]" />
+            On-chain escrow
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-[var(--accent)]" />
+            EIP-712 QR check-in
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-[var(--accent)]" />
+            Instant refunds
+          </span>
+        </div>
       </section>
 
-      {/* Three steps */}
+      {/* ── Three steps ───────────────────────────────────────── */}
       <section>
         <h2
           className="text-xl font-semibold text-[var(--ink)] mb-6 text-center"
@@ -88,42 +115,45 @@ export function Home({ onExplore, onCreateEvent, onSelectEvent }: HomeProps) {
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <StepCard
-            icon={<Ticket size={24} className="text-[var(--accent)]" />}
+            icon={<Ticket size={22} className="text-[var(--accent)]" />}
             step="1"
             title="Reserve with USDC"
             body="Pay a refundable deposit to hold your seat. The contract holds it in escrow — no middlemen."
           />
           <StepCard
-            icon={<QrCode size={24} className="text-[var(--accent)]" />}
+            icon={<QrCode size={22} className="text-[var(--accent)]" />}
             step="2"
-            title="Sign your QR at the event"
-            body="On the day, generate a 5-minute QR from your wallet. The organiser scans it to confirm attendance on-chain."
+            title="Sign your QR at the door"
+            body="Generate a 5-minute signed QR from your wallet. The organiser scans it to confirm attendance on-chain."
           />
           <StepCard
-            icon={<Coins size={24} className="text-[var(--accent)]" />}
+            icon={<Coins size={22} className="text-[var(--accent)]" />}
             step="3"
             title="Claim your refund"
-            body="Attended? Claim your full deposit back. Cancelled on time? Same result. No-show? The deposit goes to the organiser."
+            body="Attended or cancelled on time? Claim your full deposit back. No-show? The deposit goes to the organiser."
           />
         </div>
       </section>
 
-      {/* Deposit notice */}
-      <section className="rounded-2xl border border-[var(--border)] bg-[var(--surface-muted)] p-5 text-sm text-[var(--muted)]">
+      {/* ── Deposit notice ────────────────────────────────────── */}
+      <section
+        className="rounded-2xl p-5 text-sm text-[var(--muted)]"
+        style={{
+          background: 'linear-gradient(135deg, rgba(29,171,142,0.07) 0%, rgba(110,231,216,0.07) 100%)',
+          border: '1px solid rgba(29,171,142,0.18)',
+        }}
+      >
+        <p className="font-semibold text-[var(--ink)] mb-2">Before booking</p>
         <p>
-          <strong className="text-[var(--ink)]">Before booking:</strong>{' '}
           Your deposit is refundable after organiser-confirmed check-in or cancellation before the stated deadline.
           If you do not check in, the organiser may receive your deposit.
           Network fees are separate and non-refundable.
         </p>
-        <p className="mt-2">
-          Organiser cancellation: all remaining deposits become fully refundable.
-          If the organiser never opens check-in, all deposits become refundable after the window closes.
-          These two paths are in addition to the policy above.
-        </p>
-        <p className="mt-2">
-          Attendance is confirmed by the organiser. The contract does not independently prove physical presence or automatically send money without transactions.
-        </p>
+        <ul className="mt-2 ml-4 list-disc space-y-1">
+          <li>Organiser cancels: all remaining deposits become fully refundable.</li>
+          <li>Organiser never opens check-in: all deposits refundable after window closes.</li>
+          <li>Attendance is confirmed by the organiser — not by the contract independently.</li>
+        </ul>
       </section>
 
       {/* Recent events */}
@@ -217,17 +247,32 @@ function StepCard({
   body: string
 }) {
   return (
-    <div className="rounded-2xl border border-[var(--border)] bg-white p-5 flex flex-col gap-3">
+    <div
+      className="card-strong rounded-2xl p-6 flex flex-col gap-4 hover:shadow-[var(--shadow-md)] transition-shadow"
+    >
       <div className="flex items-center gap-3">
-        <div className="w-8 h-8 rounded-full bg-[var(--accent)]/10 flex items-center justify-center text-xs font-bold text-[var(--accent)]">
+        {/* Step badge */}
+        <span
+          className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0"
+          style={{ background: 'var(--accent)' }}
+        >
           {step}
+        </span>
+        {/* Icon in soft teal circle */}
+        <div
+          className="w-10 h-10 rounded-xl flex items-center justify-center"
+          style={{ background: 'var(--accent-light)' }}
+        >
+          {icon}
         </div>
-        {icon}
       </div>
-      <h3 className="font-semibold text-[var(--ink)]" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+      <h3
+        className="font-semibold text-[var(--ink)] text-base"
+        style={{ fontFamily: "'Space Grotesk', sans-serif" }}
+      >
         {title}
       </h3>
-      <p className="text-sm text-[var(--muted)]">{body}</p>
+      <p className="text-sm text-[var(--muted)] leading-relaxed">{body}</p>
     </div>
   )
 }
