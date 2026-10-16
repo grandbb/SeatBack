@@ -19,7 +19,7 @@ import { WagmiProvider } from 'wagmi'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { ConnectKitProvider } from 'connectkit'
 import { Toaster } from 'sonner'
-import { config } from './config'
+import { config, INITIAL_CHAIN_ID } from './config'
 import App from './App'
 import './index.css'
 
@@ -70,7 +70,7 @@ createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <WagmiProvider config={config}>
       <QueryClientProvider client={queryClient}>
-        <ConnectKitProvider>
+        <ConnectKitProvider options={{ initialChainId: INITIAL_CHAIN_ID }}>
           <App />
           <StudioWatermark />
           <Toaster position="top-center" />
