@@ -37,29 +37,28 @@ export function Footer() {
           </p>
           <p className="mt-0.5">
             <a
-              href="grandmaxplay@gmail.com"
-              target="_blank"
-              rel="noopener noreferrer"
+              href="mailto:grandmaxplay@gmail.com"
               className="hover:text-[var(--accent)] transition-colors"
             >
               grandmaxplay@gmail.com
-            </a>
-            {' · '}
-            <a
-              href="https://explorer.arc.io/address/0x5edD40f2817D5ADd1E991dAfa6852521ef19fDA7"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hover:text-[var(--accent)] transition-colors font-mono"
-            >
-              0x5edD…fDA7
             </a>
           </p>
         </div>
 
         {/* Contract chain badge */}
-        <div className="flex items-center gap-1.5 text-xs">
-          <span className="w-2 h-2 rounded-full bg-[var(--accent)] animate-pulse" />
-          <span className="text-[var(--muted)]">Arc Mainnet</span>
+        <div className="flex flex-col items-center sm:items-end gap-0.5 text-xs">
+          <div className="flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-[var(--accent)] animate-pulse" />
+            <span className="text-[var(--muted)]">Arc Mainnet</span>
+          </div>
+          <a
+            href="https://explorer.arc.io/address/0x5edD40f2817D5ADd1E991dAfa6852521ef19fDA7"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-mono text-[var(--muted)] hover:text-[var(--accent)] transition-colors"
+          >
+            0x5edD…fDA7
+          </a>
         </div>
       </div>
     </footer>
