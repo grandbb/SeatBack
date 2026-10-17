@@ -37,12 +37,12 @@ export function Footer() {
           </p>
           <p className="mt-0.5">
             <a
-              href="https://community.arc.io/home"
+              href="grandmaxplay@gmail.com"
               target="_blank"
               rel="noopener noreferrer"
               className="hover:text-[var(--accent)] transition-colors"
             >
-              Arc House
+              grandmaxplay@gmail.com
             </a>
             {' · '}
             <a
