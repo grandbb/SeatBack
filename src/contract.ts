@@ -17,9 +17,11 @@ import { getUsdc, requireChain } from '@/onchain-facts'
 
 // ─── Network selection ────────────────────────────────────────────────────────
 
-const NETWORK: string = (import.meta.env.VITE_NETWORK as string | undefined) ?? 'testnet'
+// Hardcoded to mainnet — this is the production build.
+// To run against testnet, change this value to 'testnet' locally.
+const NETWORK = 'mainnet'
 
-export const IS_MAINNET = NETWORK === 'mainnet'
+export const IS_MAINNET = true
 
 /** Human-readable label for the active network shown in UI strings. */
 export const NETWORK_LABEL = IS_MAINNET ? 'Arc Mainnet' : 'Arc Testnet'
@@ -27,10 +29,8 @@ export const NETWORK_LABEL = IS_MAINNET ? 'Arc Mainnet' : 'Arc Testnet'
 export const ARC_TESTNET_CHAIN_ID = 5042002
 export const ARC_MAINNET_CHAIN_ID = 5042
 
-/** Chain ID the app is currently configured for */
-export const ACTIVE_CHAIN_ID: number = IS_MAINNET
-  ? ARC_MAINNET_CHAIN_ID
-  : ARC_TESTNET_CHAIN_ID
+/** Chain ID the app is currently configured for — Arc Mainnet */
+export const ACTIVE_CHAIN_ID: number = ARC_MAINNET_CHAIN_ID
 
 export const USDC_ADDRESS = getUsdc(ACTIVE_CHAIN_ID)!.address
 export const USDC_DECIMALS = getUsdc(ACTIVE_CHAIN_ID)!.decimals // always 6
@@ -47,22 +47,12 @@ export const CHAIN = requireChain(ACTIVE_CHAIN_ID)
  * a misconfigured mainnet build fails loudly rather than silently pointing at
  * the testnet contract.
  */
-function resolveAddress(): `0x${string}` | null {
-  if (IS_MAINNET) {
-    const v =
-      (import.meta.env.VITE_MAINNET_SEATBACK_ADDRESS as string | undefined) ??
-      '0x5edD40f2817D5ADd1E991dAfa6852521ef19fDA7'
-    if (v && /^0x[0-9a-fA-F]{40}$/.test(v)) return v as `0x${string}`
-    return null
-  }
-  const v: string =
-    (import.meta.env.VITE_TESTNET_SEATBACK_ADDRESS as string | undefined) ??
-    '0x807f6bef741e807472e9f07d6d0fbaf061dba6ba'
-  if (v && /^0x[0-9a-fA-F]{40}$/.test(v)) return v as `0x${string}`
-  return null
+function resolveAddress(): `0x${string}` {
+  // Arc Mainnet deployment — deployed 2026-10-16
+  return '0x5edD40f2817D5ADd1E991dAfa6852521ef19fDA7'
 }
 
-export const SEATBACK_ADDRESS: `0x${string}` | null = resolveAddress()
+export const SEATBACK_ADDRESS: `0x${string}` = resolveAddress()
 
 // ─── ABI ──────────────────────────────────────────────────────────────────────
 

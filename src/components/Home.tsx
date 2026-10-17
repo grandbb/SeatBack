@@ -178,7 +178,7 @@ export function Home({ onExplore, onCreateEvent, onSelectEvent }: HomeProps) {
         {!SEATBACK_ADDRESS && (
           <div className="rounded-2xl border border-amber-200 bg-amber-50 p-6 text-center">
             <p className="text-amber-800 font-medium">Contract not yet deployed.</p>
-            <p className="text-sm text-amber-600 mt-1">Deploy SeatBack to Arc Testnet to see events here.</p>
+            <p className="text-sm text-amber-600 mt-1">Deploy SeatBack to Arc Mainnet to see events here.</p>
           </div>
         )}
 
@@ -208,8 +208,8 @@ export function Home({ onExplore, onCreateEvent, onSelectEvent }: HomeProps) {
             {ids.map((id, i) => {
               const result = eventsData?.[i]
               if (result?.status !== 'success' || !result.result) return null
-              const event = result.result as EventInfo
-              const seats = seatsData?.[i]?.result as number | undefined
+              const event = result.result
+              const seats = seatsData?.[i]?.result
               return (
                 <EventCard
                   key={id.toString()}

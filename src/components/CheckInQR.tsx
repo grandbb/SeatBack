@@ -80,7 +80,7 @@ export function CheckInQR({ eventId, reservationId, event, reservation }: CheckI
       return
     }
     if (chainId !== ACTIVE_CHAIN_ID) {
-      setErrorMsg('Switch to Arc Testnet first.')
+      setErrorMsg('Switch to Arc Mainnet first.')
       return
     }
 
