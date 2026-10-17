@@ -13,6 +13,7 @@ import { EventDetail } from './components/EventDetail'
 import { CreateEvent } from './components/CreateEvent'
 import { MyReservations } from './components/MyReservations'
 import { OrganizerDashboard } from './components/OrganizerDashboard'
+import { Footer } from './components/Footer'
 
 export type AppTab = 'home' | 'events' | 'create' | 'reservations' | 'organizer'
 
@@ -73,6 +74,7 @@ export default function App() {
           </>
         )}
       </main>
+      <Footer />
     </div>
   )
 }
