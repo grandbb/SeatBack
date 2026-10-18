@@ -23,7 +23,7 @@ export const CHECK_IN_DOMAIN = {
   name: 'SeatBack',
   version: '1',
   chainId: ACTIVE_CHAIN_ID,
-  verifyingContract: SEATBACK_ADDRESS as Address,
+  verifyingContract: SEATBACK_ADDRESS,
 } as const
 
 export const CHECK_IN_TYPES = {
@@ -168,13 +168,35 @@ export class PayloadDecodeError extends Error {
  * Throws PayloadDecodeError on any malformed input.
  * NEVER navigates to a URL or executes content.
  */
+/** Max byte length of a raw QR payload — prevents DoS from huge inputs */
+const MAX_PAYLOAD_BYTES = 4096
+
+/** Ethereum address regex */
+const RE_ADDRESS = /^0x[0-9a-fA-F]{40}$/
+/** Decimal uint256 string (no leading zeros except "0" itself, max 78 digits) */
+const RE_UINT256 = /^(0|[1-9][0-9]{0,77})$/
+/** EIP-712 signature: 0x + 130 hex chars (65 bytes) */
+const RE_SIG = /^0x[0-9a-fA-F]{130}$/
+
 export function decodePayload(raw: string): CheckInPayload {
-  // Reject anything that looks like a URL
-  const trimmed = raw.trim()
-  if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
-    throw new PayloadDecodeError('QR content is a URL — refusing to navigate.')
+  // 1. Size guard — prevent DoS from huge inputs
+  if (raw.length > MAX_PAYLOAD_BYTES) {
+    throw new PayloadDecodeError('QR payload exceeds maximum allowed size.')
   }
 
+  // 2. Reject anything that looks like a URL or executable content
+  const trimmed = raw.trim()
+  if (
+    trimmed.startsWith('http://') ||
+    trimmed.startsWith('https://') ||
+    trimmed.startsWith('javascript:') ||
+    trimmed.startsWith('data:text/html') ||
+    trimmed.startsWith('<')
+  ) {
+    throw new PayloadDecodeError('QR content is not a valid SeatBack payload.')
+  }
+
+  // 3. Parse JSON
   let parsed: unknown
   try {
     parsed = JSON.parse(trimmed)
@@ -182,21 +204,42 @@ export function decodePayload(raw: string): CheckInPayload {
     throw new PayloadDecodeError('QR content is not valid JSON.')
   }
 
+  // 4. Must be a plain object
+  if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
+    throw new PayloadDecodeError('QR payload must be a JSON object.')
+  }
+
   const p = parsed as Record<string, unknown>
 
+  // 5. Schema version
   if (p.v !== '1') throw new PayloadDecodeError('Unknown payload version.')
-  if (typeof p.contract !== 'string') throw new PayloadDecodeError('Missing contract field.')
-  if (typeof p.chainId !== 'string') throw new PayloadDecodeError('Missing chainId field.')
-  if (typeof p.eventId !== 'string') throw new PayloadDecodeError('Missing eventId field.')
-  if (typeof p.reservationId !== 'string') throw new PayloadDecodeError('Missing reservationId field.')
-  if (typeof p.attendee !== 'string') throw new PayloadDecodeError('Missing attendee field.')
-  if (typeof p.nonce !== 'string') throw new PayloadDecodeError('Missing nonce field.')
-  if (typeof p.validAfter !== 'string') throw new PayloadDecodeError('Missing validAfter field.')
-  if (typeof p.validUntil !== 'string') throw new PayloadDecodeError('Missing validUntil field.')
-  if (typeof p.sig !== 'string' || !p.sig.startsWith('0x')) throw new PayloadDecodeError('Missing or invalid sig field.')
 
-  // Validate contract / chainId match current deployment
-  if (SEATBACK_ADDRESS && p.contract.toLowerCase() !== SEATBACK_ADDRESS.toLowerCase()) {
+  // 6. String type checks
+  const strFields = ['contract', 'chainId', 'eventId', 'reservationId', 'attendee', 'nonce', 'validAfter', 'validUntil', 'sig'] as const
+  for (const field of strFields) {
+    if (typeof p[field] !== 'string' || (p[field]).length === 0) {
+      throw new PayloadDecodeError(`Missing or empty field: ${field}`)
+    }
+  }
+
+  // 7. Format validation
+  if (!RE_ADDRESS.test(p.contract as string)) throw new PayloadDecodeError('Invalid contract address format.')
+  if (!RE_ADDRESS.test(p.attendee as string)) throw new PayloadDecodeError('Invalid attendee address format.')
+  if (!RE_UINT256.test(p.chainId as string))  throw new PayloadDecodeError('Invalid chainId format.')
+  if (!RE_UINT256.test(p.eventId as string))  throw new PayloadDecodeError('Invalid eventId format.')
+  if (!RE_UINT256.test(p.reservationId as string)) throw new PayloadDecodeError('Invalid reservationId format.')
+  if (!RE_UINT256.test(p.nonce as string))    throw new PayloadDecodeError('Invalid nonce format.')
+  if (!RE_UINT256.test(p.validAfter as string)) throw new PayloadDecodeError('Invalid validAfter format.')
+  if (!RE_UINT256.test(p.validUntil as string)) throw new PayloadDecodeError('Invalid validUntil format.')
+  if (!RE_SIG.test(p.sig as string))          throw new PayloadDecodeError('Invalid signature format (expected 65-byte EIP-712 sig).')
+
+  // 8. Time sanity: validUntil must be > validAfter
+  const vAfter = BigInt(p.validAfter as string)
+  const vUntil = BigInt(p.validUntil as string)
+  if (vUntil <= vAfter) throw new PayloadDecodeError('Invalid time window: validUntil must be after validAfter.')
+
+  // 9. Validate contract / chainId match current deployment
+  if (SEATBACK_ADDRESS && (p.contract as string).toLowerCase() !== SEATBACK_ADDRESS.toLowerCase()) {
     throw new PayloadDecodeError('QR is for a different contract address.')
   }
   if (p.chainId !== String(ACTIVE_CHAIN_ID)) {

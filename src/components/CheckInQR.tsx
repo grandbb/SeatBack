@@ -40,7 +40,7 @@ export function CheckInQR({ eventId, reservationId, event, reservation }: CheckI
 
   const [state, setState] = useState<QrState>('idle')
   const [payload, setPayload] = useState<CheckInPayload | null>(null)
-  const [qrSvg, setQrSvg] = useState<string>('')
+  const [qrDataUrl, setQrDataUrl] = useState<string>('')
   const [secondsLeft, setSecondsLeft] = useState(0)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -67,7 +67,7 @@ export function CheckInQR({ eventId, reservationId, event, reservation }: CheckI
       if (left <= 0) {
         clearTimer()
         setState('expired')
-        setQrSvg('')
+        setQrDataUrl('')
       }
     }
     tick()
@@ -98,16 +98,17 @@ export function CheckInQR({ eventId, reservationId, event, reservation }: CheckI
 
       const encoded = encodePayload(p)
 
-      // Generate SVG QR code
-      const svgStr = await QRCode.toString(encoded, {
-        type: 'svg',
+      // Generate QR as a data URL (PNG) — avoids dangerouslySetInnerHTML / XSS
+      const dataUrl = await QRCode.toDataURL(encoded, {
+        type: 'image/png',
         margin: 2,
         color: { dark: '#12243A', light: '#FFFFFF' },
         errorCorrectionLevel: 'M',
+        width: 220,
       })
 
       setPayload(p)
-      setQrSvg(svgStr)
+      setQrDataUrl(dataUrl)
       setState('active')
       startCountdown(p)
     } catch (e: unknown) {
@@ -160,6 +161,14 @@ export function CheckInQR({ eventId, reservationId, event, reservation }: CheckI
         Your wallet signature proves control of this reservation — not physical presence.
       </p>
 
+      {/* Trust model notice */}
+      <div className="rounded-xl bg-amber-50 border border-amber-200 p-3 text-xs text-amber-800 leading-relaxed">
+        <strong>Attendance model:</strong> The organiser is the sole attester of attendance.
+        Check-in is recorded onchain only after the organiser scans your QR and submits
+        a transaction. If the organiser does not submit, your deposit remains at risk of
+        being classified as a no-show after the check-in window closes.
+      </div>
+
       {!checkInLive && (
         <div className="rounded-xl bg-slate-50 border border-slate-200 p-3 text-xs text-slate-600 flex items-center gap-2">
           <Clock size={14} />
@@ -168,15 +177,17 @@ export function CheckInQR({ eventId, reservationId, event, reservation }: CheckI
       )}
 
       {/* Active QR */}
-      {state === 'active' && qrSvg && (
+      {state === 'active' && qrDataUrl && (
         <div className="flex flex-col items-center gap-3">
-          <div
-            className="rounded-xl border-2 border-[var(--accent)] overflow-hidden bg-white p-2"
-            aria-label="Check-in QR code"
-            // biome-ignore lint/security/noDangerouslySetInnerHtml: QR SVG generated locally from trusted data
-            dangerouslySetInnerHTML={{ __html: qrSvg }}
-            style={{ width: 220, height: 220 }}
-          />
+          <div className="rounded-xl border-2 border-[var(--accent)] overflow-hidden bg-white p-2">
+            <img
+              src={qrDataUrl}
+              alt="Check-in QR code"
+              width={220}
+              height={220}
+              className="block"
+            />
+          </div>
 
           {/* Countdown */}
           <div className={`flex items-center gap-1.5 text-sm font-medium ${secondsLeft <= 30 ? 'text-red-600' : 'text-[var(--accent)]'}`}>
