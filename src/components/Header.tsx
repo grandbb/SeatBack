@@ -16,6 +16,7 @@ const TABS = [
   { id: 'create',       label: 'Create' },
   { id: 'reservations', label: 'My Tickets' },
   { id: 'organizer',    label: 'Organiser' },
+  { id: 'docs',         label: 'Docs' },
 ]
 
 export function Header({ activeTab, onTabChange }: HeaderProps) {
