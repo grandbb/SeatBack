@@ -3,7 +3,7 @@
  * Covers: what SeatBack is, how it works for attendees and organisers,
  * the refund policy, the QR check-in flow, trust model, and contract facts.
  */
-import { BookOpen, Ticket, QrCode, Coins, Shield, AlertTriangle, Code2, Users, Calendar, ChevronRight } from 'lucide-react'
+import { BookOpen, Ticket, QrCode, Coins, Shield, AlertTriangle, Code2, Users, Calendar, ChevronRight, Layers, Gift, Lock, TrendingUp, Percent } from 'lucide-react'
 import { SEATBACK_ADDRESS, ACTIVE_CHAIN_ID, NETWORK_LABEL } from '@/contract'
 
 const EXPLORER_URL = ACTIVE_CHAIN_ID === 5042
@@ -73,14 +73,16 @@ function Step({ n, title, children }: { n: number; title: string; children: Reac
 // ─── TOC ──────────────────────────────────────────────────────────────────────
 
 const TOC_ITEMS = [
-  { id: 'overview',    label: 'Overview' },
-  { id: 'attendee',   label: 'Attendee guide' },
-  { id: 'organiser',  label: 'Organiser guide' },
-  { id: 'checkin',    label: 'QR check-in' },
-  { id: 'refunds',    label: 'Refund policy' },
-  { id: 'trust',      label: 'Trust model' },
-  { id: 'contract',   label: 'Contract & security' },
-  { id: 'faq',        label: 'FAQ' },
+  { id: 'overview',     label: 'Overview' },
+  { id: 'attendee',    label: 'Attendee guide' },
+  { id: 'organiser',   label: 'Organiser guide' },
+  { id: 'checkin',     label: 'QR check-in' },
+  { id: 'refunds',     label: 'Refund policy' },
+  { id: 'trust',       label: 'Trust model' },
+  { id: 'contract',    label: 'Contract & security' },
+  { id: 'faq',         label: 'FAQ' },
+  { id: 'tokenomics',  label: 'Tokenomics (SBK)' },
+  { id: 'airdrop',     label: 'Airdrop' },
 ]
 
 // ─── Main component ───────────────────────────────────────────────────────────
@@ -435,6 +437,202 @@ export function Docs() {
               </div>
             </details>
           ))}
+        </Section>
+
+        {/* ── Tokenomics ── */}
+        <Section id="tokenomics" title="Tokenomics — SEATBACK (SBK)" icon={<Layers size={18} className="text-[var(--accent)]" />}>
+          <Callout type="info">
+            SBK is a planned utility token. The contracts and airdrop have not yet been deployed. This section describes the intended design.
+          </Callout>
+
+          <H3>Overview</H3>
+          <P>
+            SEATBACK (ticker: <strong>SBK</strong>) is the protocol utility token for SeatBack. Its primary purpose is to let token holders earn a share of USDC no-show proceeds — deposits left behind by attendees who booked a seat but never checked in. Holding SBK alone is not enough; tokens must be <em>staked</em> to earn.
+          </P>
+
+          {/* Supply table */}
+          <div className="overflow-x-auto rounded-xl border border-[var(--border)]">
+            <table className="w-full text-sm">
+              <thead>
+                <tr style={{ background: 'var(--surface-muted)' }}>
+                  <th className="px-4 py-3 text-left font-semibold text-[var(--fg)]">Parameter</th>
+                  <th className="px-4 py-3 text-left font-semibold text-[var(--fg)]">Value</th>
+                  <th className="px-4 py-3 text-left font-semibold text-[var(--fg)]">Notes</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[var(--border)]">
+                {[
+                  ['Token name', 'SEATBACK', 'ERC-20 on Arc Mainnet'],
+                  ['Ticker', 'SBK', ''],
+                  ['Total supply', '100,000,000 SBK', 'Fixed — no minting after launch'],
+                  ['Decimals', '18', 'Standard ERC-20'],
+                  ['Standard', 'ERC-20 + staking module', 'Must stake to earn USDC'],
+                  ['No-show split', '80% stakers / 20% organiser', 'Per-event, calculated at finalization'],
+                ].map(([param, value, note]) => (
+                  <tr key={param} style={{ background: 'var(--surface)' }}>
+                    <td className="px-4 py-3 font-medium text-[var(--fg)]">{param}</td>
+                    <td className="px-4 py-3 text-[var(--accent)] font-semibold">{value}</td>
+                    <td className="px-4 py-3 text-[var(--muted)]">{note}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <H3>Token allocation</H3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {[
+              { label: 'Community airdrop', pct: '30%', amount: '30,000,000 SBK', desc: 'Early users: attendees and organisers who interacted with SeatBack before the snapshot date', color: 'var(--accent)' },
+              { label: 'Ecosystem & growth', pct: '25%', amount: '25,000,000 SBK', desc: 'Grants, partnerships, liquidity incentives, and future protocol integrations', color: '#8b5cf6' },
+              { label: 'Team & contributors', pct: '20%', amount: '20,000,000 SBK', desc: '4-year linear vest, 1-year cliff. Aligns long-term incentives', color: '#f59e0b' },
+              { label: 'Treasury reserve', pct: '15%', amount: '15,000,000 SBK', desc: 'Protocol-owned reserves for future upgrades, audits, and emergency use', color: '#10b981' },
+              { label: 'Staking rewards', pct: '10%', amount: '10,000,000 SBK', desc: 'Bootstrap staking APY before no-show proceeds are large enough on their own', color: '#ef4444' },
+            ].map(({ label, pct, amount, desc, color }) => (
+              <div key={label} className="rounded-xl p-4 border border-[var(--border)]" style={{ background: 'var(--surface)' }}>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="font-semibold text-[var(--fg)] text-sm">{label}</span>
+                  <span className="text-lg font-bold" style={{ color }}>{pct}</span>
+                </div>
+                <div className="text-xs font-mono text-[var(--accent)] mb-1">{amount}</div>
+                <p className="text-xs text-[var(--muted)] leading-relaxed">{desc}</p>
+              </div>
+            ))}
+          </div>
+
+          <H3>How staking works</H3>
+          <div className="flex flex-col gap-3">
+            {[
+              { icon: <Lock size={16} />, title: 'Stake SBK', desc: 'Lock your SBK tokens in the staking contract. There is no minimum. You can unstake at any time.' },
+              { icon: <Percent size={16} />, title: 'Earn your proportional share', desc: 'When an event is finalised, 80% of all no-show USDC proceeds are sent to the staking pool. Each staker earns (your staked SBK ÷ total staked SBK) × pool amount.' },
+              { icon: <Coins size={16} />, title: 'Claim USDC rewards', desc: 'Rewards accrue on-chain. You can claim your USDC at any time without unstaking your SBK.' },
+              { icon: <TrendingUp size={16} />, title: 'Bootstrap APY', desc: 'During the early phase, 10,000,000 SBK from the staking rewards allocation are distributed pro-rata to stakers to supplement USDC earnings.' },
+            ].map(({ icon, title, desc }) => (
+              <div key={title} className="flex gap-3 rounded-xl p-4 border border-[var(--border)]" style={{ background: 'var(--surface)' }}>
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 text-[var(--accent)]" style={{ background: 'var(--accent-light)' }}>
+                  {icon}
+                </div>
+                <div>
+                  <div className="font-semibold text-[var(--fg)] text-sm mb-0.5">{title}</div>
+                  <p className="text-xs text-[var(--muted)] leading-relaxed">{desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <H3>No-show proceeds flow</H3>
+          <div className="rounded-xl border border-[var(--border)] overflow-hidden">
+            <div className="px-5 py-4 text-sm" style={{ background: 'var(--surface)' }}>
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-3 h-3 rounded-full bg-amber-400" />
+                <span className="font-semibold text-[var(--fg)]">Example: Event with 10 bookings × 1 USDC deposit = 10 USDC escrowed</span>
+              </div>
+              <div className="flex flex-col gap-2 text-[var(--muted)]">
+                <div className="flex items-center gap-2">
+                  <ChevronRight size={13} className="text-[var(--accent)] flex-shrink-0" />
+                  <span>8 attendees check in → 8 USDC becomes refundable to them</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <ChevronRight size={13} className="text-[var(--accent)] flex-shrink-0" />
+                  <span>2 no-shows → 2 USDC are no-show proceeds</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <ChevronRight size={13} className="text-[var(--accent)] flex-shrink-0" />
+                  <span className="font-semibold text-[var(--fg)]">1.6 USDC (80%) → distributed to SBK staking pool</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <ChevronRight size={13} className="text-[var(--accent)] flex-shrink-0" />
+                  <span className="font-semibold text-[var(--fg)]">0.4 USDC (20%) → organiser payout wallet</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <Callout type="warn">
+            SBK does not represent ownership, equity, or voting rights in any legal entity. Staking rewards depend on actual no-show volume — there is no guaranteed return. Token value may fluctuate. This is not investment advice.
+          </Callout>
+        </Section>
+
+        {/* ── Airdrop ── */}
+        <Section id="airdrop" title="Airdrop — Early User Rewards" icon={<Gift size={18} className="text-[var(--accent)]" />}>
+          <Callout type="info">
+            The airdrop has not yet been distributed. The snapshot date, Merkle root, and claim contract will be announced before launch.
+          </Callout>
+
+          <H3>Who is eligible</H3>
+          <P>
+            30,000,000 SBK (30% of total supply) will be distributed to wallets that interacted with SeatBack before the snapshot date. Eligibility is based on onchain activity — no application required.
+          </P>
+
+          <div className="overflow-x-auto rounded-xl border border-[var(--border)]">
+            <table className="w-full text-sm">
+              <thead>
+                <tr style={{ background: 'var(--surface-muted)' }}>
+                  <th className="px-4 py-3 text-left font-semibold text-[var(--fg)]">Action</th>
+                  <th className="px-4 py-3 text-left font-semibold text-[var(--fg)]">SBK points</th>
+                  <th className="px-4 py-3 text-left font-semibold text-[var(--fg)]">Notes</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[var(--border)]">
+                {[
+                  ['Reserve a seat', '100 pts', 'Per confirmed reservation before snapshot'],
+                  ['Check in (verified)', '300 pts', 'Organiser-attested check-in recorded onchain'],
+                  ['Create an event', '500 pts', 'Per event created with at least 1 reservation'],
+                  ['Organiser check-in', '200 pts', 'Per attendee successfully checked in'],
+                  ['Early adopter bonus', '2× multiplier', 'Activity in first 30 days after launch'],
+                ].map(([action, pts, note]) => (
+                  <tr key={action} style={{ background: 'var(--surface)' }}>
+                    <td className="px-4 py-3 font-medium text-[var(--fg)]">{action}</td>
+                    <td className="px-4 py-3 text-[var(--accent)] font-semibold">{pts}</td>
+                    <td className="px-4 py-3 text-[var(--muted)]">{note}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <P>
+            Your final SBK allocation = <strong>(your points ÷ total points across all wallets) × 30,000,000 SBK</strong>. Every eligible wallet receives a proportional share — there is no fixed amount per action.
+          </P>
+
+          <H3>How to claim</H3>
+          <div className="flex flex-col gap-3">
+            {[
+              { step: '1', title: 'Snapshot is taken', desc: 'On the announced snapshot date, all onchain activity up to that block is recorded. No further actions count after the snapshot.' },
+              { step: '2', title: 'Merkle tree is published', desc: 'A Merkle tree of all eligible wallets and their SBK amounts is built from onchain data and published publicly so anyone can verify their allocation.' },
+              { step: '3', title: 'Claim contract goes live', desc: 'A claim contract is deployed on Arc Mainnet. You connect your wallet, the app shows your allocation, and you submit one transaction to receive your SBK.' },
+              { step: '4', title: 'Stake to earn', desc: 'Once you have SBK, you can stake immediately to start earning your share of USDC no-show proceeds from every future SeatBack event.' },
+            ].map(({ step, title, desc }) => (
+              <div key={step} className="flex gap-4 rounded-xl p-4 border border-[var(--border)]" style={{ background: 'var(--surface)' }}>
+                <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-white text-sm font-bold" style={{ background: 'var(--accent)' }}>
+                  {step}
+                </div>
+                <div>
+                  <div className="font-semibold text-[var(--fg)] text-sm mb-0.5">{title}</div>
+                  <p className="text-xs text-[var(--muted)] leading-relaxed">{desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <H3>Rules and anti-gaming</H3>
+          <div className="flex flex-col gap-2">
+            {[
+              'Only wallets that appear in the SeatBack contract event logs before the snapshot block are eligible.',
+              'Sybil wallets (multiple addresses controlled by one person) will receive the same share they would earn combined — splitting across wallets provides no advantage since allocation is proportional.',
+              'Cancelled reservations count toward eligibility (the reserve action was onchain) but at the base rate — no bonus for cancelling.',
+              'The Merkle root and raw allocation data will be published at least 7 days before the claim contract opens, so anyone can audit.',
+              'Unclaimed SBK after the 180-day claim window closes returns to the Treasury reserve.',
+            ].map((rule) => (
+              <div key={rule} className="flex items-start gap-2 text-sm text-[var(--muted)]">
+                <div className="w-1.5 h-1.5 rounded-full mt-1.5 flex-shrink-0" style={{ background: 'var(--accent)' }} />
+                {rule}
+              </div>
+            ))}
+          </div>
+
+          <Callout type="warn">
+            SBK is a utility token. Participation in the airdrop does not constitute an investment and carries no guarantee of value. Always verify the official claim contract address through the SeatBack GitHub repository before interacting.
+          </Callout>
         </Section>
 
         {/* ── Source ── */}
