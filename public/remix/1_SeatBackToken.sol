@@ -1,18 +1,26 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-// @openzeppelin/contracts v5
-import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.0.0/contracts/token/ERC20/ERC20.sol";
-import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.0.0/contracts/token/ERC20/extensions/ERC20Permit.sol";
-import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.0.0/contracts/access/Ownable.sol";
+import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import {ERC20Permit} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
 /**
- * @title  SeatBackToken
- * @notice SEATBACK (SBK) — 100,000,000 fixed supply. No mint after deploy.
- *         ERC-20 + ERC-20Permit (gasless approvals).
+ * @title SeatBackToken
+ * @notice SEATBACK (SBK) — protocol utility token for the SeatBack event escrow system.
  *
- * Constructor argument:
- *   initialOwner — receives all 100M SBK. Use YOUR wallet address.
+ * Properties:
+ *  - Fixed supply of 100,000,000 SBK minted in full to the deployer at construction.
+ *  - No mint function after deployment — supply is immutable.
+ *  - ERC-20Permit (EIP-2612) for gasless approvals.
+ *  - 18 decimals (standard ERC-20).
+ *
+ * Allocation (off-chain distribution — deployer distributes):
+ *  - 30% Airdrop (early users: reserve / check-in activity)
+ *  - 25% Ecosystem / grants
+ *  - 20% Team (vested off-chain)
+ *  - 15% Treasury
+ *  - 10% Staking bootstrap rewards
  */
 contract SeatBackToken is ERC20, ERC20Permit, Ownable {
     uint256 public constant TOTAL_SUPPLY = 100_000_000 * 1e18;

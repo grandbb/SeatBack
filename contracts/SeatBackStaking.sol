@@ -70,8 +70,13 @@ contract SeatBackStaking is ReentrancyGuard, Ownable {
     /// @notice Block number when each staker last staked. Used for MEV cooldown.
     mapping(address => uint256) public stakeBlock;
 
-    /// @notice Minimum blocks between stake and reward eligibility (anti-snipe).
-    uint256 public constant STAKE_COOLDOWN_BLOCKS = 1;
+    /// @notice Blocks a staker must wait before becoming eligible for new rewards.
+    ///         ~24 hours on Arc (1-second blocks). Prevents flash-stake sniping.
+    uint256 public constant STAKE_COOLDOWN_BLOCKS = 7200;
+
+    /// @notice Minimum SBK that must be staked to participate in distributions.
+    ///         Prevents dust-stake attacks on undistributedProceeds.
+    uint256 public constant MIN_STAKE = 1e18; // 1 SBK
 
     // ─── Events ───────────────────────────────────────────────────────────────
 
@@ -84,6 +89,7 @@ contract SeatBackStaking is ReentrancyGuard, Ownable {
     // ─── Errors ───────────────────────────────────────────────────────────────
 
     error ZeroAmount();
+    error BelowMinStake();
     error InsufficientStake();
     error NoPendingReward();
     error Unauthorized();
@@ -123,12 +129,14 @@ contract SeatBackStaking is ReentrancyGuard, Ownable {
      */
     function stake(uint256 amount) external nonReentrant {
         if (amount == 0) revert ZeroAmount();
+        // Enforce minimum stake to prevent dust-stake attacks on undistributedProceeds
+        if (stakedBalance[msg.sender] + amount < MIN_STAKE) revert BelowMinStake();
 
         _updateReward(msg.sender);
 
         stakedBalance[msg.sender] += amount;
         totalStaked += amount;
-        stakeBlock[msg.sender] = block.number; // reset cooldown on every stake
+        stakeBlock[msg.sender] = block.number; // reset cooldown on every top-up
 
         sbk.safeTransferFrom(msg.sender, address(this), amount);
 
@@ -261,11 +269,12 @@ contract SeatBackStaking is ReentrancyGuard, Ownable {
      *      Must be called at the start of stake(), unstake(), claimReward(), exit().
      */
     function _updateReward(address user) internal {
-        // Anti-MEV: stakers who staked in the current block are not yet eligible
-        // for rewards — their rewardPerTokenPaid is set to current rewardPerTokenStored,
-        // so they only earn from distributions that arrive AFTER their stake block.
+        // Anti-flash-stake: stakers must wait STAKE_COOLDOWN_BLOCKS (~24h on Arc)
+        // before earning rewards. This prevents flash-stake sniping of proceeds.
+        // New users have stakeBlock[user]==0; block.number is always >= cooldown
+        // so first accrual is always gated by this same condition.
         uint256 rpt = rewardPerTokenStored;
-        if (stakeBlock[user] < block.number) {
+        if (block.number >= stakeBlock[user] + STAKE_COOLDOWN_BLOCKS) {
             uint256 accrued = (stakedBalance[user] * (rpt - rewardPerTokenPaid[user])) / PRECISION;
             pendingRewards[user] += accrued;
         }

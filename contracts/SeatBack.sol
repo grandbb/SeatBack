@@ -117,7 +117,8 @@ contract SeatBack is ReentrancyGuard {
         uint256 organizerCredit;
         uint256 refundsPaid;
         uint256 organizerPaid;
-        uint256 stakerPaid; // tracks USDC routed to staking pool for auditability
+        uint256 stakerPaid;      // tracks USDC routed to staking pool for auditability
+        address poolSnapshot;    // stakingPool address snapshotted at finalization time
     }
 
     /// @notice The EIP-712 typed-data struct that the attendee signs for QR check-in.
@@ -610,7 +611,10 @@ contract SeatBack is ReentrancyGuard {
 
         acc.organizerCredit = 0;
 
-        address pool = stakingPool;
+        // Use the pool address that was snapshotted at finalization — not the current
+        // stakingPool value. This prevents admin from rotating the pool address after
+        // an event is finalized to redirect staker proceeds.
+        address pool = acc.poolSnapshot;
         uint256 stakerAmount = 0;
         uint256 organiserAmount = totalAmount;
 
@@ -725,6 +729,10 @@ contract SeatBack is ReentrancyGuard {
         uint256 refundLiability = 0;
 
         evt.finalized = true;
+
+        // Snapshot the staking pool address at finalization time.
+        // withdrawNoShowProceeds uses this snapshot — immune to later pool rotation.
+        acc.poolSnapshot = stakingPool;
 
         if (active > 0) {
             if (evt.checkInOpened) {
