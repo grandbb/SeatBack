@@ -87,8 +87,8 @@ export function MyReservations({ onViewEvent }: MyReservationsProps) {
   const resIdSet = new Set<bigint>()
   if (activeResIds) {
     for (const r of activeResIds) {
-      if (r?.status === 'success' && (r.result as bigint) > 0n) {
-        resIdSet.add(r.result as bigint)
+      if (r?.status === 'success' && (r.result) > 0n) {
+        resIdSet.add(r.result)
       }
     }
   }
@@ -117,13 +117,13 @@ export function MyReservations({ onViewEvent }: MyReservationsProps) {
   for (let i = 0; i < resIds.length; i++) {
     const resResult = reservationData?.[i]
     if (resResult?.status !== 'success' || !resResult.result) continue
-    const reservation = resResult.result as ReservationInfo
+    const reservation = resResult.result
     const eventId = reservation.eventId
     const eventIdx = ids.findIndex((id) => id === eventId)
     if (eventIdx === -1) continue
     const eventResult = eventsData?.[eventIdx]
     if (eventResult?.status !== 'success' || !eventResult.result) continue
-    const event = eventResult.result as EventInfo
+    const event = eventResult.result
     items.push({ reservationId: resIds[i], reservation, eventId, event })
   }
 

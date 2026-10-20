@@ -67,6 +67,12 @@ contract SeatBackStaking is ReentrancyGuard, Ownable {
     /// @notice Accumulated but unclaimed USDC rewards for each staker.
     mapping(address => uint256) public pendingRewards;
 
+    /// @notice Block number when each staker last staked. Used for MEV cooldown.
+    mapping(address => uint256) public stakeBlock;
+
+    /// @notice Minimum blocks between stake and reward eligibility (anti-snipe).
+    uint256 public constant STAKE_COOLDOWN_BLOCKS = 1;
+
     // ─── Events ───────────────────────────────────────────────────────────────
 
     event Staked(address indexed user, uint256 amount);
@@ -122,6 +128,7 @@ contract SeatBackStaking is ReentrancyGuard, Ownable {
 
         stakedBalance[msg.sender] += amount;
         totalStaked += amount;
+        stakeBlock[msg.sender] = block.number; // reset cooldown on every stake
 
         sbk.safeTransferFrom(msg.sender, address(this), amount);
 
@@ -222,6 +229,21 @@ contract SeatBackStaking is ReentrancyGuard, Ownable {
         emit ProceedsReceived(total, rewardPerTokenStored);
     }
 
+    /**
+     * @notice Distribute any undistributed proceeds accumulated during zero-staker periods.
+     * @dev Permissionless: anyone can call when totalStaked > 0 and undistributedProceeds > 0.
+     *      This ensures proceeds that arrived while no one was staked are never permanently stuck.
+     */
+    function syncUndistributed() external nonReentrant {
+        if (totalStaked == 0) revert NoStakers();
+        uint256 carry = undistributedProceeds;
+        if (carry == 0) return;
+        undistributedProceeds = 0;
+        uint256 delta = (carry * PRECISION) / totalStaked;
+        rewardPerTokenStored += delta;
+        emit ProceedsReceived(carry, rewardPerTokenStored);
+    }
+
     // ─── Views ────────────────────────────────────────────────────────────────
 
     /**
@@ -239,8 +261,14 @@ contract SeatBackStaking is ReentrancyGuard, Ownable {
      *      Must be called at the start of stake(), unstake(), claimReward(), exit().
      */
     function _updateReward(address user) internal {
-        uint256 accrued = (stakedBalance[user] * (rewardPerTokenStored - rewardPerTokenPaid[user])) / PRECISION;
-        pendingRewards[user] += accrued;
-        rewardPerTokenPaid[user] = rewardPerTokenStored;
+        // Anti-MEV: stakers who staked in the current block are not yet eligible
+        // for rewards — their rewardPerTokenPaid is set to current rewardPerTokenStored,
+        // so they only earn from distributions that arrive AFTER their stake block.
+        uint256 rpt = rewardPerTokenStored;
+        if (stakeBlock[user] < block.number) {
+            uint256 accrued = (stakedBalance[user] * (rpt - rewardPerTokenPaid[user])) / PRECISION;
+            pendingRewards[user] += accrued;
+        }
+        rewardPerTokenPaid[user] = rpt;
     }
 }

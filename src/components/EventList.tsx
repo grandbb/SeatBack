@@ -71,8 +71,8 @@ export function EventList({ onSelectEvent }: EventListProps) {
       {ids.map((id, i) => {
         const result = eventsData?.[i]
         if (result?.status !== 'success' || !result.result) return null
-        const event = result.result as EventInfo
-        const seats = seatsData?.[i]?.result as number | undefined
+        const event = result.result
+        const seats = seatsData?.[i]?.result
         return (
           <EventCard
             key={id.toString()}

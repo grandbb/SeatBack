@@ -117,6 +117,7 @@ contract SeatBack is ReentrancyGuard {
         uint256 organizerCredit;
         uint256 refundsPaid;
         uint256 organizerPaid;
+        uint256 stakerPaid; // tracks USDC routed to staking pool for auditability
     }
 
     /// @notice The EIP-712 typed-data struct that the attendee signs for QR check-in.
@@ -175,14 +176,18 @@ contract SeatBack is ReentrancyGuard {
     /// @notice Owner / deployer who can set the staking pool address once.
     address public immutable admin;
 
-    error StakingPoolAlreadySet();
     error NotAdmin();
 
-    /// @notice Set the staking pool address. Can only be called by admin, once.
+    /**
+     * @notice Set or update the staking pool address.
+     *         Can be updated by admin at any time (rotatable for upgrades/recovery).
+     *         Pass address(0) to disable routing (100% to organiser).
+     * @param _pool New staking pool address, or address(0) to disable.
+     */
     function setStakingPool(address _pool) external {
         if (msg.sender != admin) revert NotAdmin();
-        if (stakingPool != address(0)) revert StakingPoolAlreadySet();
-        if (_pool == address(0)) revert InvalidAddress();
+        // allow address(0) to disable routing; require contract if non-zero
+        if (_pool != address(0) && _pool.code.length == 0) revert InvalidAddress();
         stakingPool = _pool;
         emit StakingPoolSet(_pool);
     }
@@ -444,41 +449,44 @@ contract SeatBack is ReentrancyGuard {
         CheckInAuthorization calldata auth,
         bytes calldata sig
     ) external nonReentrant {
-        // ── 1. Organizer authorization ────────────────────────────────────────
-        uint256 eventId = auth.eventId;
-        if (eventId >= eventCount) revert EventNotFound();
+        _verifyCheckInAuth(auth, sig);
+        _applyCheckIn(auth);
+    }
 
-        EventInfo storage evt = events[eventId];
+    /// @dev Validates organizer, event state, time bounds, reservation, nonce, and signature.
+    function _verifyCheckInAuth(
+        CheckInAuthorization calldata auth,
+        bytes calldata sig
+    ) internal view {
+        if (auth.eventId >= eventCount) revert EventNotFound();
+        EventInfo storage evt = events[auth.eventId];
         if (msg.sender != evt.organizer) revert NotOrganizer();
         if (evt.cancelled) revert EventCancelled_();
         if (!evt.checkInOpened) revert CheckInNotOpen();
-
-        // ── 2. Time bounds ────────────────────────────────────────────────────
         if (block.timestamp >= evt.checkInEnd) revert CheckInWindowClosed();
         if (auth.validUntil > evt.checkInEnd) revert QrValidityTooLong();
         if (block.timestamp < auth.validAfter) revert QrNotYetValid();
         if (block.timestamp >= auth.validUntil) revert QrExpired();
         if (auth.validUntil - auth.validAfter > MAX_QR_VALIDITY) revert QrValidityTooLong();
 
-        // ── 3. Reservation state ──────────────────────────────────────────────
-        uint256 reservationId = auth.reservationId;
-        ReservationInfo storage res = reservations[reservationId];
-
-        // The auth attendee must match the reservation attendee
+        ReservationInfo storage res = reservations[auth.reservationId];
         if (res.attendee != auth.attendee) revert AttendeeWalletMismatch();
-        // The reservation's eventId must match
-        if (res.eventId != eventId) revert AttendeeWalletMismatch();
-        // The reservation must still be active (cancelled / rebooked QRs fail here)
+        if (res.eventId != auth.eventId) revert AttendeeWalletMismatch();
         if (!res.active) revert NotActive();
-        // The active reservation must match (guards against a rebooked reservation having a new ID)
-        if (activeReservationId[eventId][auth.attendee] != reservationId) revert NotActive();
+        if (activeReservationId[auth.eventId][auth.attendee] != auth.reservationId) revert NotActive();
+        if (usedNonces[auth.reservationId][auth.nonce]) revert NonceAlreadyUsed();
 
-        // ── 4. Replay protection ──────────────────────────────────────────────
-        if (usedNonces[reservationId][auth.nonce]) revert NonceAlreadyUsed();
+        if (!_verifySig(auth, sig)) revert InvalidSignature();
+    }
 
-        // ── 5. Signature verification ─────────────────────────────────────────
-        bytes32 structHash = keccak256(
-            abi.encode(
+    /// @dev Verifies EIP-712 signature — EOA first, then ERC-1271.
+    function _verifySig(
+        CheckInAuthorization calldata auth,
+        bytes calldata sig
+    ) internal view returns (bool) {
+        bytes32 digest = MessageHashUtils.toTypedDataHash(
+            DOMAIN_SEPARATOR(),
+            keccak256(abi.encode(
                 _CHECK_IN_AUTH_TYPE_HASH,
                 auth.eventId,
                 auth.reservationId,
@@ -486,35 +494,27 @@ contract SeatBack is ReentrancyGuard {
                 auth.nonce,
                 auth.validAfter,
                 auth.validUntil
-            )
+            ))
         );
-        bytes32 digest = MessageHashUtils.toTypedDataHash(DOMAIN_SEPARATOR(), structHash);
-
-        // Try EOA recovery first (cheapest path)
         address recovered = _tryRecover(digest, sig);
-        bool valid = (recovered != address(0) && recovered == auth.attendee);
+        if (recovered != address(0) && recovered == auth.attendee) return true;
+        return _checkERC1271(auth.attendee, digest, sig);
+    }
 
-        // Fallback: ERC-1271 smart-contract wallet
-        if (!valid) {
-            valid = _checkERC1271(auth.attendee, digest, sig);
-        }
+    /// @dev Applies state changes after successful auth verification.
+    function _applyCheckIn(CheckInAuthorization calldata auth) internal {
+        usedNonces[auth.reservationId][auth.nonce] = true;
 
-        if (!valid) revert InvalidSignature();
-
-        // ── 6. State update (consume nonce before transfer) ────────────────────
-        usedNonces[reservationId][auth.nonce] = true;
-
-        uint256 depositAmount = evt.depositAmount;
-
+        ReservationInfo storage res = reservations[auth.reservationId];
         res.active = false;
         res.refundable = true;
+        activeReservationId[auth.eventId][auth.attendee] = 0;
 
-        activeReservationId[eventId][auth.attendee] = 0;
+        uint256 deposit = events[auth.eventId].depositAmount;
+        accounting[auth.eventId].activeDeposits -= deposit;
+        accounting[auth.eventId].outstandingRefunds += deposit;
 
-        accounting[eventId].activeDeposits -= depositAmount;
-        accounting[eventId].outstandingRefunds += depositAmount;
-
-        emit CheckedIn(eventId, reservationId, auth.attendee);
+        emit CheckedIn(auth.eventId, auth.reservationId, auth.attendee);
     }
 
     // ─── Event lifecycle ──────────────────────────────────────────────────────
@@ -629,17 +629,17 @@ contract SeatBack is ReentrancyGuard {
 
         // ── Route staker share: transfer THEN notify (best-effort, non-blocking) ──
         if (stakerAmount > 0 && pool != address(0)) {
-            // Transfer USDC to staking pool first, then notify it.
-            // If the notify call reverts (e.g. pool is paused), we catch and escrow
-            // stakerAmount in pendingStakerProceeds so it can be re-pushed later.
+            // Transfer USDC to staking pool, then notify it (receiveProceeds).
+            // Notify failure is caught and ignored — USDC is already at the pool;
+            // the pool operator can reconcile via balance delta.
+            acc.stakerPaid += stakerAmount;
             usdc.safeTransfer(pool, stakerAmount);
             try ISeatBackStaking(pool).receiveProceeds(stakerAmount) {
-                emit StakerProceedsRouted(eventId, pool, stakerAmount, organiserAmount);
+                // success
             } catch {
-                // Pool refused the notify — funds are already at the pool address.
-                // Emit a separate event so the pool operator can reconcile manually.
-                emit StakerProceedsRouted(eventId, pool, stakerAmount, organiserAmount);
+                // pool notify reverted — USDC already transferred, pool must reconcile
             }
+            emit StakerProceedsRouted(eventId, pool, stakerAmount, organiserAmount);
         }
     }
 

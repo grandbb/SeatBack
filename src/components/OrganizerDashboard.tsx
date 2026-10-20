@@ -37,7 +37,7 @@ export function OrganizerDashboard() {
   const myEventIds = ids.filter((id, i) => {
     const r = eventsData?.[i]
     if (r?.status !== 'success' || !r.result) return false
-    return (r.result as EventInfo).organizer.toLowerCase() === address?.toLowerCase()
+    return (r.result).organizer.toLowerCase() === address?.toLowerCase()
   })
 
   const myEvents = myEventIds.map((id) => {
@@ -155,7 +155,7 @@ function OrganizerEventPanel({ eventId, event, wrongChain, onSwitchChain }: Orga
 
   const handleOpenCheckIn = () =>
     call(() => openCI({
-      address: SEATBACK_ADDRESS!,
+      address: SEATBACK_ADDRESS,
       abi: SEATBACK_ABI,
       functionName: 'openCheckIn',
       args: [eventId],
@@ -168,7 +168,7 @@ function OrganizerEventPanel({ eventId, event, wrongChain, onSwitchChain }: Orga
       return
     }
     call(() => checkIn({
-      address: SEATBACK_ADDRESS!,
+      address: SEATBACK_ADDRESS,
       abi: SEATBACK_ABI,
       functionName: 'checkIn',
       args: [eventId, checkInAddress as `0x${string}`],
@@ -178,7 +178,7 @@ function OrganizerEventPanel({ eventId, event, wrongChain, onSwitchChain }: Orga
 
   const handleCancelEvent = () =>
     call(() => cancelEvt({
-      address: SEATBACK_ADDRESS!,
+      address: SEATBACK_ADDRESS,
       abi: SEATBACK_ABI,
       functionName: 'cancelEvent',
       args: [eventId],
@@ -187,7 +187,7 @@ function OrganizerEventPanel({ eventId, event, wrongChain, onSwitchChain }: Orga
 
   const handleFinalize = () =>
     call(() => finalize({
-      address: SEATBACK_ADDRESS!,
+      address: SEATBACK_ADDRESS,
       abi: SEATBACK_ABI,
       functionName: 'finalizeEvent',
       args: [eventId],
@@ -196,7 +196,7 @@ function OrganizerEventPanel({ eventId, event, wrongChain, onSwitchChain }: Orga
 
   const handleWithdraw = () =>
     call(() => withdraw({
-      address: SEATBACK_ADDRESS!,
+      address: SEATBACK_ADDRESS,
       abi: SEATBACK_ABI,
       functionName: 'withdrawNoShowProceeds',
       args: [eventId],
