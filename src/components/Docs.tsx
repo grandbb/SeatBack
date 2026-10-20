@@ -467,7 +467,7 @@ export function Docs() {
                   ['Total supply', '100,000,000 SBK', 'Fixed — no minting after launch'],
                   ['Decimals', '18', 'Standard ERC-20'],
                   ['Standard', 'ERC-20 + staking module', 'Must stake to earn USDC'],
-                  ['No-show split', '80% stakers / 20% organiser', 'Per-event, calculated at finalization'],
+                  ['No-show split', '50% stakers / 50% organiser', 'Per-event, calculated at finalization'],
                 ].map(([param, value, note]) => (
                   <tr key={param} style={{ background: 'var(--surface)' }}>
                     <td className="px-4 py-3 font-medium text-[var(--fg)]">{param}</td>
@@ -503,7 +503,7 @@ export function Docs() {
           <div className="flex flex-col gap-3">
             {[
               { icon: <Lock size={16} />, title: 'Stake SBK', desc: 'Lock your SBK tokens in the staking contract. There is no minimum. You can unstake at any time.' },
-              { icon: <Percent size={16} />, title: 'Earn your proportional share', desc: 'When an event is finalised, 80% of all no-show USDC proceeds are sent to the staking pool. Each staker earns (your staked SBK ÷ total staked SBK) × pool amount.' },
+              { icon: <Percent size={16} />, title: 'Earn your proportional share', desc: 'When an event is finalised, 50% of all no-show USDC proceeds are sent to the staking pool. Each staker earns (your staked SBK ÷ total staked SBK) × pool amount.' },
               { icon: <Coins size={16} />, title: 'Claim USDC rewards', desc: 'Rewards accrue on-chain. You can claim your USDC at any time without unstaking your SBK.' },
               { icon: <TrendingUp size={16} />, title: 'Bootstrap APY', desc: 'During the early phase, 10,000,000 SBK from the staking rewards allocation are distributed pro-rata to stakers to supplement USDC earnings.' },
             ].map(({ icon, title, desc }) => (
@@ -537,11 +537,11 @@ export function Docs() {
                 </div>
                 <div className="flex items-center gap-2">
                   <ChevronRight size={13} className="text-[var(--accent)] flex-shrink-0" />
-                  <span className="font-semibold text-[var(--fg)]">1.6 USDC (80%) → distributed to SBK staking pool</span>
+                  <span className="font-semibold text-[var(--fg)]">1.0 USDC (50%) → distributed to SBK staking pool</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <ChevronRight size={13} className="text-[var(--accent)] flex-shrink-0" />
-                  <span className="font-semibold text-[var(--fg)]">0.4 USDC (20%) → organiser payout wallet</span>
+                  <span className="font-semibold text-[var(--fg)]">1.0 USDC (50%) → organiser payout wallet</span>
                 </div>
               </div>
             </div>

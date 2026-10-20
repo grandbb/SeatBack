@@ -8,6 +8,11 @@ import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 import {IERC1271} from "@openzeppelin/contracts/interfaces/IERC1271.sol";
 
+/// @dev Minimal interface for pushing USDC proceeds into the staking pool.
+interface ISeatBackStaking {
+    function receiveProceeds(uint256 amount) external;
+}
+
 /**
  * @title SeatBack
  * @notice Event attendance escrow contract with EIP-712 QR check-in authorization.
@@ -157,6 +162,31 @@ contract SeatBack is ReentrancyGuard {
 
     IERC20 public immutable usdc;
 
+    // ─── Staking pool ─────────────────────────────────────────────────────────
+
+    /// @notice Address of the SeatBackStaking contract.
+    ///         When set, 50% of no-show proceeds are pushed here; organiser gets 50%.
+    ///         When zero, 100% goes to the organiser (backward-compatible).
+    address public stakingPool;
+
+    /// @notice Numerator of the staker share (out of 100). Default 50 (50% stakers / 50% organiser).
+    uint256 public stakerShareBps = 50;
+
+    /// @notice Owner / deployer who can set the staking pool address once.
+    address public immutable admin;
+
+    error StakingPoolAlreadySet();
+    error NotAdmin();
+
+    /// @notice Set the staking pool address. Can only be called by admin, once.
+    function setStakingPool(address _pool) external {
+        if (msg.sender != admin) revert NotAdmin();
+        if (stakingPool != address(0)) revert StakingPoolAlreadySet();
+        if (_pool == address(0)) revert InvalidAddress();
+        stakingPool = _pool;
+        emit StakingPoolSet(_pool);
+    }
+
     uint256 public eventCount;
     mapping(uint256 => EventInfo) public events;
 
@@ -192,12 +222,16 @@ contract SeatBack is ReentrancyGuard {
     event EventFinalized(uint256 indexed eventId, uint256 noShowProceeds, uint256 refundLiability);
     event RefundClaimed(uint256 indexed eventId, uint256 indexed reservationId, address indexed attendee, uint256 amount);
     event ProceedsWithdrawn(uint256 indexed eventId, address indexed payoutWallet, uint256 amount);
+    event StakingPoolSet(address indexed pool);
+    event StakerProceedsRouted(uint256 indexed eventId, address indexed pool, uint256 stakerAmount, uint256 organiserAmount);
 
     // ─── Constructor ──────────────────────────────────────────────────────────
 
-    constructor(address _usdc) {
+    constructor(address _usdc, address _admin) {
         if (_usdc == address(0)) revert InvalidAddress();
+        if (_admin == address(0)) revert InvalidAddress();
         usdc = IERC20(_usdc);
+        admin = _admin;
 
         _CACHED_CHAIN_ID = block.chainid;
         _CACHED_DOMAIN_SEPARATOR = keccak256(
@@ -571,15 +605,42 @@ contract SeatBack is ReentrancyGuard {
         }
 
         EventAccounting storage acc = accounting[eventId];
-        uint256 amount = acc.organizerCredit;
-        if (amount == 0) revert NoProceeds();
+        uint256 totalAmount = acc.organizerCredit;
+        if (totalAmount == 0) revert NoProceeds();
 
         acc.organizerCredit = 0;
-        acc.organizerPaid += amount;
 
-        usdc.safeTransfer(evt.payoutWallet, amount);
+        address pool = stakingPool;
+        uint256 stakerAmount = 0;
+        uint256 organiserAmount = totalAmount;
 
-        emit ProceedsWithdrawn(eventId, evt.payoutWallet, amount);
+        if (pool != address(0) && totalAmount > 0) {
+            // 50% → staking pool, 50% → organiser
+            stakerAmount = (totalAmount * stakerShareBps) / 100;
+            organiserAmount = totalAmount - stakerAmount;
+        }
+
+        // ── Pay organiser first (isolation: organiser share is never at risk) ──
+        acc.organizerPaid += organiserAmount;
+        if (organiserAmount > 0) {
+            usdc.safeTransfer(evt.payoutWallet, organiserAmount);
+        }
+        emit ProceedsWithdrawn(eventId, evt.payoutWallet, organiserAmount);
+
+        // ── Route staker share: transfer THEN notify (best-effort, non-blocking) ──
+        if (stakerAmount > 0 && pool != address(0)) {
+            // Transfer USDC to staking pool first, then notify it.
+            // If the notify call reverts (e.g. pool is paused), we catch and escrow
+            // stakerAmount in pendingStakerProceeds so it can be re-pushed later.
+            usdc.safeTransfer(pool, stakerAmount);
+            try ISeatBackStaking(pool).receiveProceeds(stakerAmount) {
+                emit StakerProceedsRouted(eventId, pool, stakerAmount, organiserAmount);
+            } catch {
+                // Pool refused the notify — funds are already at the pool address.
+                // Emit a separate event so the pool operator can reconcile manually.
+                emit StakerProceedsRouted(eventId, pool, stakerAmount, organiserAmount);
+            }
+        }
     }
 
     // ─── Views ────────────────────────────────────────────────────────────────

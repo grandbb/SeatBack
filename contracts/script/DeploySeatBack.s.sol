@@ -40,12 +40,16 @@ contract DeploySeatBack is Script {
         address usdc = vm.envAddress("USDC_ADDRESS");
         require(usdc != address(0), "DeploySeatBack: USDC_ADDRESS not set");
 
-        console.log("Deploying SeatBack on chain %s", block.chainid);
+        // admin defaults to deployer if not explicitly set
+        address admin = vm.envOr("ADMIN_ADDRESS", msg.sender);
+
+        console.log("Deploying SeatBack v2 on chain %s", block.chainid);
         console.log("  USDC address: %s", usdc);
+        console.log("  Admin:        %s", admin);
         console.log("  Deployer:     %s", msg.sender);
 
         vm.startBroadcast();
-        seatback = address(new SeatBack(usdc));
+        seatback = address(new SeatBack(usdc, admin));
         vm.stopBroadcast();
 
         console.log("SeatBack deployed at: %s", seatback);
