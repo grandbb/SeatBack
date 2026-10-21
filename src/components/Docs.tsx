@@ -436,29 +436,27 @@ export function Docs() {
         {/* ── 9. Points ── */}
         <Section id="points" title="Points" icon={<Star size={18} className="text-[var(--accent)]" />}>
           <P>
-            Points วัดกิจกรรมบน SeatBack และกำหนดสัดส่วน SBK airdrop ของคุณ
-            คำนวณแบบ real-time จาก onchain events โดยตรง — ไม่มี server ไม่ต้องสมัครบัญชี
-            เชื่อมต่อ wallet เพื่อดูคะแนนและรายละเอียดใน header
+            Points track your activity on SeatBack and determine your share of the SBK airdrop.
+            They are calculated in real time directly from onchain events — no server, no account required.
+            Connect your wallet and tap it to see your current score and breakdown instantly.
           </P>
 
-          {/* ─ กติกาหลัก ─ */}
-          <H3>กติกาการให้คะแนน</H3>
-
+          <H3>Earning rules</H3>
           <div className="rounded-xl border border-[var(--border)] overflow-hidden">
             <table className="w-full text-sm">
               <thead>
                 <tr style={{ background: 'var(--surface-muted)' }}>
-                  <th className="px-4 py-3 text-left font-semibold text-[var(--fg)]">กิจกรรม</th>
-                  <th className="px-4 py-3 text-left font-semibold text-[var(--fg)]">คะแนน</th>
-                  <th className="px-4 py-3 text-left font-semibold text-[var(--fg)]">เงื่อนไข</th>
+                  <th className="px-4 py-3 text-left font-semibold text-[var(--fg)]">Action</th>
+                  <th className="px-4 py-3 text-left font-semibold text-[var(--fg)]">Points</th>
+                  <th className="px-4 py-3 text-left font-semibold text-[var(--fg)]">Condition</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[var(--border)]">
                 {[
-                  ['จองที่นั่ง',     '+100', 'หลังงานจบ + ไม่ยกเลิก + มา check-in จริง'],
-                  ['Check in',      '+300', 'หลังงานจบ (finalized) เท่านั้น'],
-                  ['สร้างงาน',      '+500', 'งานต้องจบ + มีผู้ check-in จริง ≥ 5 คน + ผ่าน allowlist'],
-                  ['Early adopter', '×2',   'First 500 wallets ที่เคย reserve — คะแนนทั้งหมดคูณสอง'],
+                  ['Reserve a seat',  '+100', 'Event finalised + you attended (checked in)'],
+                  ['Check in',        '+300', 'Event finalised only'],
+                  ['Create an event', '+500', 'Event finalised + ≥5 real check-ins + passes campaign allowlist'],
+                  ['Early adopter',   '×2',   'First 500 wallets ever to reserve — all points doubled'],
                 ].map(([a, p, n]) => (
                   <tr key={a} style={{ background: 'var(--surface)' }}>
                     <td className="px-4 py-3 font-medium text-[var(--fg)] text-sm">{a}</td>
@@ -470,37 +468,32 @@ export function Docs() {
             </table>
           </div>
 
-          {/* ─ Pending vs Confirmed ─ */}
           <H3>Pending vs Confirmed</H3>
-          <P>
-            คะแนนแบ่งเป็น 2 สถานะ:
-          </P>
           <div className="flex flex-col gap-2 mt-1">
             <div className="rounded-xl p-4 flex gap-3" style={{ background: 'var(--surface-strong)' }}>
               <span className="text-xl">⏳</span>
               <div>
-                <div className="font-semibold text-sm">Pending (รอตรวจสอบ)</div>
-                <div className="text-sm opacity-70 mt-0.5">งานที่คุณจอง สร้าง หรือ check-in แต่ยังไม่จบ — แสดงแยก ไม่นับใน total จนกว่างานจะ finalized</div>
+                <div className="font-semibold text-sm">Pending</div>
+                <div className="text-sm opacity-70 mt-0.5">Events you reserved, created, or checked into that have not yet been finalised. Shown separately — not counted in your total until the event closes.</div>
               </div>
             </div>
             <div className="rounded-xl p-4 flex gap-3" style={{ background: 'var(--surface-strong)' }}>
               <span className="text-xl">✅</span>
               <div>
-                <div className="font-semibold text-sm">Confirmed (นับแล้ว)</div>
-                <div className="text-sm opacity-70 mt-0.5">งานจบแล้ว + ผ่านเกณฑ์ทั้งหมด — นับใน total และ airdrop</div>
+                <div className="font-semibold text-sm">Confirmed</div>
+                <div className="text-sm opacity-70 mt-0.5">Event finalised and all conditions met. Counts toward your total and airdrop allocation.</div>
               </div>
             </div>
           </div>
 
-          {/* ─ สิ่งที่ไม่ได้คะแนน ─ */}
-          <H3>สิ่งที่ไม่ได้คะแนน</H3>
+          <H3>What earns zero points</H3>
           <div className="flex flex-col gap-1.5 mt-1">
             {[
-              'ยกเลิกการจอง — คืนเงิน แต่ 0 pts',
-              'จองแล้วไม่มา (no-show) — 0 pts หลังงานจบ',
-              'งานถูก cancel ก่อนเริ่ม — 0 pts ทุกฝ่าย',
-              'สร้างงานที่มีผู้ check-in น้อยกว่า 5 คน — 0 pts ผู้จัด',
-              'งานที่ไม่ผ่าน campaign allowlist — 0 pts (ระยะแรก)',
+              'Cancelling a reservation — deposit refunded, 0 pts',
+              'No-show — 0 pts after event finalises',
+              'Event cancelled before it starts — 0 pts for everyone',
+              'Creating an event with fewer than 5 real check-ins — 0 pts for organiser',
+              'Events not on the campaign allowlist — 0 pts (early phase)',
             ].map(t => (
               <div key={t} className="flex items-start gap-2 text-sm">
                 <span className="opacity-40 mt-0.5">✗</span>
@@ -509,16 +502,15 @@ export function Docs() {
             ))}
           </div>
 
-          {/* ─ เพดาน ─ */}
-          <H3>เพดานคะแนน</H3>
+          <H3>Per-wallet caps</H3>
           <div className="rounded-xl border border-[var(--border)] overflow-hidden">
             <table className="w-full text-sm">
               <tbody className="divide-y divide-[var(--border)]">
                 {[
-                  ['สูงสุดต่อ wallet',              '50,000 pts',  'ป้องกัน Sybil ด้วยกระเป๋าเดิมหลายใบ'],
-                  ['Reserve ต่องาน',                '1 ครั้ง',     'ถ้าจองซ้ำงานเดิม นับครั้งแรกครั้งเดียว'],
-                  ['Check-in ต่องาน',               '1 ครั้ง',     '1 คน 1 check-in ต่องาน'],
-                  ['Create ต่องาน',                  '1 ครั้ง',     'ผู้จัดคนเดียวกันกับใน EventCreated log'],
+                  ['Max per wallet',       '50,000 pts', 'Limits advantage from holding many wallets'],
+                  ['Reserve per event',    '1 time',     'Only the first reservation on any event counts'],
+                  ['Check-in per event',   '1 time',     'One check-in per person per event'],
+                  ['Create per event',     '1 time',     'Must match the organiser in the EventCreated log'],
                 ].map(([a, b, c]) => (
                   <tr key={a} style={{ background: 'var(--surface)' }}>
                     <td className="px-4 py-3 font-medium text-[var(--fg)] text-sm">{a}</td>
@@ -530,24 +522,20 @@ export function Docs() {
             </table>
           </div>
 
-          {/* ─ Campaign allowlist ─ */}
           <H3>Campaign allowlist</H3>
           <P>
-            ในระยะแรก เฉพาะงานที่ผ่านการอนุมัติเข้าแคมเปญเท่านั้นที่สร้างคะแนนได้
-            ทุกคนยังสร้างงานได้ตามปกติ แต่คะแนนจะเริ่มนับเมื่องานผ่านเกณฑ์แล้ว
-            วิธีนี้ป้องกันงานปลอมในช่วงเริ่มต้น และจะเปิดกว้างเมื่อมีข้อมูลเพียงพอ
+            During the early phase, only events approved for the campaign generate points.
+            Anyone can still create events normally — points start accruing once an event passes the criteria.
+            This prevents fake events at launch and will open further as data accumulates.
           </P>
 
-          {/* ─ การตรวจพฤติกรรม ─ */}
-          <H3>การตรวจพฤติกรรมผิดปกติ</H3>
-          <P>
-            ระบบตรวจ pattern ดังนี้เป็น flag (ไม่ตัดสิทธิ์อัตโนมัติ):
-          </P>
+          <H3>Suspicious activity flags</H3>
+          <P>The following patterns are flagged for review — they do not automatically disqualify a wallet:</P>
           <div className="flex flex-col gap-1.5 mt-1">
             {[
-              'กลุ่มกระเป๋าเดิมจองงานเดียวกันซ้ำๆ เกิน 3 ครั้ง',
-              'รูปแบบเวลาจองและ check-in เหมือนกันมาก (bot-like)',
-              'wallet จากแหล่งเดียวกันร่วมงานกันตลอด',
+              'Same group of wallets repeatedly reserving the same events (>3 times)',
+              'Reservation and check-in timing that looks automated (bot-like pattern)',
+              'Wallets that consistently co-appear across many events together',
             ].map(t => (
               <div key={t} className="flex items-start gap-2 text-sm">
                 <span className="text-yellow-500 mt-0.5">⚠️</span>
@@ -556,19 +544,18 @@ export function Docs() {
             ))}
           </div>
           <P>
-            wallet ที่ถูก flag จะเห็นคำเตือนใน Points badge และอาจถูกตรวจเพิ่มก่อน snapshot
-            มีช่องทางอุทธรณ์ผ่าน GitHub Issues
+            Flagged wallets see a warning in their Points panel. They may be reviewed before the snapshot.
+            Appeals can be submitted via GitHub Issues.
           </P>
 
-          {/* ─ ก่อน snapshot ─ */}
-          <H3>ก่อน snapshot</H3>
+          <H3>Before the snapshot</H3>
           <P>
-            กติกาทั้งหมดนี้จะถูกประกาศและล็อกก่อน snapshot อย่างน้อย 14 วัน
-            ผลคะแนนเบื้องต้นจะเผยแพร่ให้ตรวจสอบและอุทธรณ์ก่อนที่ Merkle root จะถูกล็อก
+            All rules will be published and locked at least 14 days before the snapshot block.
+            Preliminary point totals will be shared publicly for review and appeal before the Merkle root is finalised.
           </P>
 
           <Callout type="info">
-            ⭐ เชื่อมต่อ wallet — คะแนน confirmed และ pending จะแสดงใน header อัตโนมัติ อ่านจาก Arc Mainnet ไม่ใช้ gas
+            ⭐ Connect your wallet and tap it — confirmed and pending points appear automatically. Read directly from Arc Mainnet, no gas used.
           </Callout>
         </Section>
 
@@ -595,10 +582,10 @@ export function Docs() {
               </thead>
               <tbody className="divide-y divide-[var(--border)]">
                 {[
-                  ['จองที่นั่ง',     '100',  'งานจบ + ไม่ยกเลิก + มา check-in จริง'],
-                  ['Check in',      '300',  'งานจบ (finalized) เท่านั้น'],
-                  ['สร้างงาน',      '500',  'งานจบ + ≥5 check-in + ผ่าน allowlist'],
-                  ['Early adopter', '×2',   'First 500 wallets ที่เคย reserve — คูณทั้งหมด'],
+                  ['Reserve a seat',  '100', 'Event finalised + attended (not cancelled)'],
+                  ['Check in',        '300', 'Event finalised only'],
+                  ['Create an event', '500', 'Event finalised + ≥5 check-ins + passes allowlist'],
+                  ['Early adopter',   '×2',  'First 500 wallets ever to reserve — all points doubled'],
                 ].map(([a, p, n]) => (
                   <tr key={a} style={{ background: 'var(--surface)' }}>
                     <td className="px-4 py-3 font-medium text-[var(--fg)] text-sm">{a}</td>

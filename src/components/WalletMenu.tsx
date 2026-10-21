@@ -1,13 +1,9 @@
-/**
- * WalletMenu — wallet button ที่กดแล้วเห็น Points + Sign Out
- * ใช้แทน ConnectKitButton + PointsBadge แยกกัน
- */
-
 import { useAccount, useDisconnect } from 'wagmi'
 import { useModal } from 'connectkit'
 import { useState, useRef, useEffect } from 'react'
 import { LogOut, Star, RefreshCw } from 'lucide-react'
 import { usePoints, POINTS_RULES, MIN_CHECKED_IN_FOR_ORGANISER, MAX_POINTS_PER_WALLET } from '@/hooks/usePoints'
+import { useTheme } from '@/hooks/useTheme'
 
 export function WalletMenu() {
   const { address, isConnected } = useAccount()
@@ -16,8 +12,8 @@ export function WalletMenu() {
   const [open, setMenuOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
   const { breakdown, loading, lastFetched, refresh } = usePoints(address)
+  const { isDark } = useTheme()
 
-  // ปิด dropdown เมื่อคลิกข้างนอก
   useEffect(() => {
     function handler(e: MouseEvent) {
       if (ref.current && !ref.current.contains(e.target as Node)) {
@@ -28,7 +24,6 @@ export function WalletMenu() {
     return () => document.removeEventListener('mousedown', handler)
   }, [open])
 
-  // ยังไม่ connect — แสดงปุ่ม Connect
   if (!isConnected || !address) {
     return (
       <button
@@ -44,6 +39,10 @@ export function WalletMenu() {
   const hasPending = breakdown.pending > 0
   const nearCap = breakdown.total >= MAX_POINTS_PER_WALLET * 0.9
 
+  // Solid background colours — no transparency so it reads clearly over any content
+  const dropdownBg = isDark ? '#0f1f2e' : '#ffffff'
+  const rowBg      = isDark ? '#162130' : '#f8f9fa'
+
   return (
     <div ref={ref} className="relative">
       {/* ── Wallet button ── */}
@@ -56,13 +55,11 @@ export function WalletMenu() {
           color: 'var(--ink)',
         }}
       >
-        {/* avatar dot */}
         <span
           className="w-5 h-5 rounded-full flex-shrink-0"
           style={{ background: `hsl(${parseInt(address.slice(2, 8), 16) % 360},60%,55%)` }}
         />
         <span className="hidden sm:inline">{short}</span>
-        {/* mini points badge */}
         <span
           className="flex items-center gap-0.5 text-xs font-semibold px-1.5 py-0.5 rounded-full"
           style={{ background: 'var(--accent-muted)', color: 'var(--accent)' }}
@@ -70,7 +67,6 @@ export function WalletMenu() {
           <Star size={10} strokeWidth={2.5} />
           {loading && breakdown.total === 0 ? '…' : breakdown.total.toLocaleString()}
         </span>
-        {/* chevron */}
         <svg
           className={`w-3.5 h-3.5 opacity-40 transition-transform ${open ? 'rotate-180' : ''}`}
           viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2"
@@ -82,18 +78,24 @@ export function WalletMenu() {
       {/* ── Dropdown ── */}
       {open && (
         <div
-          className="absolute right-0 top-12 z-50 w-80 rounded-2xl shadow-xl flex flex-col"
-          style={{ background: 'var(--surface-strong)', border: '1px solid var(--border)' }}
+          className="absolute right-0 top-12 z-50 w-80 rounded-2xl shadow-2xl flex flex-col overflow-hidden"
+          style={{
+            background: dropdownBg,
+            border: '1px solid var(--border)',
+          }}
         >
-          {/* wallet info */}
-          <div className="px-5 pt-5 pb-3 border-b" style={{ borderColor: 'var(--border)' }}>
+          {/* Wallet info */}
+          <div
+            className="px-5 pt-5 pb-3 border-b"
+            style={{ borderColor: 'var(--border)' }}
+          >
             <div className="flex items-center gap-3">
               <span
                 className="w-9 h-9 rounded-full flex-shrink-0"
                 style={{ background: `hsl(${parseInt(address.slice(2, 8), 16) % 360},60%,55%)` }}
               />
               <div>
-                <div className="text-xs opacity-40 font-medium uppercase tracking-wide">Connected</div>
+                <div className="text-xs opacity-40 font-medium uppercase tracking-wide">Connected wallet</div>
                 <div className="font-mono text-sm font-semibold" style={{ color: 'var(--ink)' }}>{short}</div>
               </div>
             </div>
@@ -101,16 +103,17 @@ export function WalletMenu() {
 
           {/* Points section */}
           <div className="px-5 py-4 flex flex-col gap-3">
+            {/* Total + refresh */}
             <div className="flex items-center justify-between">
               <div>
                 <div className="text-xs opacity-40 font-semibold uppercase tracking-wide mb-0.5">SeatBack Points</div>
                 <div className="text-2xl font-bold" style={{ color: 'var(--accent)' }}>
                   {breakdown.total.toLocaleString()}
-                  <span className="text-sm font-normal opacity-40 ml-1">pts</span>
+                  <span className="text-sm font-normal opacity-40 ml-1">pts confirmed</span>
                 </div>
                 {hasPending && (
                   <div className="text-xs opacity-50 mt-0.5">
-                    +{breakdown.pending.toLocaleString()} รอตรวจสอบ
+                    +{breakdown.pending.toLocaleString()} pts pending (events not yet finalised)
                   </div>
                 )}
               </div>
@@ -118,62 +121,70 @@ export function WalletMenu() {
                 onClick={e => { e.stopPropagation(); void refresh() }}
                 disabled={loading}
                 className="w-8 h-8 rounded-xl flex items-center justify-center transition-opacity"
-                style={{ background: 'var(--surface)', opacity: loading ? 0.4 : 1 }}
+                style={{ background: rowBg, opacity: loading ? 0.4 : 1 }}
                 title="Refresh points"
               >
-                <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
+                <RefreshCw size={14} className={loading ? 'animate-spin' : ''} style={{ color: 'var(--muted)' }} />
               </button>
             </div>
 
-            {/* suspicious flag */}
+            {/* Suspicious flag */}
             {breakdown.suspiciousFlag && (
               <div
                 className="text-xs rounded-xl p-3 leading-relaxed"
-                style={{ background: 'rgba(234,179,8,0.1)', color: '#ca8a04', border: '1px solid rgba(234,179,8,0.3)' }}
+                style={{ background: 'rgba(234,179,8,0.12)', color: '#b45309', border: '1px solid rgba(234,179,8,0.3)' }}
               >
-                ⚠️ พบรูปแบบการจองซ้ำผิดปกติ — Points อาจถูกตรวจสอบก่อน snapshot
+                ⚠️ Repeated reservations detected — points may be reviewed before snapshot.
               </div>
             )}
 
-            {/* cap warning */}
+            {/* Cap warning */}
             {nearCap && (
               <div
                 className="text-xs rounded-xl p-3"
-                style={{ background: 'rgba(239,68,68,0.1)', color: '#dc2626' }}
+                style={{ background: 'rgba(239,68,68,0.1)', color: '#dc2626', border: '1px solid rgba(239,68,68,0.2)' }}
               >
-                ใกล้ถึงเพดาน {MAX_POINTS_PER_WALLET.toLocaleString()} pts
+                Approaching the {MAX_POINTS_PER_WALLET.toLocaleString()} pts per-wallet cap.
               </div>
             )}
 
-            {/* breakdown rows */}
-            <div className="flex flex-col gap-2">
+            {/* Breakdown */}
+            <div
+              className="flex flex-col gap-2 rounded-xl p-3"
+              style={{ background: rowBg }}
+            >
               <BreakdownRow
                 icon="🎟️"
-                label={`สร้างงาน (≥${MIN_CHECKED_IN_FOR_ORGANISER} check-in)`}
+                label={`Create event (≥${MIN_CHECKED_IN_FOR_ORGANISER} check-ins)`}
                 count={breakdown.eventCount}
                 pts={breakdown.createEvent}
                 each={POINTS_RULES.CREATE_EVENT}
               />
+              <div className="border-t" style={{ borderColor: 'var(--border)' }} />
               <BreakdownRow
                 icon="📋"
-                label="จองที่นั่ง (งานจบ + มา)"
+                label="Reserve seat (finalised + attended)"
                 count={breakdown.reserveCount}
                 pts={breakdown.reserve}
                 each={POINTS_RULES.RESERVE}
               />
+              <div className="border-t" style={{ borderColor: 'var(--border)' }} />
               <BreakdownRow
                 icon="✅"
-                label="Check-in (งานจบ)"
+                label="Check-in (finalised event)"
                 count={breakdown.checkInCount}
                 pts={breakdown.checkIn}
                 each={POINTS_RULES.CHECK_IN}
               />
             </div>
 
-            {/* footer */}
-            <div className="text-xs opacity-30 flex justify-between pt-1 border-t" style={{ borderColor: 'var(--border)' }}>
-              <span>Arc Mainnet · ไม่ใช้ gas</span>
-              {lastFetched && <span>{lastFetched.toLocaleTimeString()}</span>}
+            {/* Footer */}
+            <div
+              className="text-xs opacity-30 flex justify-between pt-1 border-t"
+              style={{ borderColor: 'var(--border)' }}
+            >
+              <span>Read from Arc Mainnet · no gas</span>
+              {lastFetched && <span>Updated {lastFetched.toLocaleTimeString()}</span>}
             </div>
           </div>
 
@@ -207,7 +218,7 @@ function BreakdownRow({ icon, label, count, pts, each }: {
         <span className="text-base">{icon}</span>
         <div>
           <div className="font-medium text-xs leading-tight" style={{ color: 'var(--ink)' }}>{label}</div>
-          <div className="text-xs opacity-40">{count} × {each} pts</div>
+          <div className="text-xs opacity-40">{count} × {each} pts each</div>
         </div>
       </div>
       <div className="font-bold tabular-nums text-sm" style={{ color: 'var(--accent)' }}>

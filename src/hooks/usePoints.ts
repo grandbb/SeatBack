@@ -1,34 +1,33 @@
 /**
- * usePoints — คำนวณ Points จาก onchain events แบบ read-only
+ * usePoints — read-only Points calculation from onchain events
  *
- * ─── กติกา (v2) ───────────────────────────────────────────────────────────────
- *
+ * Rules (v2):
  * 1. PENDING vs CONFIRMED
- *    - Points จะ "confirmed" เฉพาะจากงานที่จบแล้ว (finalized หรือ cancelled)
- *    - งานที่ยังไม่จบ = pending (แสดงแยก ไม่นับใน total)
- *    - ผู้จองที่ยกเลิก (ReservationCancelled) = 0 pts
- *    - ผู้จองที่ไม่มา (Reserved แต่ไม่มี CheckedIn) = 0 pts ถ้างานจบแล้ว
+ *    - Points are "confirmed" only from events that have finalised or been cancelled.
+ *    - Events not yet closed = pending (shown separately, not counted in total).
+ *    - Cancelled reservations (ReservationCancelled) = 0 pts.
+ *    - No-shows (Reserved but no CheckedIn, event finalised) = 0 pts.
  *
- * 2. เงื่อนไขผู้จัดได้แต้ม
- *    - งานต้องผ่านเกณฑ์แคมเปญ (CAMPAIGN_ALLOWLIST) — ระยะแรกกำหนดโดย admin
- *    - ต้องมีผู้เข้าร่วมที่ check-in จริง >= MIN_CHECKED_IN_FOR_ORGANISER (5 คน)
+ * 2. Organiser earn condition
+ *    - Event must pass the campaign allowlist (CAMPAIGN_ALLOWLIST) — set by admin in early phase.
+ *    - Event must have >= MIN_CHECKED_IN_FOR_ORGANISER real check-ins.
  *
  * 3. Per-event cap + per-wallet cap
- *    - Reserve: สูงสุด 1 ครั้งต่องานต่อ wallet (นับแค่ครั้งสุดท้าย)
- *    - Check-in: สูงสุด 1 ครั้งต่องานต่อ wallet
- *    - Create: 1 ครั้งต่องาน (ผู้จัด)
- *    - Per-wallet total cap: MAX_POINTS_PER_WALLET
+ *    - Reserve: max 1 per event per wallet.
+ *    - Check-in: max 1 per event per wallet.
+ *    - Create: 1 per event (must be the organiser in EventCreated log).
+ *    - Per-wallet total cap: MAX_POINTS_PER_WALLET.
  *
  * 4. Campaign allowlist
- *    - ระยะแรก: กำหนดรายการ eventId ที่อนุมัติไว้ใน CAMPAIGN_ALLOWLIST
- *    - [] = เปิดกว้าง (disable allowlist ตอน production)
+ *    - Early phase: list approved eventIds in CAMPAIGN_ALLOWLIST.
+ *    - [] = open to all events (disable allowlist for production).
  *
- * 5. การตรวจพฤติกรรม (informational — snapshot processor ทำต่อ)
- *    - ระบบนี้แสดง flag "pattern detected" แต่ไม่ตัดสิทธิ์โดยอัตโนมัติ
- *    - flag ถ้า: งานเดียวกัน wallet เดิมจองซ้ำ > REPEAT_BOOKING_THRESHOLD ครั้ง
+ * 5. Suspicious behaviour detection (informational — snapshot processor handles final decision)
+ *    - Flags wallets but does NOT automatically disqualify.
+ *    - Flagged if: same wallet reserves the same event > REPEAT_BOOKING_THRESHOLD times.
  *
- * 6. กติกาประกาศก่อน snapshot
- *    - ค่า rules ทุกตัวที่นี่ถูก export เพื่อให้ Docs อ่านได้โดยตรง
+ * 6. Rules published before snapshot
+ *    - All exported constants here are read directly by Docs for transparency.
  */
 
 import { useEffect, useState, useCallback, useRef } from 'react'
@@ -38,28 +37,28 @@ import { SEATBACK_ADDRESS } from '@/contract'
 
 // ─── Campaign & Rule Constants (exported for Docs) ───────────────────────────
 
-/** eventId ที่อนุมัติให้เข้าร่วมแคมเปญ — [] = เปิดกว้างทุกงาน */
+/** Approved eventIds for the campaign. [] = all events qualify. */
 export const CAMPAIGN_ALLOWLIST: bigint[] = []
 
-/** จำนวน check-in ขั้นต่ำที่งานต้องมีเพื่อให้ผู้จัดได้แต้ม */
+/** Minimum real check-ins an event must have for the organiser to earn points. */
 export const MIN_CHECKED_IN_FOR_ORGANISER = 5
 
-/** เพดาน Points สูงสุดต่อ wallet (ป้องกัน sybil อย่างง่าย) */
+/** Maximum total points per wallet (basic Sybil resistance). */
 export const MAX_POINTS_PER_WALLET = 50_000
 
-/** เพดาน Reserve points ต่องาน (1 ครั้ง = 100 pts) */
+/** Max reserve points per event per wallet (1 reservation = 100 pts). */
 export const MAX_RESERVE_PER_EVENT = 1
 
-/** เพดาน Check-in points ต่องาน (1 ครั้ง = 300 pts) */
+/** Max check-in points per event per wallet (1 check-in = 300 pts). */
 export const MAX_CHECKIN_PER_EVENT = 1
 
-/** จำนวนการจองซ้ำที่ถือว่า suspicious (flag แต่ไม่ตัด) */
+/** Reservation repeat count above which a wallet is flagged as suspicious (not auto-disqualified). */
 export const REPEAT_BOOKING_THRESHOLD = 3
 
 export const POINTS_RULES = {
-  CREATE_EVENT: 500,  // ผู้จัดงาน — งานต้องผ่าน allowlist + ≥5 check-in
-  RESERVE: 100,       // ผู้จอง — นับหลังงานจบ ถ้า check-in ด้วยรับเพิ่ม
-  CHECK_IN: 300,      // ผู้จองที่ check-in — งานต้องจบ
+  CREATE_EVENT: 500,  // organiser — event must pass allowlist + ≥5 check-ins
+  RESERVE: 100,       // attendee — counted after event finalises, only if attended
+  CHECK_IN: 300,      // attendee who checked in — event must be finalised
 } as const
 
 const POLL_INTERVAL = 60_000
@@ -67,9 +66,9 @@ const POLL_INTERVAL = 60_000
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export interface PointsBreakdown {
-  /** แต้มที่ confirmed (งานจบแล้ว + ผ่านเกณฑ์) */
+  /** Confirmed points (event finalised + all conditions met). */
   total: number
-  /** แต้มที่รอตรวจสอบ (งานยังไม่จบ) */
+  /** Pending points (events not yet closed). */
   pending: number
   createEvent: number
   reserve: number
@@ -77,9 +76,9 @@ export interface PointsBreakdown {
   eventCount: number
   reserveCount: number
   checkInCount: number
-  /** งานที่ยังไม่จบ (pending) */
+  /** Number of events still pending finalisation. */
   pendingEvents: number
-  /** flag: พบพฤติกรรม suspicious */
+  /** True when a suspicious reservation pattern was detected. */
   suspiciousFlag: boolean
 }
 
@@ -153,7 +152,7 @@ export function usePoints(address: `0x${string}` | undefined) {
 
       // ── Build lookup sets ─────────────────────────────────────────────────
 
-      /** eventId → จำนวน check-in ทั้งหมด (ทุก attendee) */
+      /** eventId → total check-in count across all attendees */
       const allCheckedIn = await client.getLogs({
         address: SEATBACK_ADDRESS, event: CHECKED_IN,
         fromBlock: 0n, toBlock: 'latest',
@@ -164,7 +163,7 @@ export function usePoints(address: `0x${string}` | undefined) {
         eventCheckInCount.set(eid, (eventCheckInCount.get(eid) ?? 0) + 1)
       }
 
-      /** eventId ที่ finalized หรือ cancelled = "จบแล้ว" */
+      /** eventIds that are finalised or cancelled = closed */
       const finalizedIds = new Set<string>(
         finalized.map(l => String(l.args.eventId))
       )
@@ -173,17 +172,17 @@ export function usePoints(address: `0x${string}` | undefined) {
       )
       const closedIds = new Set<string>([...finalizedIds, ...cancelledIds])
 
-      /** eventId ที่ผ่าน allowlist ([] = ทุกงาน) */
+      /** Returns true if eventId passes the campaign allowlist (empty = all events qualify). */
       const inAllowlist = (eid: bigint) =>
         CAMPAIGN_ALLOWLIST.length === 0 ||
         CAMPAIGN_ALLOWLIST.some(a => a === eid)
 
-      /** eventId ที่ผู้จองยกเลิก */
+      /** reservationId keys for cancelled reservations (eventId-reservationId). */
       const cancelledReservations = new Set<string>(
         cancelled.map(l => `${l.args.eventId}-${l.args.reservationId}`)
       )
 
-      // ── ตรวจ suspicious pattern ───────────────────────────────────────────
+      // ── Check for suspicious patterns ────────────────────────────────────
       const reservePerEvent = new Map<string, number>()
       for (const log of reserved) {
         const eid = String(log.args.eventId)
@@ -193,10 +192,10 @@ export function usePoints(address: `0x${string}` | undefined) {
         n => n > REPEAT_BOOKING_THRESHOLD
       )
 
-      // ── คำนวณ Reserve points ──────────────────────────────────────────────
-      // - 1 ครั้งต่องาน (MAX_RESERVE_PER_EVENT)
-      // - ถ้างานจบแล้วและไม่ได้ยกเลิก = confirmed
-      // - ถ้างานยังไม่จบ = pending
+      // ── Reserve points ────────────────────────────────────────────────────
+      // - Max 1 per event (MAX_RESERVE_PER_EVENT)
+      // - Closed event + not cancelled = confirmed
+      // - Event still open = pending
       let confirmedReserve = 0
       let pendingReserve = 0
       let reserveCount = 0
@@ -206,7 +205,7 @@ export function usePoints(address: `0x${string}` | undefined) {
         const eid = String(log.args.eventId)
         const rid = `${eid}-${log.args.reservationId}`
         if (seenReserveEvents.has(eid)) continue // per-event cap
-        if (cancelledReservations.has(rid)) continue // ยกเลิกแล้ว = 0 pts
+        if (cancelledReservations.has(rid)) continue // cancelled = 0 pts
         if (!inAllowlist(log.args.eventId!)) continue
         seenReserveEvents.add(eid)
         reserveCount++
@@ -217,9 +216,9 @@ export function usePoints(address: `0x${string}` | undefined) {
         }
       }
 
-      // ── คำนวณ Check-in points ─────────────────────────────────────────────
-      // - 1 ครั้งต่องาน
-      // - งานต้องจบแล้ว (finalized or cancelled-with-checkin)
+      // ── Check-in points ───────────────────────────────────────────────────
+      // - Max 1 per event
+      // - Event must be closed (finalised or cancelled)
       let confirmedCheckIn = 0
       let pendingCheckIn = 0
       let checkInCount = 0
@@ -238,10 +237,10 @@ export function usePoints(address: `0x${string}` | undefined) {
         }
       }
 
-      // ── คำนวณ Create points ───────────────────────────────────────────────
-      // - งานต้องผ่าน allowlist
-      // - ต้องมี check-in จริง >= MIN_CHECKED_IN_FOR_ORGANISER
-      // - งานต้องจบแล้ว (finalized)
+      // ── Create points ─────────────────────────────────────────────────────
+      // - Event must pass allowlist
+      // - Must have >= MIN_CHECKED_IN_FOR_ORGANISER real check-ins
+      // - Event must be finalised
       let confirmedCreate = 0
       let pendingCreate = 0
       let eventCount = 0
@@ -254,17 +253,17 @@ export function usePoints(address: `0x${string}` | undefined) {
         const meetsThreshold = checkInTotal >= MIN_CHECKED_IN_FOR_ORGANISER
         eventCount++
         if (finalizedIds.has(eid) && meetsThreshold) {
-          // งานจบ + ผ่านเกณฑ์ = confirmed
+          // closed + meets threshold = confirmed
           confirmedCreate += POINTS_RULES.CREATE_EVENT
         } else if (!closedIds.has(eid)) {
-          // งานยังไม่จบ = pending
+          // still open = pending
           pendingCreate += POINTS_RULES.CREATE_EVENT
           pendingEvents++
         }
-        // งานจบแต่ไม่ผ่านเกณฑ์ = 0 pts
+        // closed but below threshold = 0 pts
       }
 
-      // ── รวม ───────────────────────────────────────────────────────────────
+      // ── Totals ────────────────────────────────────────────────────────────
       const rawTotal = confirmedCreate + confirmedReserve + confirmedCheckIn
       const total = Math.min(rawTotal, MAX_POINTS_PER_WALLET)
       const pending = pendingCreate + pendingReserve + pendingCheckIn
