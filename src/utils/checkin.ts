@@ -38,7 +38,7 @@ export const CHECK_IN_TYPES = {
 } as const
 
 /** Maximum QR validity in seconds — must match the contract constant */
-export const MAX_QR_VALIDITY_S = 5 * 60
+export const MAX_QR_VALIDITY_S = 10 * 60
 
 // ─── Payload type ─────────────────────────────────────────────────────────────
 

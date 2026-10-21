@@ -2,7 +2,7 @@
  * CheckInQR — attendee-side QR generator.
  *
  * The attendee explicitly clicks "Generate QR" to request a single EIP-712
- * signature.  The QR is valid for up to 5 minutes.  A countdown timer
+ * signature.  The QR is valid for up to 10 minutes.  A countdown timer
  * shows remaining validity and the QR auto-clears on expiry.
  * No background signature requests are made.
  *

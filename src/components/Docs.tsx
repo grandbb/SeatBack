@@ -174,7 +174,7 @@ export function Docs() {
             {[
               { n: 1, t: 'Organiser creates an event', d: 'Sets deposit amount, capacity, booking deadline, refund cutoff, and check-in window. All rules are locked onchain at creation — nothing can be changed afterwards.' },
               { n: 2, t: 'Attendee reserves a seat', d: 'Approves and sends USDC deposit to the escrow contract. The deposit is not held by the organiser — it stays in the contract.' },
-              { n: 3, t: 'Event day: attendee generates a QR', d: 'During the check-in window, the attendee signs a message with their wallet (no gas, no transaction). This creates a QR code valid for 5 minutes.' },
+              { n: 3, t: 'Event day: attendee generates a QR', d: 'During the check-in window, the attendee signs a message with their wallet (no gas, no transaction). This creates a QR code valid for 10 minutes.' },
               { n: 4, t: 'Organiser scans QR', d: 'The organiser\'s app verifies the signature and submits a check-in transaction onchain. This marks the attendee as present.' },
               { n: 5, t: 'Organiser finalises the event', d: 'After the check-in window closes, finalization calculates who showed up and who didn\'t. Anyone can trigger finalization.' },
               { n: 6, t: 'Everyone collects what they\'re owed', d: 'Checked-in attendees claim their deposit refund. Organiser withdraws no-show proceeds. SBK stakers claim their USDC share.' },
@@ -200,11 +200,11 @@ export function Docs() {
           <div className="flex flex-col gap-3 mt-1">
             <Step n={1} title="Browse and reserve">Go to Events, pick an event, click Reserve. Approve the USDC deposit then confirm the transaction. Your seat is held and the deposit is in escrow.</Step>
             <Step n={2} title="Cancel (if needed)">Go to My Tickets and cancel before the event's refund cutoff. Cancelling after the cutoff is not allowed — your deposit stays locked until finalization.</Step>
-            <Step n={3} title="Generate your QR on event day">During the check-in window, open My Tickets → your event → tap Generate QR. Sign the message in your wallet (free, no gas). Show the QR to the organiser within 5 minutes.</Step>
+            <Step n={3} title="Generate your QR on event day">During the check-in window, open My Tickets → your event → tap Generate QR. Sign the message in your wallet (free, no gas). Show the QR to the organiser within 10 minutes.</Step>
             <Step n={4} title="Claim your refund after">Once the event is finalised, go to My Tickets and click Claim Refund. Your USDC is sent back to your wallet.</Step>
           </div>
           <Callout type="info">
-            If your QR expires before the organiser scans it, tap Generate QR again — you can generate as many as needed. Each is valid for 5 minutes.
+            If your QR expires before the organiser scans it, tap Generate QR again — you can generate as many as needed. Each is valid for 10 minutes.
           </Callout>
         </Section>
 
@@ -347,7 +347,7 @@ export function Docs() {
             { q: 'What token is used for deposits and gas?', a: 'USDC only. On Arc, gas is also paid in USDC — you do not need ETH or any other token.' },
             { q: 'Can I book two seats at the same event?', a: 'No. One active reservation per wallet per event. Cancel your existing one first if you need to rebook.' },
             { q: 'What if I miss the refund cutoff?', a: 'You cannot cancel after the cutoff. Your deposit stays in escrow. If you\'re not checked in and check-in was opened, it becomes no-show proceeds after finalization.' },
-            { q: 'My QR expired — what do I do?', a: 'Tap Generate QR again. Each new QR is valid for 5 minutes. You can generate as many as you need.' },
+            { q: 'My QR expired — what do I do?', a: 'Tap Generate QR again. Each new QR is valid for 10 minutes. You can generate as many as you need.' },
             { q: 'What if the organiser never finalises?', a: 'Anyone can call finalizeEvent once the check-in window ends. The app does this automatically when you try to claim your refund.' },
             { q: 'Can the organiser change the rules after I book?', a: 'No. Deposit amount, capacity, and all deadlines are locked onchain at creation and cannot be changed.' },
             { q: 'What is SBK and do I need it?', a: 'SBK is the staking token. You do not need it to attend events or get refunds. It is only needed if you want to earn a share of no-show proceeds by staking.' },

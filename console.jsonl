@@ -90,3 +90,11 @@
 {"level":"debug","message":"[vite] hot updated: /src/index.css","timestamp":1792573653487}
 {"level":"debug","message":"[vite] hot updated: /src/components/Docs.tsx","timestamp":1792573678853}
 {"level":"debug","message":"[vite] hot updated: /src/index.css","timestamp":1792573678853}
+{"level":"debug","message":"[vite] connected.","timestamp":1792574069275}
+{"level":"log","message":"[vite] server connection lost. Polling for restart...","timestamp":1792574089130}
+{"level":"log","message":"[vite] server connection lost. Polling for restart...","timestamp":1792574185628}
+{"level":"debug","message":"[vite] connected.","timestamp":1792574190564}
+{"level":"debug","message":"[vite] hot updated: /src/components/Docs.tsx","timestamp":1792574454388}
+{"level":"debug","message":"[vite] hot updated: /src/index.css","timestamp":1792574454388}
+{"level":"debug","message":"[vite] hot updated: /src/components/Docs.tsx","timestamp":1792574456014}
+{"level":"debug","message":"[vite] hot updated: /src/index.css","timestamp":1792574456014}
