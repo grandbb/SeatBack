@@ -554,43 +554,41 @@ contract SeatBack is ReentrancyGuard {
         ReservationInfo storage res = reservations[reservationId];
         if (res.attendee == address(0)) revert NotRefundable();
         if (res.refundClaimed) revert AlreadyClaimed();
+        _ensureRefundable(res);
+        _executeRefund(reservationId, res);
+    }
 
+    function _ensureRefundable(ReservationInfo storage res) internal {
+        if (res.refundable) return;
         uint256 eventId = res.eventId;
         EventInfo storage evt = events[eventId];
-
-        if (!res.refundable) {
-            if (evt.cancelled && res.active) {
+        if (evt.cancelled && res.active) {
+            res.active = false;
+            res.refundable = true;
+            activeReservationId[eventId][res.attendee] = 0;
+            return;
+        }
+        if (!evt.cancelled && block.timestamp >= evt.checkInEnd) {
+            if (!evt.finalized) _finalizeEvent(eventId);
+            if (!evt.checkInOpened && res.active) {
                 res.active = false;
                 res.refundable = true;
                 activeReservationId[eventId][res.attendee] = 0;
-            } else if (!evt.cancelled && block.timestamp >= evt.checkInEnd) {
-                if (!evt.finalized) {
-                    _finalizeEvent(eventId);
-                }
-
-                if (!evt.checkInOpened && res.active) {
-                    res.active = false;
-                    res.refundable = true;
-                    activeReservationId[eventId][res.attendee] = 0;
-                } else {
-                    revert NotRefundable();
-                }
-            } else {
-                revert NotRefundable();
+                return;
             }
         }
+        revert NotRefundable();
+    }
 
-        uint256 amount = evt.depositAmount;
-
+    function _executeRefund(uint256 reservationId, ReservationInfo storage res) internal {
+        uint256 eventId = res.eventId;
+        uint256 amount = events[eventId].depositAmount;
+        address attendee = res.attendee;
         res.refundClaimed = true;
-
-        EventAccounting storage acc = accounting[eventId];
-        acc.outstandingRefunds -= amount;
-        acc.refundsPaid += amount;
-
-        usdc.safeTransfer(res.attendee, amount);
-
-        emit RefundClaimed(eventId, reservationId, res.attendee, amount);
+        accounting[eventId].outstandingRefunds -= amount;
+        accounting[eventId].refundsPaid += amount;
+        usdc.safeTransfer(attendee, amount);
+        emit RefundClaimed(eventId, reservationId, attendee, amount);
     }
 
     function withdrawNoShowProceeds(uint256 eventId) external nonReentrant {
