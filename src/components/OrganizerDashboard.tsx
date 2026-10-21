@@ -213,7 +213,7 @@ function OrganizerEventPanel({ eventId, event, wrongChain, onSwitchChain }: Orga
   const canWithdraw = !event.cancelled && event.finalized && (accounting?.organizerCredit ?? 0n) > 0n
 
   return (
-    <div className="rounded-2xl border border-[var(--border)] bg-white overflow-hidden">
+    <div className="rounded-2xl border border-[var(--border)] overflow-hidden" style={{ background: 'var(--surface-strong)' }}>
       {/* Collapsed header */}
       <button
         onClick={() => setExpanded(!expanded)}
@@ -280,14 +280,16 @@ function OrganizerEventPanel({ eventId, event, wrongChain, onSwitchChain }: Orga
                 <div className="flex items-center gap-1 rounded-xl bg-[var(--surface-muted)] p-1 w-fit">
                   <button
                     onClick={() => setCheckInMode('qr')}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${checkInMode === 'qr' ? 'bg-white shadow-sm text-[var(--ink)]' : 'text-[var(--muted)] hover:text-[var(--ink)]'}`}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${checkInMode === 'qr' ? 'shadow-sm text-[var(--ink)]' : 'text-[var(--muted)] hover:text-[var(--ink)]'}`}
+                    style={checkInMode === 'qr' ? { background: 'var(--surface-strong)' } : {}}
                   >
                     <QrCode size={13} />
                     QR Scanner
                   </button>
                   <button
                     onClick={() => setCheckInMode('manual')}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${checkInMode === 'manual' ? 'bg-white shadow-sm text-[var(--ink)]' : 'text-[var(--muted)] hover:text-[var(--ink)]'}`}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${checkInMode === 'manual' ? 'shadow-sm text-[var(--ink)]' : 'text-[var(--muted)] hover:text-[var(--ink)]'}`}
+                    style={checkInMode === 'manual' ? { background: 'var(--surface-strong)' } : {}}
                   >
                     Manual
                   </button>

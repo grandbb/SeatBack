@@ -185,7 +185,7 @@ export function EventDetail({ eventId, onBack }: EventDetailProps) {
       </button>
 
       {/* Hero card */}
-      <div className="rounded-2xl border border-[var(--border)] bg-white p-6 flex flex-col gap-4">
+      <div className="rounded-2xl border border-[var(--border)] p-6 flex flex-col gap-4" style={{ background: 'var(--surface-strong)' }}>
         <div className="flex items-start justify-between gap-3">
           <div>
             <h1
@@ -257,7 +257,7 @@ export function EventDetail({ eventId, onBack }: EventDetailProps) {
           claimErrMsg={claimErr ? parseOnchainError(claimErr) : null}
         />
       ) : (
-        <div className="rounded-2xl border border-[var(--border)] bg-white p-6 text-center">
+        <div className="rounded-2xl border border-[var(--border)] p-6 text-center" style={{ background: 'var(--surface-strong)' }}>
           <p className="text-[var(--muted)]">Connect your wallet to reserve a seat or manage your reservation.</p>
         </div>
       )}
@@ -400,7 +400,7 @@ function AttendeeActions({
   const errorMsg = txError || reserveErrMsg || cancelResErrMsg || claimErrMsg
 
   return (
-    <div className="rounded-2xl border border-[var(--border)] bg-white p-6 flex flex-col gap-4">
+    <div className="rounded-2xl border border-[var(--border)] p-6 flex flex-col gap-4" style={{ background: 'var(--surface-strong)' }}>
       <h2 className="font-semibold text-[var(--ink)]">Your Reservation</h2>
 
       {wrongChain && (

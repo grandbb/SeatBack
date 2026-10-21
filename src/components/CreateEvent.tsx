@@ -165,7 +165,7 @@ export function CreateEvent({ onCreated }: CreateEventProps) {
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-4" noValidate>
         {/* Basic info */}
-        <fieldset className="rounded-2xl border border-[var(--border)] bg-white p-5 flex flex-col gap-4">
+        <fieldset className="rounded-2xl border border-[var(--border)] p-5 flex flex-col gap-4" style={{ background: 'var(--surface-strong)' }}>
           <legend className="font-semibold text-[var(--ink)] px-1">Event Details</legend>
 
           <Field label="Title" required hint="Max 120 characters · shown publicly">
@@ -206,7 +206,7 @@ export function CreateEvent({ onCreated }: CreateEventProps) {
         </fieldset>
 
         {/* Times */}
-        <fieldset className="rounded-2xl border border-[var(--border)] bg-white p-5 flex flex-col gap-4">
+        <fieldset className="rounded-2xl border border-[var(--border)] p-5 flex flex-col gap-4" style={{ background: 'var(--surface-strong)' }}>
           <legend className="font-semibold text-[var(--ink)] px-1">Schedule</legend>
           <p className="text-xs text-[var(--subtle)]">
             Times are in your local timezone. The contract stores UTC Unix timestamps.
@@ -241,7 +241,7 @@ export function CreateEvent({ onCreated }: CreateEventProps) {
         </fieldset>
 
         {/* Seats & deposit */}
-        <fieldset className="rounded-2xl border border-[var(--border)] bg-white p-5 flex flex-col gap-4">
+        <fieldset className="rounded-2xl border border-[var(--border)] p-5 flex flex-col gap-4" style={{ background: 'var(--surface-strong)' }}>
           <legend className="font-semibold text-[var(--ink)] px-1">Seats & Deposit</legend>
 
           <div className="grid grid-cols-2 gap-3">
@@ -273,7 +273,7 @@ export function CreateEvent({ onCreated }: CreateEventProps) {
         </fieldset>
 
         {/* Payout wallet */}
-        <fieldset className="rounded-2xl border border-[var(--border)] bg-white p-5 flex flex-col gap-4">
+        <fieldset className="rounded-2xl border border-[var(--border)] p-5 flex flex-col gap-4" style={{ background: 'var(--surface-strong)' }}>
           <legend className="font-semibold text-[var(--ink)] px-1">Payout Wallet</legend>
           <Field label="No-show proceeds sent to" required hint="Immutable after creation — double-check this address">
             <input

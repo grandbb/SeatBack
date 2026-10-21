@@ -148,7 +148,7 @@ export function CheckInQR({ eventId, reservationId, event, reservation }: CheckI
   }
 
   return (
-    <div className="rounded-2xl border border-[var(--border)] bg-white p-5 flex flex-col gap-4">
+    <div className="rounded-2xl border border-[var(--border)] p-5 flex flex-col gap-4" style={{ background: 'var(--surface-strong)' }}>
       <div className="flex items-center gap-2">
         <QrCode size={18} className="text-[var(--accent)]" />
         <h3 className="font-semibold text-[var(--ink)] text-sm">Check-In QR Code</h3>
@@ -179,7 +179,7 @@ export function CheckInQR({ eventId, reservationId, event, reservation }: CheckI
       {/* Active QR */}
       {state === 'active' && qrDataUrl && (
         <div className="flex flex-col items-center gap-3">
-          <div className="rounded-xl border-2 border-[var(--accent)] overflow-hidden bg-white p-2">
+          <div className="rounded-xl border-2 border-[var(--accent)] overflow-hidden p-2" style={{ background: 'var(--surface-strong)' }}>
             <img
               src={qrDataUrl}
               alt="Check-in QR code"

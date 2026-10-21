@@ -159,6 +159,25 @@ html.dark [class*="rounded-xl"][style*="background"] {
   border-color: rgba(255,255,255,0.10) !important;
 }
 
+/* inputs — browser UA stylesheet can inject white background on date/number inputs */
+html.dark input,
+html.dark textarea,
+html.dark select {
+  background: var(--surface-strong) !important;
+  color: var(--ink) !important;
+  border-color: var(--border) !important;
+  color-scheme: dark;
+}
+html.dark input::placeholder,
+html.dark textarea::placeholder {
+  color: var(--subtle) !important;
+}
+
+/* fieldset — browser UA may render white background */
+html.dark fieldset {
+  border-color: var(--border) !important;
+}
+
 /* details element — browser UA stylesheet sets white background */
 html.dark details {
   background: var(--surface) !important;

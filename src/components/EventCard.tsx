@@ -31,9 +31,10 @@ export function EventCard({ eventId: _eventId, event, reservedSeats, onClick }: 
       role={onClick ? 'button' : undefined}
       tabIndex={onClick ? 0 : undefined}
       onKeyDown={onClick ? (e) => e.key === 'Enter' && onClick() : undefined}
-      className={`rounded-2xl border border-[var(--border)] bg-white p-5 flex flex-col gap-3 transition-shadow ${
+      className={`rounded-2xl border border-[var(--border)] p-5 flex flex-col gap-3 transition-shadow ${
         onClick ? 'cursor-pointer hover:shadow-md hover:border-[var(--accent)] focus-visible:ring-2 focus-visible:ring-[var(--focus)]' : ''
       }`}
+      style={{ background: 'var(--surface-strong)' }}
     >
       {/* Header row */}
       <div className="flex items-start justify-between gap-3">

@@ -252,7 +252,7 @@ function ReservationCard({
   const txExplorer = (hash: `0x${string}`) => `${explorerBase}/tx/${hash}`
 
   return (
-    <div className="rounded-2xl border border-[var(--border)] bg-white overflow-hidden">
+    <div className="rounded-2xl border border-[var(--border)] overflow-hidden" style={{ background: 'var(--surface-strong)' }}>
       {/* Header */}
       <div className="p-5 flex items-start justify-between gap-3 border-b border-[var(--border)]">
         <div className="flex-1 min-w-0">

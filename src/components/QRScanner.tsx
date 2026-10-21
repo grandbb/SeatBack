@@ -191,7 +191,7 @@ export function QRScanner({ event, eventId: _eventId, onCheckedIn }: QRScannerPr
     const auth = payloadToAuthArgs(payload)
 
     return (
-      <div className="rounded-2xl border border-[var(--border)] bg-white p-5 flex flex-col gap-4">
+      <div className="rounded-2xl border border-[var(--border)] p-5 flex flex-col gap-4" style={{ background: 'var(--surface-strong)' }}>
         {/* Header */}
         <div className="flex items-center justify-between">
           <h3 className="font-semibold text-[var(--ink)] text-sm flex items-center gap-2">
@@ -272,7 +272,7 @@ export function QRScanner({ event, eventId: _eventId, onCheckedIn }: QRScannerPr
 
   // ── Scanner panel ─────────────────────────────────────────────────────────────
   return (
-    <div className="rounded-2xl border border-[var(--border)] bg-white p-5 flex flex-col gap-4">
+    <div className="rounded-2xl border border-[var(--border)] p-5 flex flex-col gap-4" style={{ background: 'var(--surface-strong)' }}>
       <h3 className="font-semibold text-[var(--ink)] text-sm">Scan Attendee QR</h3>
 
       {/* Camera / paste toggle */}
