@@ -29,6 +29,7 @@
   --accent: #1DAB8E;
   --accent-hover: #179477;
   --accent-light: #D0F5EC;
+  --accent-muted: rgba(29, 171, 142, 0.12);
   --accent-dark: #0F2035;
   --focus: #6EE7D8;
 
@@ -73,6 +74,7 @@ html.dark {
   --accent: #20C2A0;
   --accent-hover: #18A888;
   --accent-light: rgba(32, 194, 160, 0.15);
+  --accent-muted: rgba(32, 194, 160, 0.12);
   --accent-dark: #E8F4F1;
   --focus: #6EE7D8;
 

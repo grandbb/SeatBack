@@ -3,7 +3,7 @@ import { useReadContracts } from 'wagmi'
 import { SEATBACK_ABI, SEATBACK_ADDRESS, ACTIVE_CHAIN_ID, NETWORK_LABEL } from '@/contract'
 import { EventCard } from './EventCard'
 import { Loader2, CalendarX } from 'lucide-react'
-import type { EventInfo } from '@/types'
+
 
 interface EventListProps {
   onSelectEvent: (eventId: bigint) => void

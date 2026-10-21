@@ -1,7 +1,7 @@
 /**
  * Docs — SeatBack documentation. Plain English, no duplicates.
  */
-import { BookOpen, Ticket, QrCode, Coins, Shield, AlertTriangle, Code2, Calendar, ChevronRight, Layers, Gift } from 'lucide-react'
+import { BookOpen, Ticket, QrCode, Coins, Shield, AlertTriangle, Code2, Calendar, ChevronRight, Layers, Gift, Star } from 'lucide-react'
 import { SEATBACK_ADDRESS, STAKING_ADDRESS, SBK_ADDRESS, ACTIVE_CHAIN_ID, NETWORK_LABEL } from '@/contract'
 
 const EXPLORER_URL = ACTIVE_CHAIN_ID === 5042
@@ -101,6 +101,7 @@ const TOC_ITEMS = [
   { id: 'refunds',    label: 'Refund policy' },
   { id: 'contracts',  label: 'Contracts' },
   { id: 'faq',        label: 'FAQ' },
+  { id: 'points',     label: 'Points' },
   { id: 'tokenomics', label: 'SBK token' },
   { id: 'airdrop',    label: 'Airdrop' },
   { id: 'source',     label: 'Source code' },
@@ -432,7 +433,57 @@ export function Docs() {
           </Callout>
         </Section>
 
-        {/* ── 9. Airdrop ── */}
+        {/* ── 9. Points ── */}
+        <Section id="points" title="Points" icon={<Star size={18} className="text-[var(--accent)]" />}>
+          <P>
+            Points track your activity on SeatBack and determine your share of the SBK airdrop.
+            They are calculated in real time directly from onchain events — no server, no account needed.
+            Just connect your wallet to see your current score in the header bar.
+          </P>
+
+          <div className="rounded-xl border border-[var(--border)] overflow-hidden">
+            <table className="w-full text-sm">
+              <thead>
+                <tr style={{ background: 'var(--surface-muted)' }}>
+                  <th className="px-4 py-3 text-left font-semibold text-[var(--fg)]">Action</th>
+                  <th className="px-4 py-3 text-left font-semibold text-[var(--fg)]">Points</th>
+                  <th className="px-4 py-3 text-left font-semibold text-[var(--fg)]">Notes</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[var(--border)]">
+                {[
+                  ['Reserve a seat',    '+100', 'Per confirmed reservation on any event'],
+                  ['Check in',          '+300', 'Per onchain check-in confirmed by organiser'],
+                  ['Create an event',   '+500', 'Per event you create as organiser'],
+                  ['Early adopter 2×',  '×2',   'First 500 unique wallets to ever reserve — all points doubled'],
+                ].map(([a, p, n]) => (
+                  <tr key={a} style={{ background: 'var(--surface)' }}>
+                    <td className="px-4 py-3 font-medium text-[var(--fg)] text-sm">{a}</td>
+                    <td className="px-4 py-3 text-[var(--accent)] font-bold text-sm">{p}</td>
+                    <td className="px-4 py-3 text-[var(--muted)] text-sm">{n}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <Callout type="info">
+            ⭐ Connect your wallet and look at the top bar — your live points and breakdown appear there automatically. The Early Adopter 2× badge shows if you qualify.
+          </Callout>
+
+          <H3>How it works technically</H3>
+          <P>
+            Your browser reads the <code className="text-xs px-1.5 py-0.5 rounded" style={{ background: 'var(--surface-muted)' }}>Reserved</code>,{' '}
+            <code className="text-xs px-1.5 py-0.5 rounded" style={{ background: 'var(--surface-muted)' }}>CheckedIn</code>, and{' '}
+            <code className="text-xs px-1.5 py-0.5 rounded" style={{ background: 'var(--surface-muted)' }}>EventCreated</code> events directly from the SeatBack contract — no API or off-chain database involved.
+            Points are computed locally from those logs every time you open the app.
+          </P>
+          <P>
+            Early adopter status: the first 500 unique wallets to appear in any <code className="text-xs px-1.5 py-0.5 rounded" style={{ background: 'var(--surface-muted)' }}>Reserved</code> log (sorted by block number, oldest first) receive the 2× multiplier. This is verifiable by anyone from the public chain data.
+          </P>
+        </Section>
+
+        {/* ── 10. Airdrop ── */}
         <Section id="airdrop" title="Airdrop — 30M SBK for early users" icon={<Gift size={18} className="text-[var(--accent)]" />}>
           <Callout type="info">
             Not yet distributed. Any onchain activity on SeatBack before the snapshot counts. The snapshot date and claim contract address will be announced publicly.
@@ -455,11 +506,10 @@ export function Docs() {
               </thead>
               <tbody className="divide-y divide-[var(--border)]">
                 {[
-                  ['Reserve a seat',       '100',  'Per confirmed reservation'],
-                  ['Check in (verified)',  '300',  'Organiser-confirmed onchain check-in'],
-                  ['Create an event',      '500',  'Event must have at least 1 reservation'],
-                  ['Organiser: check in attendee', '200', 'Per attendee you successfully check in'],
-                  ['Early adopter bonus',  '2×',   'Activity in the first 30 days after launch'],
+                  ['Reserve a seat',      '100',  'Per confirmed reservation on any event'],
+                  ['Check in',           '300',  'Per onchain check-in confirmed by organiser'],
+                  ['Create an event',    '500',  'Per event you create as organiser'],
+                  ['Early adopter',      '2×',   'First 500 unique wallets to ever reserve — multiplies total points'],
                 ].map(([a, p, n]) => (
                   <tr key={a} style={{ background: 'var(--surface)' }}>
                     <td className="px-4 py-3 font-medium text-[var(--fg)] text-sm">{a}</td>

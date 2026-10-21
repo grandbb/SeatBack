@@ -10,9 +10,9 @@ import { useEventCount, useEventsBatch } from '@/hooks/useEvents'
 import { useReadContracts } from 'wagmi'
 import { SEATBACK_ABI } from '@/contract'
 import { EventCard } from './EventCard'
-import { Logo } from './Logo'
+
 import { Loader2, CalendarX, Ticket, QrCode, Coins } from 'lucide-react'
-import type { EventInfo } from '@/types'
+
 
 interface HomeProps {
   onExplore: () => void
@@ -124,7 +124,7 @@ export function Home({ onExplore, onCreateEvent, onSelectEvent }: HomeProps) {
             icon={<QrCode size={22} className="text-[var(--accent)]" />}
             step="2"
             title="Sign your QR at the door"
-            body="Generate a 5-minute signed QR from your wallet. The organiser scans it to confirm attendance on-chain."
+            body="Generate a 10-minute signed QR from your wallet. The organiser scans it to confirm attendance on-chain."
           />
           <StepCard
             icon={<Coins size={22} className="text-[var(--accent)]" />}

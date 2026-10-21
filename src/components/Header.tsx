@@ -1,6 +1,8 @@
+import { useState } from 'react'
 import { ConnectKitButton } from 'connectkit'
 import { useAccount } from 'wagmi'
 import { Logo } from './Logo'
+import { PointsBadge } from './PointsBadge'
 import { ACTIVE_CHAIN_ID, IS_MAINNET } from '@/contract'
 import { useTheme } from '@/hooks/useTheme'
 import { Sun, Moon } from 'lucide-react'
@@ -23,6 +25,7 @@ export function Header({ activeTab, onTabChange }: HeaderProps) {
   const { chainId, isConnected } = useAccount()
   const wrongChain = isConnected && chainId !== ACTIVE_CHAIN_ID
   const { isDark, toggle } = useTheme()
+  const [pointsOpen, setPointsOpen] = useState(false)
 
   return (
     <header
@@ -85,6 +88,14 @@ export function Header({ activeTab, onTabChange }: HeaderProps) {
             <span className="hidden sm:inline-flex text-xs font-semibold px-2.5 py-1 rounded-full bg-amber-500/10 text-amber-600 border border-amber-300/50">
               Wrong network
             </span>
+          )}
+
+          {/* Points badge — only when connected */}
+          {isConnected && (
+            <PointsBadge
+              expanded={pointsOpen}
+              onToggle={() => setPointsOpen((v) => !v)}
+            />
           )}
 
           {/* Dark / Light toggle */}

@@ -108,9 +108,9 @@ export async function signCheckInAuth(args: SignCheckInArgs): Promise<CheckInPay
 
   const now = BigInt(Math.floor(Date.now() / 1000))
   const validAfter = now
-  // 5-minute window, but never beyond checkInEnd
-  const fiveMin = now + BigInt(MAX_QR_VALIDITY_S)
-  const validUntil = fiveMin < checkInEnd ? fiveMin : checkInEnd
+  // 10-minute window, but never beyond checkInEnd
+  const tenMin = now + BigInt(MAX_QR_VALIDITY_S)
+  const validUntil = tenMin < checkInEnd ? tenMin : checkInEnd
 
   if (validUntil <= validAfter) {
     throw new Error('Check-in window has closed — cannot generate QR.')
