@@ -202,3 +202,6 @@
 {"level":"debug","message":"[vite] hot updated: /src/components/WalletMenu.tsx","timestamp":1792580328281}
 {"level":"debug","message":"[vite] hot updated: /src/index.css","timestamp":1792580339291}
 {"level":"debug","message":"[vite] hot updated: /src/components/WalletMenu.tsx","timestamp":1792580339291}
+{"level":"log","message":"[vite] server connection lost. Polling for restart...","timestamp":1792581467650}
+{"level":"log","message":"[vite] server connection lost. Polling for restart...","timestamp":1792581724595}
+{"level":"debug","message":"[vite] connected.","timestamp":1792596396406}

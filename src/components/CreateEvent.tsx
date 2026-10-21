@@ -56,11 +56,11 @@ export function CreateEvent({ onCreated }: CreateEventProps) {
     const tCheckInStart = Math.floor(new Date(checkInStartInput).getTime() / 1000)
     const tCheckInEnd = Math.floor(new Date(checkInEndInput).getTime() / 1000)
     const now = Math.floor(Date.now() / 1000)
-    if (tBookingClose <= now) return 'Booking close must be in the future.'
-    if (tBookingClose > tRefundCutoff) return 'Booking close must be ≤ refund cutoff.'
-    if (tRefundCutoff > tCheckInStart) return 'Refund cutoff must be ≤ check-in start.'
-    if (tCheckInStart >= tCheckInEnd) return 'Check-in start must be before check-in end.'
-    if (tEventEnd <= tEventStart) return 'Event end must be after event start.'
+    if (tBookingClose <= now) return '① Booking Closes must be in the future.'
+    if (tBookingClose > tRefundCutoff) return '① Booking Closes must be ≤ ② Refund Cutoff.'
+    if (tRefundCutoff > tCheckInStart) return '② Refund Cutoff must be ≤ ③ Check-In Opens.'
+    if (tCheckInStart >= tCheckInEnd) return '③ Check-In Opens must be before ④ Check-In Closes.'
+    if (tEventEnd <= tEventStart) return 'Event End must be after Event Start.'
     if (!/^0x[0-9a-fA-F]{40}$/.test(effectivePayoutWallet)) return 'Enter a valid payout wallet address.'
     return null
   }
@@ -208,35 +208,47 @@ export function CreateEvent({ onCreated }: CreateEventProps) {
         {/* Times */}
         <fieldset className="rounded-2xl border border-[var(--border)] p-5 flex flex-col gap-4" style={{ background: 'var(--surface-strong)' }}>
           <legend className="font-semibold text-[var(--ink)] px-1">Schedule</legend>
-          <p className="text-xs text-[var(--subtle)]">
-            Times are in your local timezone. The contract stores UTC Unix timestamps.
-          </p>
+
+          {/* Timeline diagram */}
+          <div className="rounded-xl border border-[var(--border)] bg-[var(--surface-muted)] p-3 text-xs text-[var(--muted)]">
+            <p className="font-semibold text-[var(--ink-2)] mb-2">Timeline (must be in this order):</p>
+            <ol className="flex flex-col gap-1 pl-1">
+              <li className="flex items-center gap-2"><span className="w-5 h-5 rounded-full bg-[var(--accent)] text-white flex items-center justify-center font-bold text-[10px]">1</span><span><strong>Booking Closes</strong> — last moment to reserve a seat</span></li>
+              <li className="flex items-center gap-2"><span className="w-5 h-5 rounded-full bg-[var(--accent)] text-white flex items-center justify-center font-bold text-[10px]">2</span><span><strong>Refund Cutoff</strong> — after this, cancellations forfeit the deposit (≥ step 1)</span></li>
+              <li className="flex items-center gap-2"><span className="w-5 h-5 rounded-full bg-[var(--accent)] text-white flex items-center justify-center font-bold text-[10px]">3</span><span><strong>Check-In Opens</strong> — QR scanner activates; set to event start time (≥ step 2)</span></li>
+              <li className="flex items-center gap-2"><span className="w-5 h-5 rounded-full bg-[var(--accent)] text-white flex items-center justify-center font-bold text-[10px]">4</span><span><strong>Check-In Closes</strong> — no-shows decided; finalization unlocks after this (&gt; step 3)</span></li>
+            </ol>
+            <p className="mt-2 text-[var(--subtle)]">Event Start/End are for display only — they do not affect on-chain logic.</p>
+            <p className="mt-1 text-[var(--subtle)]">Times are in your local timezone. The contract stores UTC Unix timestamps.</p>
+          </div>
 
           <div className="grid grid-cols-2 gap-3">
-            <Field label="Event Start" required>
+            <Field label="Event Start" required hint="Display only — not enforced on-chain">
               <input type="datetime-local" value={eventStartInput} onChange={(e) => setEventStartInput(e.target.value)} className={inputCls} aria-required="true" />
             </Field>
-            <Field label="Event End" required>
+            <Field label="Event End" required hint="Display only — not enforced on-chain">
               <input type="datetime-local" value={eventEndInput} onChange={(e) => setEventEndInput(e.target.value)} className={inputCls} aria-required="true" />
             </Field>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <Field label="Booking Closes" required hint="After this, no new reservations">
-              <input type="datetime-local" value={bookingCloseInput} onChange={(e) => setBookingCloseInput(e.target.value)} className={inputCls} aria-required="true" />
-            </Field>
-            <Field label="Refund Cutoff" required hint="After this, cancellations forfeit deposit">
-              <input type="datetime-local" value={refundCutoffInput} onChange={(e) => setRefundCutoffInput(e.target.value)} className={inputCls} aria-required="true" />
-            </Field>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <Field label="Check-In Opens" required hint="Organiser can open check-in from this time">
-              <input type="datetime-local" value={checkInStartInput} onChange={(e) => setCheckInStartInput(e.target.value)} className={inputCls} aria-required="true" />
-            </Field>
-            <Field label="Check-In Closes" required hint="Finalization & refund claims available after this">
-              <input type="datetime-local" value={checkInEndInput} onChange={(e) => setCheckInEndInput(e.target.value)} className={inputCls} aria-required="true" />
-            </Field>
+          <div className="rounded-xl border border-[var(--border)] p-3 flex flex-col gap-3" style={{ background: 'var(--surface-muted)' }}>
+            <p className="text-xs font-semibold text-[var(--ink-2)]">On-chain enforced dates (must be in order 1 → 2 → 3 → 4):</p>
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="① Booking Closes" required hint="Last moment to reserve">
+                <input type="datetime-local" value={bookingCloseInput} onChange={(e) => setBookingCloseInput(e.target.value)} className={inputCls} aria-required="true" />
+              </Field>
+              <Field label="② Refund Cutoff" required hint="After this, cancellations forfeit deposit">
+                <input type="datetime-local" value={refundCutoffInput} onChange={(e) => setRefundCutoffInput(e.target.value)} className={inputCls} aria-required="true" />
+              </Field>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="③ Check-In Opens" required hint="Set to your event start time">
+                <input type="datetime-local" value={checkInStartInput} onChange={(e) => setCheckInStartInput(e.target.value)} className={inputCls} aria-required="true" />
+              </Field>
+              <Field label="④ Check-In Closes" required hint="No-shows locked; finalization available after">
+                <input type="datetime-local" value={checkInEndInput} onChange={(e) => setCheckInEndInput(e.target.value)} className={inputCls} aria-required="true" />
+              </Field>
+            </div>
           </div>
         </fieldset>
 
