@@ -40,9 +40,9 @@ export function EventList({ onSelectEvent }: EventListProps) {
 
   if (!SEATBACK_ADDRESS) {
     return (
-      <div className="rounded-2xl border border-amber-200 bg-amber-50 p-6 text-center">
-        <p className="text-amber-800 font-medium">Contract not yet deployed.</p>
-        <p className="text-sm text-amber-600 mt-1">Deploy SeatBack to {NETWORK_LABEL} to see events here.</p>
+      <div className="rounded-2xl p-6 text-center" style={{ background: 'var(--warning-bg)', color: 'var(--warning)', border: '1px solid var(--accent-muted)' }}>
+        <p className="font-medium">Contract not yet deployed.</p>
+        <p className="text-sm mt-1 opacity-80">Deploy SeatBack to {NETWORK_LABEL} to see events here.</p>
       </div>
     )
   }

@@ -238,7 +238,7 @@ function OrganizerEventPanel({ eventId, event, wrongChain, onSwitchChain }: Orga
       {expanded && (
         <div className="border-t border-[var(--border)] p-5 flex flex-col gap-4">
           {wrongChain && (
-            <div className="rounded-xl bg-amber-50 border border-amber-200 p-3 text-sm text-amber-800">
+            <div className="rounded-xl p-3 text-sm" style={{ background: "var(--warning-bg)", color: "var(--warning)", border: "1px solid var(--accent-muted)" }}>
               Switch to {NETWORK_LABEL}.{' '}
               <button onClick={onSwitchChain} className="font-semibold underline">Switch</button>
             </div>

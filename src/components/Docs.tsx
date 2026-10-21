@@ -41,11 +41,12 @@ function H3({ children }: { children: React.ReactNode }) {
 }
 
 function Callout({ type, children }: { type: 'info' | 'warn'; children: React.ReactNode }) {
-  const colors = type === 'warn'
-    ? 'bg-amber-50 border-amber-200 text-amber-800 dark:bg-amber-950/30 dark:border-amber-800 dark:text-amber-300'
-    : 'bg-teal-50 border-teal-200 text-teal-800 dark:bg-teal-950/30 dark:border-teal-800 dark:text-teal-300'
+  // Both types use teal/accent tokens — warn uses slightly stronger border
+  const style = type === 'warn'
+    ? { background: 'var(--warning-bg)', color: 'var(--warning)', border: '1px solid var(--accent)' }
+    : { background: 'var(--accent-muted)', color: 'var(--accent)', border: '1px solid var(--accent-muted)' }
   return (
-    <div className={`rounded-xl border p-4 text-sm leading-relaxed ${colors}`}>
+    <div className="rounded-xl p-4 text-sm leading-relaxed" style={style}>
       {children}
     </div>
   )

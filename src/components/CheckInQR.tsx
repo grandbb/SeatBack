@@ -162,7 +162,7 @@ export function CheckInQR({ eventId, reservationId, event, reservation }: CheckI
       </p>
 
       {/* Trust model notice */}
-      <div className="rounded-xl bg-amber-50 border border-amber-200 p-3 text-xs text-amber-800 leading-relaxed">
+      <div className="rounded-xl p-3 text-xs leading-relaxed" style={{ background: "var(--warning-bg)", color: "var(--warning)", border: "1px solid var(--accent-muted)" }}>
         <strong>Attendance model:</strong> The organiser is the sole attester of attendance.
         Check-in is recorded onchain only after the organiser scans your QR and submits
         a transaction. If the organiser does not submit, your deposit remains at risk of
@@ -215,7 +215,7 @@ export function CheckInQR({ eventId, reservationId, event, reservation }: CheckI
       {/* Expired */}
       {state === 'expired' && (
         <div className="flex flex-col items-center gap-3">
-          <div className="rounded-xl bg-amber-50 border border-amber-200 p-3 text-sm text-amber-800 flex items-center gap-2 w-full">
+          <div className="rounded-xl p-3 text-sm flex items-center gap-2 w-full" style={{ background: "var(--warning-bg)", color: "var(--warning)", border: "1px solid var(--accent-muted)" }}>
             <AlertTriangle size={14} />
             QR expired — generate a new one.
           </div>

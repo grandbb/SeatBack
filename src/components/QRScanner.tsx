@@ -218,7 +218,7 @@ export function QRScanner({ event, eventId: _eventId, onCheckedIn }: QRScannerPr
           />
         </div>
 
-        <div className="text-xs text-[var(--subtle)] bg-amber-50 rounded-xl border border-amber-200 p-3">
+        <div className="text-xs rounded-xl p-3" style={{ background: 'var(--warning-bg)', color: 'var(--warning)', border: '1px solid var(--accent-muted)' }}>
           <strong>Note:</strong> The QR signature proves wallet control, not physical presence.
           You as organiser are attesting attendance. Submitting this transaction is your confirmation.
         </div>
@@ -370,7 +370,7 @@ export function QRScanner({ event, eventId: _eventId, onCheckedIn }: QRScannerPr
 
       {/* Errors */}
       {cameraError && (
-        <div className="rounded-xl bg-amber-50 border border-amber-200 p-3 text-sm text-amber-800 flex items-start gap-2">
+        <div className="rounded-xl p-3 text-sm flex items-start gap-2" style={{ background: "var(--warning-bg)", color: "var(--warning)", border: "1px solid var(--accent-muted)" }}>
           <CameraOff size={14} className="mt-0.5 flex-shrink-0" />
           {cameraError}
         </div>

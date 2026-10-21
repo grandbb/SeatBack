@@ -161,7 +161,7 @@ export function MyReservations({ onViewEvent }: MyReservationsProps) {
   return (
     <div className="flex flex-col gap-4">
       {wrongChain && (
-        <div className="rounded-xl bg-amber-50 border border-amber-200 p-3 text-sm text-amber-800">
+        <div className="rounded-xl p-3 text-sm" style={{ background: "var(--warning-bg)", color: "var(--warning)", border: "1px solid var(--accent-muted)" }}>
           Switch to {NETWORK_LABEL} to take actions.{' '}
           <button onClick={() => switchChain({ chainId: ACTIVE_CHAIN_ID })} className="font-semibold underline">
             Switch
@@ -337,7 +337,7 @@ function ReservationCard({
 
         {/* No-show */}
         {isNoShow && (
-          <div className="rounded-xl bg-amber-50 border border-amber-200 p-3 text-sm text-amber-800 flex items-center gap-2">
+          <div className="rounded-xl p-3 text-sm flex items-center gap-2" style={{ background: 'var(--warning-bg)', color: 'var(--warning)', border: '1px solid var(--accent-muted)' }}>
             <AlertTriangle size={14} />
             No check-in recorded. Deposit assigned to organiser as a no-show.
           </div>
@@ -447,7 +447,7 @@ function ReservationStatusBadge({
     return <Badge label="Refunded" className="bg-teal-50 text-teal-700 border-teal-200" />
   }
   if (isNoShow) {
-    return <Badge label="No-show" className="bg-amber-50 text-amber-700 border-amber-200" />
+    return <Badge label="No-show" className="badge-navy" />
   }
   if (!reservation.active && reservation.refundable) {
     return <Badge label="Checked in" className="bg-blue-50 text-blue-700 border-blue-200" />

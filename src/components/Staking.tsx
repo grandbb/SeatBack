@@ -197,9 +197,9 @@ export function Staking() {
 
       {/* Chain warning */}
       {wrongChain && (
-        <div className="rounded-xl border border-amber-300/50 bg-amber-50 dark:bg-amber-950/30 p-4 flex items-start gap-3">
-          <AlertTriangle size={16} className="text-amber-600 mt-0.5 flex-shrink-0" />
-          <p className="text-sm text-amber-700 dark:text-amber-300">
+        <div className="rounded-xl p-4 flex items-start gap-3" style={{ background: 'var(--warning-bg)', color: 'var(--warning)', border: '1px solid var(--accent-muted)' }}>
+          <AlertTriangle size={16} className="mt-0.5 flex-shrink-0" style={{ color: 'var(--warning)' }} />
+          <p className="text-sm">
             Wrong network. Please switch to {NETWORK_LABEL} to use staking.
           </p>
         </div>
@@ -312,7 +312,7 @@ export function Staking() {
           {txHash && (
             <a href={`${EXPLORER}/tx/${txHash}`} target="_blank" rel="noopener noreferrer"
               className="card p-4 flex items-center gap-3 text-sm hover:bg-[var(--surface-muted)]">
-              <div className={`w-2 h-2 rounded-full flex-shrink-0 ${isTxSuccess ? 'bg-green-500' : 'bg-amber-400 animate-pulse'}`} />
+              <div className={`w-2 h-2 rounded-full flex-shrink-0 ${isTxSuccess ? 'bg-green-500' : 'animate-pulse'}`} style={isTxSuccess ? {} : { background: 'var(--accent)' }} />
               <span className="text-[var(--muted)] truncate">{isTxSuccess ? 'Transaction confirmed' : 'Waiting for confirmation…'}</span>
               <ExternalLink size={13} className="ml-auto text-[var(--accent)] flex-shrink-0" />
             </a>

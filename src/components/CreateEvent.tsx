@@ -155,7 +155,7 @@ export function CreateEvent({ onCreated }: CreateEventProps) {
       )}
 
       {wrongChain && (
-        <div className="rounded-xl bg-amber-50 border border-amber-200 p-3 text-sm text-amber-800">
+        <div className="rounded-xl p-3 text-sm" style={{ background: "var(--warning-bg)", color: "var(--warning)", border: "1px solid var(--accent-muted)" }}>
           Switch to {NETWORK_LABEL} first.{' '}
           <button onClick={() => switchChain({ chainId: ACTIVE_CHAIN_ID })} className="font-semibold underline">
             Switch

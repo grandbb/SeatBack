@@ -82,7 +82,7 @@ export function Header({ activeTab, onTabChange }: HeaderProps) {
 
           {/* Wrong chain warning */}
           {wrongChain && (
-            <span className="hidden sm:inline-flex text-xs font-semibold px-2.5 py-1 rounded-full bg-amber-500/10 text-amber-600 border border-amber-300/50">
+            <span className="hidden sm:inline-flex text-xs font-semibold px-2.5 py-1 rounded-full" style={{ background: 'var(--warning-bg)', color: 'var(--warning)', border: '1px solid var(--accent-muted)' }}>
               Wrong network
             </span>
           )}
