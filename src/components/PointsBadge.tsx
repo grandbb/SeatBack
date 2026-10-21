@@ -1,11 +1,11 @@
 /**
  * PointsBadge — แสดง Points ของ wallet ที่ connect อยู่
- * คลิกเพื่อดู breakdown แบบ popover
+ * แยก confirmed vs pending + suspicious flag
  */
 
 import { useState } from 'react'
 import { useAccount } from 'wagmi'
-import { usePoints, POINTS_RULES } from '@/hooks/usePoints'
+import { usePoints, POINTS_RULES, MIN_CHECKED_IN_FOR_ORGANISER, MAX_POINTS_PER_WALLET } from '@/hooks/usePoints'
 
 interface PointsBadgeProps {
   expanded?: boolean
@@ -17,7 +17,6 @@ export function PointsBadge({ expanded, onToggle }: PointsBadgeProps = {}) {
   const { breakdown, loading, lastFetched, refresh } = usePoints(address)
   const [internalOpen, setInternalOpen] = useState(false)
 
-  // Support both controlled (expanded/onToggle) and uncontrolled mode
   const open = expanded !== undefined ? expanded : internalOpen
   const toggle = () => {
     if (onToggle) onToggle()
@@ -25,6 +24,8 @@ export function PointsBadge({ expanded, onToggle }: PointsBadgeProps = {}) {
   }
 
   if (!address) return null
+
+  const hasPending = breakdown.pending > 0
 
   return (
     <div className="relative">
@@ -41,21 +42,21 @@ export function PointsBadge({ expanded, onToggle }: PointsBadgeProps = {}) {
       >
         <span>⭐</span>
         <span>{loading && breakdown.total === 0 ? '…' : breakdown.total.toLocaleString()}</span>
+        {hasPending && (
+          <span className="text-xs opacity-60 font-normal">
+            +{breakdown.pending.toLocaleString()} pending
+          </span>
+        )}
         <span className="opacity-60 font-normal">pts</span>
       </button>
 
       {/* Popover */}
       {open && (
         <>
-          {/* Backdrop */}
-          <div
-            className="fixed inset-0 z-40"
-            onClick={toggle}
-          />
+          <div className="fixed inset-0 z-40" onClick={toggle} />
 
-          {/* Panel */}
           <div
-            className="absolute right-0 top-10 z-50 w-72 rounded-2xl shadow-xl p-5 flex flex-col gap-4"
+            className="absolute right-0 top-10 z-50 w-80 rounded-2xl shadow-xl p-5 flex flex-col gap-4"
             style={{ background: 'var(--surface-strong)', border: '1px solid var(--border)' }}
           >
             {/* Header */}
@@ -64,8 +65,13 @@ export function PointsBadge({ expanded, onToggle }: PointsBadgeProps = {}) {
                 <div className="text-xs font-medium opacity-50 uppercase tracking-wide">SeatBack Points</div>
                 <div className="text-2xl font-bold mt-0.5" style={{ color: 'var(--accent)' }}>
                   {breakdown.total.toLocaleString()}
-                  <span className="text-sm font-normal opacity-50 ml-1">pts</span>
+                  <span className="text-sm font-normal opacity-50 ml-1">pts confirmed</span>
                 </div>
+                {hasPending && (
+                  <div className="text-sm opacity-60 mt-0.5">
+                    +{breakdown.pending.toLocaleString()} pts รอตรวจสอบ
+                  </div>
+                )}
               </div>
               <button
                 onClick={e => { e.stopPropagation(); void refresh() }}
@@ -77,37 +83,71 @@ export function PointsBadge({ expanded, onToggle }: PointsBadgeProps = {}) {
               </button>
             </div>
 
-            {/* Breakdown */}
-            <div className="flex flex-col gap-2">
-              <Row
-                icon="🎟️"
-                label="Events Created"
-                count={breakdown.eventCount}
-                pts={breakdown.createEvent}
-                each={POINTS_RULES.CREATE_EVENT}
-              />
-              <Row
-                icon="📋"
-                label="Reservations"
-                count={breakdown.reserveCount}
-                pts={breakdown.reserve}
-                each={POINTS_RULES.RESERVE}
-              />
-              <Row
-                icon="✅"
-                label="Check-ins"
-                count={breakdown.checkInCount}
-                pts={breakdown.checkIn}
-                each={POINTS_RULES.CHECK_IN}
-              />
+            {/* Suspicious flag */}
+            {breakdown.suspiciousFlag && (
+              <div
+                className="text-xs rounded-xl p-3 leading-relaxed"
+                style={{ background: 'rgba(234,179,8,0.1)', color: '#ca8a04', border: '1px solid rgba(234,179,8,0.3)' }}
+              >
+                ⚠️ พบรูปแบบการจองซ้ำผิดปกติ Points อาจถูกตรวจสอบเพิ่มเติมก่อน snapshot
+              </div>
+            )}
+
+            {/* Confirmed breakdown */}
+            <div>
+              <div className="text-xs font-semibold opacity-50 uppercase tracking-wide mb-2">Confirmed</div>
+              <div className="flex flex-col gap-2">
+                <Row
+                  icon="🎟️"
+                  label={`Events (≥${MIN_CHECKED_IN_FOR_ORGANISER} check-in)`}
+                  count={breakdown.eventCount}
+                  pts={breakdown.createEvent}
+                  each={POINTS_RULES.CREATE_EVENT}
+                />
+                <Row
+                  icon="📋"
+                  label="Reservations (งานจบ + มา)"
+                  count={breakdown.reserveCount}
+                  pts={breakdown.reserve}
+                  each={POINTS_RULES.RESERVE}
+                />
+                <Row
+                  icon="✅"
+                  label="Check-ins (งานจบ)"
+                  count={breakdown.checkInCount}
+                  pts={breakdown.checkIn}
+                  each={POINTS_RULES.CHECK_IN}
+                />
+              </div>
             </div>
+
+            {/* Pending breakdown */}
+            {hasPending && (
+              <div>
+                <div className="text-xs font-semibold opacity-50 uppercase tracking-wide mb-2">รอตรวจสอบ (งานยังไม่จบ)</div>
+                <div className="text-sm opacity-60 rounded-xl p-3" style={{ background: 'var(--surface)' }}>
+                  {breakdown.pendingEvents > 0 && (
+                    <div>🕐 งานที่รอจบ: {breakdown.pendingEvents} งาน ({breakdown.pending.toLocaleString()} pts)</div>
+                  )}
+                  <div className="text-xs mt-1 opacity-70">Points จะ confirmed เมื่องานสิ้นสุดและผ่านเกณฑ์</div>
+                </div>
+              </div>
+            )}
+
+            {/* Cap notice */}
+            {breakdown.total >= MAX_POINTS_PER_WALLET * 0.9 && (
+              <div
+                className="text-xs rounded-xl p-3"
+                style={{ background: 'rgba(239,68,68,0.1)', color: '#dc2626' }}
+              >
+                ใกล้ถึงเพดาน {MAX_POINTS_PER_WALLET.toLocaleString()} pts ต่อ wallet
+              </div>
+            )}
 
             {/* Footer */}
             <div className="text-xs opacity-40 flex items-center justify-between pt-1 border-t" style={{ borderColor: 'var(--border)' }}>
-              <span>Read from Arc Mainnet</span>
-              {lastFetched && (
-                <span>{lastFetched.toLocaleTimeString()}</span>
-              )}
+              <span>Read from Arc Mainnet · ไม่ใช้ gas</span>
+              {lastFetched && <span>{lastFetched.toLocaleTimeString()}</span>}
             </div>
 
             {/* Airdrop notice */}
@@ -115,7 +155,7 @@ export function PointsBadge({ expanded, onToggle }: PointsBadgeProps = {}) {
               className="text-xs rounded-xl p-3 leading-relaxed"
               style={{ background: 'var(--accent-muted)', color: 'var(--accent)' }}
             >
-              Points count toward SBK airdrop snapshot. See Docs → Airdrop for details.
+              Points นับรวมใน SBK airdrop snapshot — ดูกติกาทั้งหมดที่ Docs → Points
             </div>
           </div>
         </>
@@ -126,9 +166,7 @@ export function PointsBadge({ expanded, onToggle }: PointsBadgeProps = {}) {
 
 // ─── Row component ────────────────────────────────────────────────────────────
 
-function Row({
-  icon, label, count, pts, each,
-}: {
+function Row({ icon, label, count, pts, each }: {
   icon: string
   label: string
   count: number
@@ -137,16 +175,15 @@ function Row({
 }) {
   return (
     <div className="flex items-center justify-between text-sm">
-      <div className="flex items-center gap-2 opacity-70">
+      <div className="flex items-center gap-2">
         <span>{icon}</span>
-        <span>{label}</span>
-        <span className="opacity-50 text-xs">×{count}</span>
+        <div>
+          <div className="font-medium leading-tight">{label}</div>
+          <div className="text-xs opacity-50">{count} × {each} pts</div>
+        </div>
       </div>
-      <div className="flex items-center gap-1.5">
-        <span className="opacity-40 text-xs">+{each}/each</span>
-        <span className="font-semibold" style={{ color: pts > 0 ? 'var(--accent)' : undefined }}>
-          {pts.toLocaleString()}
-        </span>
+      <div className="font-semibold tabular-nums" style={{ color: 'var(--accent)' }}>
+        {pts.toLocaleString()}
       </div>
     </div>
   )

@@ -436,26 +436,29 @@ export function Docs() {
         {/* ── 9. Points ── */}
         <Section id="points" title="Points" icon={<Star size={18} className="text-[var(--accent)]" />}>
           <P>
-            Points track your activity on SeatBack and determine your share of the SBK airdrop.
-            They are calculated in real time directly from onchain events — no server, no account needed.
-            Just connect your wallet to see your current score in the header bar.
+            Points วัดกิจกรรมบน SeatBack และกำหนดสัดส่วน SBK airdrop ของคุณ
+            คำนวณแบบ real-time จาก onchain events โดยตรง — ไม่มี server ไม่ต้องสมัครบัญชี
+            เชื่อมต่อ wallet เพื่อดูคะแนนและรายละเอียดใน header
           </P>
+
+          {/* ─ กติกาหลัก ─ */}
+          <H3>กติกาการให้คะแนน</H3>
 
           <div className="rounded-xl border border-[var(--border)] overflow-hidden">
             <table className="w-full text-sm">
               <thead>
                 <tr style={{ background: 'var(--surface-muted)' }}>
-                  <th className="px-4 py-3 text-left font-semibold text-[var(--fg)]">Action</th>
-                  <th className="px-4 py-3 text-left font-semibold text-[var(--fg)]">Points</th>
-                  <th className="px-4 py-3 text-left font-semibold text-[var(--fg)]">Notes</th>
+                  <th className="px-4 py-3 text-left font-semibold text-[var(--fg)]">กิจกรรม</th>
+                  <th className="px-4 py-3 text-left font-semibold text-[var(--fg)]">คะแนน</th>
+                  <th className="px-4 py-3 text-left font-semibold text-[var(--fg)]">เงื่อนไข</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[var(--border)]">
                 {[
-                  ['Reserve a seat',    '+100', 'Per confirmed reservation on any event'],
-                  ['Check in',          '+300', 'Per onchain check-in confirmed by organiser'],
-                  ['Create an event',   '+500', 'Per event you create as organiser'],
-                  ['Early adopter 2×',  '×2',   'First 500 unique wallets to ever reserve — all points doubled'],
+                  ['จองที่นั่ง',     '+100', 'หลังงานจบ + ไม่ยกเลิก + มา check-in จริง'],
+                  ['Check in',      '+300', 'หลังงานจบ (finalized) เท่านั้น'],
+                  ['สร้างงาน',      '+500', 'งานต้องจบ + มีผู้ check-in จริง ≥ 5 คน + ผ่าน allowlist'],
+                  ['Early adopter', '×2',   'First 500 wallets ที่เคย reserve — คะแนนทั้งหมดคูณสอง'],
                 ].map(([a, p, n]) => (
                   <tr key={a} style={{ background: 'var(--surface)' }}>
                     <td className="px-4 py-3 font-medium text-[var(--fg)] text-sm">{a}</td>
@@ -467,20 +470,106 @@ export function Docs() {
             </table>
           </div>
 
-          <Callout type="info">
-            ⭐ Connect your wallet and look at the top bar — your live points and breakdown appear there automatically. The Early Adopter 2× badge shows if you qualify.
-          </Callout>
+          {/* ─ Pending vs Confirmed ─ */}
+          <H3>Pending vs Confirmed</H3>
+          <P>
+            คะแนนแบ่งเป็น 2 สถานะ:
+          </P>
+          <div className="flex flex-col gap-2 mt-1">
+            <div className="rounded-xl p-4 flex gap-3" style={{ background: 'var(--surface-strong)' }}>
+              <span className="text-xl">⏳</span>
+              <div>
+                <div className="font-semibold text-sm">Pending (รอตรวจสอบ)</div>
+                <div className="text-sm opacity-70 mt-0.5">งานที่คุณจอง สร้าง หรือ check-in แต่ยังไม่จบ — แสดงแยก ไม่นับใน total จนกว่างานจะ finalized</div>
+              </div>
+            </div>
+            <div className="rounded-xl p-4 flex gap-3" style={{ background: 'var(--surface-strong)' }}>
+              <span className="text-xl">✅</span>
+              <div>
+                <div className="font-semibold text-sm">Confirmed (นับแล้ว)</div>
+                <div className="text-sm opacity-70 mt-0.5">งานจบแล้ว + ผ่านเกณฑ์ทั้งหมด — นับใน total และ airdrop</div>
+              </div>
+            </div>
+          </div>
 
-          <H3>How it works technically</H3>
+          {/* ─ สิ่งที่ไม่ได้คะแนน ─ */}
+          <H3>สิ่งที่ไม่ได้คะแนน</H3>
+          <div className="flex flex-col gap-1.5 mt-1">
+            {[
+              'ยกเลิกการจอง — คืนเงิน แต่ 0 pts',
+              'จองแล้วไม่มา (no-show) — 0 pts หลังงานจบ',
+              'งานถูก cancel ก่อนเริ่ม — 0 pts ทุกฝ่าย',
+              'สร้างงานที่มีผู้ check-in น้อยกว่า 5 คน — 0 pts ผู้จัด',
+              'งานที่ไม่ผ่าน campaign allowlist — 0 pts (ระยะแรก)',
+            ].map(t => (
+              <div key={t} className="flex items-start gap-2 text-sm">
+                <span className="opacity-40 mt-0.5">✗</span>
+                <span className="opacity-70">{t}</span>
+              </div>
+            ))}
+          </div>
+
+          {/* ─ เพดาน ─ */}
+          <H3>เพดานคะแนน</H3>
+          <div className="rounded-xl border border-[var(--border)] overflow-hidden">
+            <table className="w-full text-sm">
+              <tbody className="divide-y divide-[var(--border)]">
+                {[
+                  ['สูงสุดต่อ wallet',              '50,000 pts',  'ป้องกัน Sybil ด้วยกระเป๋าเดิมหลายใบ'],
+                  ['Reserve ต่องาน',                '1 ครั้ง',     'ถ้าจองซ้ำงานเดิม นับครั้งแรกครั้งเดียว'],
+                  ['Check-in ต่องาน',               '1 ครั้ง',     '1 คน 1 check-in ต่องาน'],
+                  ['Create ต่องาน',                  '1 ครั้ง',     'ผู้จัดคนเดียวกันกับใน EventCreated log'],
+                ].map(([a, b, c]) => (
+                  <tr key={a} style={{ background: 'var(--surface)' }}>
+                    <td className="px-4 py-3 font-medium text-[var(--fg)] text-sm">{a}</td>
+                    <td className="px-4 py-3 text-[var(--accent)] font-semibold text-sm">{b}</td>
+                    <td className="px-4 py-3 text-[var(--muted)] text-sm">{c}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* ─ Campaign allowlist ─ */}
+          <H3>Campaign allowlist</H3>
           <P>
-            Your browser reads the <code className="text-xs px-1.5 py-0.5 rounded" style={{ background: 'var(--surface-muted)' }}>Reserved</code>,{' '}
-            <code className="text-xs px-1.5 py-0.5 rounded" style={{ background: 'var(--surface-muted)' }}>CheckedIn</code>, and{' '}
-            <code className="text-xs px-1.5 py-0.5 rounded" style={{ background: 'var(--surface-muted)' }}>EventCreated</code> events directly from the SeatBack contract — no API or off-chain database involved.
-            Points are computed locally from those logs every time you open the app.
+            ในระยะแรก เฉพาะงานที่ผ่านการอนุมัติเข้าแคมเปญเท่านั้นที่สร้างคะแนนได้
+            ทุกคนยังสร้างงานได้ตามปกติ แต่คะแนนจะเริ่มนับเมื่องานผ่านเกณฑ์แล้ว
+            วิธีนี้ป้องกันงานปลอมในช่วงเริ่มต้น และจะเปิดกว้างเมื่อมีข้อมูลเพียงพอ
           </P>
+
+          {/* ─ การตรวจพฤติกรรม ─ */}
+          <H3>การตรวจพฤติกรรมผิดปกติ</H3>
           <P>
-            Early adopter status: the first 500 unique wallets to appear in any <code className="text-xs px-1.5 py-0.5 rounded" style={{ background: 'var(--surface-muted)' }}>Reserved</code> log (sorted by block number, oldest first) receive the 2× multiplier. This is verifiable by anyone from the public chain data.
+            ระบบตรวจ pattern ดังนี้เป็น flag (ไม่ตัดสิทธิ์อัตโนมัติ):
           </P>
+          <div className="flex flex-col gap-1.5 mt-1">
+            {[
+              'กลุ่มกระเป๋าเดิมจองงานเดียวกันซ้ำๆ เกิน 3 ครั้ง',
+              'รูปแบบเวลาจองและ check-in เหมือนกันมาก (bot-like)',
+              'wallet จากแหล่งเดียวกันร่วมงานกันตลอด',
+            ].map(t => (
+              <div key={t} className="flex items-start gap-2 text-sm">
+                <span className="text-yellow-500 mt-0.5">⚠️</span>
+                <span className="opacity-70">{t}</span>
+              </div>
+            ))}
+          </div>
+          <P>
+            wallet ที่ถูก flag จะเห็นคำเตือนใน Points badge และอาจถูกตรวจเพิ่มก่อน snapshot
+            มีช่องทางอุทธรณ์ผ่าน GitHub Issues
+          </P>
+
+          {/* ─ ก่อน snapshot ─ */}
+          <H3>ก่อน snapshot</H3>
+          <P>
+            กติกาทั้งหมดนี้จะถูกประกาศและล็อกก่อน snapshot อย่างน้อย 14 วัน
+            ผลคะแนนเบื้องต้นจะเผยแพร่ให้ตรวจสอบและอุทธรณ์ก่อนที่ Merkle root จะถูกล็อก
+          </P>
+
+          <Callout type="info">
+            ⭐ เชื่อมต่อ wallet — คะแนน confirmed และ pending จะแสดงใน header อัตโนมัติ อ่านจาก Arc Mainnet ไม่ใช้ gas
+          </Callout>
         </Section>
 
         {/* ── 10. Airdrop ── */}
@@ -506,10 +595,10 @@ export function Docs() {
               </thead>
               <tbody className="divide-y divide-[var(--border)]">
                 {[
-                  ['Reserve a seat',      '100',  'Per confirmed reservation on any event'],
-                  ['Check in',           '300',  'Per onchain check-in confirmed by organiser'],
-                  ['Create an event',    '500',  'Per event you create as organiser'],
-                  ['Early adopter',      '2×',   'First 500 unique wallets to ever reserve — multiplies total points'],
+                  ['จองที่นั่ง',     '100',  'งานจบ + ไม่ยกเลิก + มา check-in จริง'],
+                  ['Check in',      '300',  'งานจบ (finalized) เท่านั้น'],
+                  ['สร้างงาน',      '500',  'งานจบ + ≥5 check-in + ผ่าน allowlist'],
+                  ['Early adopter', '×2',   'First 500 wallets ที่เคย reserve — คูณทั้งหมด'],
                 ].map(([a, p, n]) => (
                   <tr key={a} style={{ background: 'var(--surface)' }}>
                     <td className="px-4 py-3 font-medium text-[var(--fg)] text-sm">{a}</td>
