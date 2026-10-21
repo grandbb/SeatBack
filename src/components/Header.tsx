@@ -1,8 +1,6 @@
-import { useState } from 'react'
-import { ConnectKitButton } from 'connectkit'
 import { useAccount } from 'wagmi'
 import { Logo } from './Logo'
-import { PointsBadge } from './PointsBadge'
+import { WalletMenu } from './WalletMenu'
 import { ACTIVE_CHAIN_ID, IS_MAINNET } from '@/contract'
 import { useTheme } from '@/hooks/useTheme'
 import { Sun, Moon } from 'lucide-react'
@@ -25,7 +23,6 @@ export function Header({ activeTab, onTabChange }: HeaderProps) {
   const { chainId, isConnected } = useAccount()
   const wrongChain = isConnected && chainId !== ACTIVE_CHAIN_ID
   const { isDark, toggle } = useTheme()
-  const [pointsOpen, setPointsOpen] = useState(false)
 
   return (
     <header
@@ -42,7 +39,7 @@ export function Header({ activeTab, onTabChange }: HeaderProps) {
       }}
     >
       <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
-        {/* Logo — clickable back to home */}
+        {/* Logo */}
         <button
           onClick={() => onTabChange('home')}
           className="flex-shrink-0 focus-visible:outline-none"
@@ -90,14 +87,6 @@ export function Header({ activeTab, onTabChange }: HeaderProps) {
             </span>
           )}
 
-          {/* Points badge — only when connected */}
-          {isConnected && (
-            <PointsBadge
-              expanded={pointsOpen}
-              onToggle={() => setPointsOpen((v) => !v)}
-            />
-          )}
-
           {/* Dark / Light toggle */}
           <button
             onClick={toggle}
@@ -110,7 +99,8 @@ export function Header({ activeTab, onTabChange }: HeaderProps) {
             }
           </button>
 
-          <ConnectKitButton />
+          {/* Wallet button — Points + Sign Out inside */}
+          <WalletMenu />
         </div>
       </div>
 
