@@ -16,6 +16,8 @@
   /* Ink */
   --ink: #0F2035;
   --ink-2: #243D58;
+  --fg: #0F2035;
+  --fg-2: #243D58;
   --muted: #456070;
   --subtle: #7B9BAE;
 
@@ -58,6 +60,8 @@ html.dark {
   /* Ink */
   --ink: #E8F4F1;
   --ink-2: #B8D0CB;
+  --fg: #E8F4F1;
+  --fg-2: #B8D0CB;
   --muted: #7BA8A0;
   --subtle: #4A7068;
 
@@ -144,6 +148,28 @@ html.dark .card-strong {
 
 html.dark .badge-navy {
   background: rgba(232, 244, 241, 0.10);
+}
+
+/* ── Dark mode: inline-style surface overrides ─────────────── */
+/* Force any element using style="background: var(--surface)" to be
+   legible in dark mode — the token already does this, but some
+   browsers cache the computed value on the element style attribute.
+   Adding explicit dark overrides on common pattern classes. */
+html.dark [class*="rounded-xl"][style*="background"] {
+  border-color: rgba(255,255,255,0.10) !important;
+}
+
+/* details element — browser UA stylesheet sets white background */
+html.dark details {
+  background: var(--surface) !important;
+  color: var(--fg);
+}
+html.dark details > div {
+  background: var(--surface-muted) !important;
+}
+html.dark details summary {
+  background: var(--surface) !important;
+  color: var(--fg);
 }
 
 /* ── Card & surface helpers ───────────────────────────────────── */

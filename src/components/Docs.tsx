@@ -347,36 +347,91 @@ export function Docs() {
 
         {/* ── 7. Contract & security ── */}
         <Section id="contract" title="Contract & security" icon={<Shield size={18} className="text-[var(--accent)]" />}>
-          <div className="rounded-xl border border-[var(--border)] p-4 flex flex-col gap-3 text-sm" style={{ background: 'var(--surface)' }}>
-            <div className="flex flex-wrap gap-x-6 gap-y-2">
-              <div>
-                <span className="text-[var(--muted)]">Network</span>
-                <p className="font-semibold text-[var(--fg)]">{NETWORK_LABEL}</p>
-              </div>
-              <div>
-                <span className="text-[var(--muted)]">Chain ID</span>
-                <p className="font-semibold text-[var(--fg)] font-mono">{ACTIVE_CHAIN_ID}</p>
-              </div>
-            </div>
-            <div className="flex flex-col gap-2">
-              {[
-                { label: 'SeatBack v3', addr: SEATBACK_ADDRESS },
-                { label: 'SeatBackStaking v2', addr: STAKING_ADDRESS },
-                { label: 'SBK Token', addr: SBK_ADDRESS },
-              ].map(({ label, addr }) => (
-                <div key={label}>
-                  <span className="text-[var(--muted)] text-xs">{label}</span>
-                  <a
-                    href={`${EXPLORER_URL}/address/${addr}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="block font-semibold text-[var(--accent)] hover:underline font-mono text-xs mt-0.5 break-all"
-                  >
-                    {addr}
-                  </a>
+
+          {/* Network badge */}
+          <div className="flex flex-wrap gap-3 items-center text-sm">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full font-medium text-[var(--accent)]" style={{ background: 'var(--accent-light)' }}>
+              <span className="w-2 h-2 rounded-full bg-[var(--accent)] animate-pulse inline-block" />
+              {NETWORK_LABEL}
+            </span>
+            <span className="text-[var(--muted)]">Chain ID <span className="font-mono font-semibold text-[var(--fg)]">{ACTIVE_CHAIN_ID}</span></span>
+          </div>
+
+          {/* Contract cards */}
+          <div className="flex flex-col gap-3">
+
+            {/* SeatBack — main escrow */}
+            <div className="rounded-xl border border-[var(--border)] p-4 flex flex-col gap-2 text-sm" style={{ background: 'var(--surface)' }}>
+              <div className="flex items-start justify-between gap-2 flex-wrap">
+                <div>
+                  <p className="font-bold text-[var(--fg)] text-base">SeatBack <span className="text-xs font-normal text-[var(--muted)] ml-1">v3</span></p>
+                  <p className="text-xs text-[var(--muted)] mt-0.5">Main escrow contract — all event creation, deposits, reservations, check-in, refunds, and no-show proceeds live here.</p>
                 </div>
-              ))}
+                <span className="badge badge-teal flex-shrink-0">Escrow</span>
+              </div>
+              <ul className="text-xs text-[var(--muted)] leading-relaxed ml-1 list-disc list-inside space-y-0.5 mt-1">
+                <li>Holds USDC deposits in escrow until the event is finalised</li>
+                <li>Releases refunds to attendees who were checked in (or when the event is cancelled)</li>
+                <li>Sends no-show proceeds 50% to the organiser, 50% to the staking pool</li>
+                <li>Admin can only rotate the staking pool address — no other privileged actions</li>
+              </ul>
+              <a
+                href={`${EXPLORER_URL}/address/${SEATBACK_ADDRESS}`}
+                target="_blank" rel="noopener noreferrer"
+                className="font-mono text-xs text-[var(--accent)] hover:underline break-all mt-1"
+              >
+                {SEATBACK_ADDRESS}
+              </a>
             </div>
+
+            {/* SeatBackStaking */}
+            <div className="rounded-xl border border-[var(--border)] p-4 flex flex-col gap-2 text-sm" style={{ background: 'var(--surface)' }}>
+              <div className="flex items-start justify-between gap-2 flex-wrap">
+                <div>
+                  <p className="font-bold text-[var(--fg)] text-base">SeatBackStaking <span className="text-xs font-normal text-[var(--muted)] ml-1">v2</span></p>
+                  <p className="text-xs text-[var(--muted)] mt-0.5">USDC yield pool — SBK holders lock tokens here to earn a pro-rata share of every event's no-show proceeds.</p>
+                </div>
+                <span className="badge badge-teal flex-shrink-0">Staking</span>
+              </div>
+              <ul className="text-xs text-[var(--muted)] leading-relaxed ml-1 list-disc list-inside space-y-0.5 mt-1">
+                <li>Accepts SBK stake (minimum 1 SBK, 7,200-block cooldown before unstake)</li>
+                <li>Receives USDC from SeatBack when an event is finalised with no-shows</li>
+                <li>Distributes USDC pro-rata to all stakers at the moment of each event's finalisation</li>
+                <li>Undistributed proceeds carry forward — no USDC is ever stuck</li>
+              </ul>
+              <a
+                href={`${EXPLORER_URL}/address/${STAKING_ADDRESS}`}
+                target="_blank" rel="noopener noreferrer"
+                className="font-mono text-xs text-[var(--accent)] hover:underline break-all mt-1"
+              >
+                {STAKING_ADDRESS}
+              </a>
+            </div>
+
+            {/* SBK Token */}
+            <div className="rounded-xl border border-[var(--border)] p-4 flex flex-col gap-2 text-sm" style={{ background: 'var(--surface)' }}>
+              <div className="flex items-start justify-between gap-2 flex-wrap">
+                <div>
+                  <p className="font-bold text-[var(--fg)] text-base">SeatBack Token <span className="text-xs font-normal text-[var(--muted)] ml-1">SBK</span></p>
+                  <p className="text-xs text-[var(--muted)] mt-0.5">ERC-20 governance and staking token. Fixed supply of 100,000,000 SBK — no minting after deploy.</p>
+                </div>
+                <span className="badge badge-teal flex-shrink-0">ERC-20</span>
+              </div>
+              <ul className="text-xs text-[var(--muted)] leading-relaxed ml-1 list-disc list-inside space-y-0.5 mt-1">
+                <li>100M fixed supply, minted entirely to the deployer at launch</li>
+                <li>ERC-20Permit (gasless approvals via EIP-2612 signature)</li>
+                <li>Stake SBK → receive USDC yield from no-show proceeds</li>
+                <li>30M SBK allocated to the community airdrop (not yet distributed)</li>
+              </ul>
+              <a
+                href={`${EXPLORER_URL}/address/${SBK_ADDRESS}`}
+                target="_blank" rel="noopener noreferrer"
+                className="font-mono text-xs text-[var(--accent)] hover:underline break-all mt-1"
+              >
+                {SBK_ADDRESS}
+              </a>
+            </div>
+
           </div>
 
           <H3>Security properties</H3>
@@ -435,12 +490,12 @@ export function Docs() {
               a: 'Anyone can call finaliseEvent once the check-in window has ended. You can also claim your refund directly from My Tickets — the app finalises automatically when needed.',
             },
           ].map(({ q, a }) => (
-            <details key={q} className="group rounded-xl border border-[var(--border)] overflow-hidden">
+            <details key={q} className="group rounded-xl border border-[var(--border)] overflow-hidden" style={{ background: 'var(--surface)' }}>
               <summary className="flex items-center justify-between px-5 py-4 cursor-pointer font-medium text-[var(--fg)] text-sm select-none list-none" style={{ background: 'var(--surface)' }}>
                 <span>{q}</span>
                 <ChevronRight size={15} className="text-[var(--muted)] group-open:rotate-90 transition-transform flex-shrink-0 ml-3" />
               </summary>
-              <div className="px-5 py-4 text-sm text-[var(--muted)] leading-relaxed border-t border-[var(--border)]">
+              <div className="px-5 py-4 text-sm text-[var(--muted)] leading-relaxed border-t border-[var(--border)]" style={{ background: 'var(--surface-muted)' }}>
                 {a}
               </div>
             </details>
