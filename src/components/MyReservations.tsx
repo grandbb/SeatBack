@@ -329,7 +329,7 @@ function ReservationCard({
 
         {/* Never-opened refund */}
         {!event.cancelled && !event.checkInOpened && isOver && reservation.active && (
-          <div className="rounded-xl bg-slate-50 border border-slate-200 p-3 text-sm text-slate-700 flex items-center gap-2">
+          <div className="rounded-xl p-3 text-sm flex items-center gap-2" style={{ background: "var(--surface-muted)", color: "var(--ink-2)", border: "1px solid var(--border)" }}>
             <Clock size={14} />
             Check-in was never opened. Your deposit is fully refundable.
           </div>
@@ -456,10 +456,10 @@ function ReservationStatusBadge({
     return <Badge label="Event cancelled" className="bg-red-50 text-red-600 border-red-200" />
   }
   if (!event.cancelled && !event.checkInOpened && isOver && reservation.active) {
-    return <Badge label="Refund available" className="bg-slate-100 text-slate-700 border-slate-200" />
+    return <Badge label="Refund available" className="badge-navy" />
   }
   if (reservation.refundable && !reservation.refundClaimed) {
-    return <Badge label="Refund available" className="bg-slate-100 text-slate-700 border-slate-200" />
+    return <Badge label="Refund available" className="badge-navy" />
   }
   if (reservation.active && phase === 'check_in_open') {
     return <Badge label="Check-in open" className="bg-blue-50 text-blue-700 border-blue-200" />
@@ -467,7 +467,7 @@ function ReservationStatusBadge({
   if (reservation.active) {
     return <Badge label="Active" className="bg-teal-50 text-teal-700 border-teal-200" />
   }
-  return <Badge label="Inactive" className="bg-slate-100 text-slate-500 border-slate-200" />
+  return <Badge label="Inactive" className="badge-navy" />
 }
 
 function Badge({ label, className }: { label: string; className: string }) {

@@ -3,7 +3,6 @@ import { useModal } from 'connectkit'
 import { useState, useRef, useEffect } from 'react'
 import { LogOut, Star, RefreshCw } from 'lucide-react'
 import { usePoints, POINTS_RULES, MIN_CHECKED_IN_FOR_ORGANISER, MAX_POINTS_PER_WALLET } from '@/hooks/usePoints'
-import { useTheme } from '@/hooks/useTheme'
 
 export function WalletMenu() {
   const { address, isConnected } = useAccount()
@@ -12,7 +11,6 @@ export function WalletMenu() {
   const [open, setMenuOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
   const { breakdown, loading, lastFetched, refresh } = usePoints(address)
-  const { isDark } = useTheme()
 
   useEffect(() => {
     function handler(e: MouseEvent) {
@@ -39,13 +37,9 @@ export function WalletMenu() {
   const hasPending = breakdown.pending > 0
   const nearCap = breakdown.total >= MAX_POINTS_PER_WALLET * 0.9
 
-  // Solid background colours — no transparency so it reads clearly over any content
-  const dropdownBg = isDark ? '#0f1f2e' : '#ffffff'
-  const rowBg      = isDark ? '#162130' : '#f8f9fa'
-
   return (
     <div ref={ref} className="relative">
-      {/* ── Wallet button ── */}
+      {/* Wallet button */}
       <button
         onClick={() => setMenuOpen(v => !v)}
         className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-sm font-semibold transition-all"
@@ -75,20 +69,17 @@ export function WalletMenu() {
         </svg>
       </button>
 
-      {/* ── Dropdown ── */}
+      {/* Dropdown */}
       {open && (
         <div
           className="absolute right-0 top-12 z-50 w-80 rounded-2xl shadow-2xl flex flex-col overflow-hidden"
           style={{
-            background: dropdownBg,
-            border: '1px solid var(--border)',
+            background: 'var(--surface-strong)',
+            border: '1px solid var(--border-strong)',
           }}
         >
           {/* Wallet info */}
-          <div
-            className="px-5 pt-5 pb-3 border-b"
-            style={{ borderColor: 'var(--border)' }}
-          >
+          <div className="px-5 pt-5 pb-3 border-b" style={{ borderColor: 'var(--border)' }}>
             <div className="flex items-center gap-3">
               <span
                 className="w-9 h-9 rounded-full flex-shrink-0"
@@ -121,7 +112,7 @@ export function WalletMenu() {
                 onClick={e => { e.stopPropagation(); void refresh() }}
                 disabled={loading}
                 className="w-8 h-8 rounded-xl flex items-center justify-center transition-opacity"
-                style={{ background: rowBg, opacity: loading ? 0.4 : 1 }}
+                style={{ background: 'var(--surface-muted)', opacity: loading ? 0.4 : 1 }}
                 title="Refresh points"
               >
                 <RefreshCw size={14} className={loading ? 'animate-spin' : ''} style={{ color: 'var(--muted)' }} />
@@ -132,7 +123,11 @@ export function WalletMenu() {
             {breakdown.suspiciousFlag && (
               <div
                 className="text-xs rounded-xl p-3 leading-relaxed"
-                style={{ background: 'rgba(234,179,8,0.12)', color: '#b45309', border: '1px solid rgba(234,179,8,0.3)' }}
+                style={{
+                  background: 'var(--warning-bg)',
+                  color: 'var(--warning)',
+                  border: '1px solid var(--warning-bg)',
+                }}
               >
                 ⚠️ Repeated reservations detected — points may be reviewed before snapshot.
               </div>
@@ -142,7 +137,11 @@ export function WalletMenu() {
             {nearCap && (
               <div
                 className="text-xs rounded-xl p-3"
-                style={{ background: 'rgba(239,68,68,0.1)', color: '#dc2626', border: '1px solid rgba(239,68,68,0.2)' }}
+                style={{
+                  background: 'var(--danger-bg)',
+                  color: 'var(--danger)',
+                  border: '1px solid var(--danger-bg)',
+                }}
               >
                 Approaching the {MAX_POINTS_PER_WALLET.toLocaleString()} pts per-wallet cap.
               </div>
@@ -151,7 +150,7 @@ export function WalletMenu() {
             {/* Breakdown */}
             <div
               className="flex flex-col gap-2 rounded-xl p-3"
-              style={{ background: rowBg }}
+              style={{ background: 'var(--surface-muted)' }}
             >
               <BreakdownRow
                 icon="🎟️"
@@ -194,9 +193,9 @@ export function WalletMenu() {
               onClick={() => { disconnect(); setMenuOpen(false) }}
               className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-colors"
               style={{
-                background: 'rgba(239,68,68,0.08)',
-                color: '#ef4444',
-                border: '1px solid rgba(239,68,68,0.2)',
+                background: 'var(--danger-bg)',
+                color: 'var(--danger)',
+                border: '1px solid var(--danger-bg)',
               }}
             >
               <LogOut size={15} />

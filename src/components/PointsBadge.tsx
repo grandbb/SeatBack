@@ -49,7 +49,7 @@ export function PointsBadge({ expanded, onToggle }: PointsBadgeProps = {}) {
           <div className="fixed inset-0 z-40" onClick={toggle} />
           <div
             className="absolute right-0 top-10 z-50 w-80 rounded-2xl shadow-xl p-5 flex flex-col gap-4"
-            style={{ background: 'var(--surface-strong)', border: '1px solid var(--border)' }}
+            style={{ background: 'var(--surface-strong)', border: '1px solid var(--border-strong)' }}
           >
             <div className="flex items-center justify-between">
               <div>
@@ -67,7 +67,7 @@ export function PointsBadge({ expanded, onToggle }: PointsBadgeProps = {}) {
               <button
                 onClick={e => { e.stopPropagation(); void refresh() }}
                 className="text-xs px-2 py-1 rounded-lg opacity-50 hover:opacity-100 transition-opacity"
-                style={{ background: 'var(--surface)' }}
+                style={{ background: 'var(--surface-muted)', color: 'var(--ink)' }}
                 title="Refresh"
               >
                 {loading ? '⟳' : '↻'} Refresh
@@ -77,7 +77,7 @@ export function PointsBadge({ expanded, onToggle }: PointsBadgeProps = {}) {
             {breakdown.suspiciousFlag && (
               <div
                 className="text-xs rounded-xl p-3 leading-relaxed"
-                style={{ background: 'rgba(234,179,8,0.1)', color: '#ca8a04', border: '1px solid rgba(234,179,8,0.3)' }}
+                style={{ background: 'var(--warning-bg)', color: 'var(--warning)', border: '1px solid var(--warning-bg)' }}
               >
                 ⚠️ Repeated reservation pattern detected. Points may be reviewed before snapshot.
               </div>
@@ -113,7 +113,7 @@ export function PointsBadge({ expanded, onToggle }: PointsBadgeProps = {}) {
             {hasPending && (
               <div>
                 <div className="text-xs font-semibold opacity-50 uppercase tracking-wide mb-2">Pending (events not yet closed)</div>
-                <div className="text-sm opacity-60 rounded-xl p-3" style={{ background: 'var(--surface)' }}>
+                <div className="text-sm opacity-60 rounded-xl p-3" style={{ background: 'var(--surface-muted)' }}>
                   {breakdown.pendingEvents > 0 && (
                     <div>🕐 Waiting on {breakdown.pendingEvents} event{breakdown.pendingEvents > 1 ? 's' : ''} ({breakdown.pending.toLocaleString()} pts)</div>
                   )}
@@ -125,7 +125,7 @@ export function PointsBadge({ expanded, onToggle }: PointsBadgeProps = {}) {
             {breakdown.total >= MAX_POINTS_PER_WALLET * 0.9 && (
               <div
                 className="text-xs rounded-xl p-3"
-                style={{ background: 'rgba(239,68,68,0.1)', color: '#dc2626' }}
+                style={{ background: 'var(--danger-bg)', color: 'var(--danger)' }}
               >
                 Approaching the {MAX_POINTS_PER_WALLET.toLocaleString()} pts per-wallet cap.
               </div>
@@ -157,7 +157,7 @@ function Row({ icon, label, count, pts, each }: {
       <div className="flex items-center gap-2">
         <span>{icon}</span>
         <div>
-          <div className="font-medium leading-tight">{label}</div>
+          <div className="font-medium leading-tight" style={{ color: 'var(--ink)' }}>{label}</div>
           <div className="text-xs opacity-50">{count} × {each} pts</div>
         </div>
       </div>

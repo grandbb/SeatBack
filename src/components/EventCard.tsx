@@ -12,10 +12,10 @@ interface EventCardProps {
 
 const PHASE_BADGE: Record<string, { label: string; className: string }> = {
   booking_open: { label: 'Booking Open', className: 'bg-teal-50 text-teal-700 border-teal-200' },
-  booking_closed: { label: 'Booking Closed', className: 'bg-slate-100 text-slate-500 border-slate-200' },
+  booking_closed: { label: 'Booking Closed', className: 'badge-navy' },
   check_in_open: { label: 'Check-In Open', className: 'bg-blue-50 text-blue-700 border-blue-200' },
-  check_in_closed: { label: 'Ended', className: 'bg-slate-100 text-slate-500 border-slate-200' },
-  finalized: { label: 'Finalized', className: 'bg-slate-100 text-slate-500 border-slate-200' },
+  check_in_closed: { label: 'Ended', className: 'badge-navy' },
+  finalized: { label: 'Finalized', className: 'badge-navy' },
   cancelled: { label: 'Cancelled', className: 'bg-red-50 text-red-600 border-red-200' },
 }
 

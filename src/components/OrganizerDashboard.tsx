@@ -405,10 +405,10 @@ function AccountingRow({ label, value }: { label: string; value: bigint }) {
 function PhasePill({ phase }: { phase: string }) {
   const map: Record<string, string> = {
     booking_open: 'bg-teal-50 text-teal-700 border-teal-200',
-    booking_closed: 'bg-slate-100 text-slate-500 border-slate-200',
+    booking_closed: 'badge-navy',
     check_in_open: 'bg-blue-50 text-blue-700 border-blue-200',
-    check_in_closed: 'bg-slate-100 text-slate-500 border-slate-200',
-    finalized: 'bg-slate-100 text-slate-500 border-slate-200',
+    check_in_closed: 'badge-navy',
+    finalized: 'badge-navy',
     cancelled: 'bg-red-50 text-red-600 border-red-200',
   }
   const labels: Record<string, string> = {
@@ -416,7 +416,7 @@ function PhasePill({ phase }: { phase: string }) {
     check_in_closed: 'Ended', finalized: 'Done', cancelled: 'Cancelled',
   }
   return (
-    <span className={`text-xs font-medium px-2 py-0.5 rounded-full border ${map[phase] ?? 'bg-slate-100 text-slate-500 border-slate-200'}`}>
+    <span className={`text-xs font-medium px-2 py-0.5 rounded-full border ${map[phase] ?? 'badge-navy'}`}>
       {labels[phase] ?? phase}
     </span>
   )

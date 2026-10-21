@@ -170,7 +170,7 @@ export function CheckInQR({ eventId, reservationId, event, reservation }: CheckI
       </div>
 
       {!checkInLive && (
-        <div className="rounded-xl bg-slate-50 border border-slate-200 p-3 text-xs text-slate-600 flex items-center gap-2">
+        <div className="rounded-xl p-3 text-xs flex items-center gap-2" style={{ background: "var(--surface-muted)", color: "var(--ink-2)", border: "1px solid var(--border)" }}>
           <Clock size={14} />
           QR check-in is only available during the check-in window once the organiser opens it.
         </div>
