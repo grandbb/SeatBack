@@ -52,12 +52,12 @@ export function Footer() {
             <span className="text-[var(--muted)]">Arc Mainnet</span>
           </div>
           <a
-            href="https://explorer.arc.io/address/0x5edD40f2817D5ADd1E991dAfa6852521ef19fDA7"
+            href="https://explorer.arc.io/address/0x6Fdb06A9Ce387937C2261F489E502e53cA1F0Bbc"
             target="_blank"
             rel="noopener noreferrer"
             className="font-mono text-[var(--muted)] hover:text-[var(--accent)] transition-colors"
           >
-            0x5edD…fDA7
+            0x6Fdb…Bbc
           </a>
         </div>
       </div>

@@ -4,7 +4,7 @@
  * the refund policy, the QR check-in flow, trust model, and contract facts.
  */
 import { BookOpen, Ticket, QrCode, Coins, Shield, AlertTriangle, Code2, Users, Calendar, ChevronRight, Layers, Gift, Lock, TrendingUp, Percent } from 'lucide-react'
-import { SEATBACK_ADDRESS, ACTIVE_CHAIN_ID, NETWORK_LABEL } from '@/contract'
+import { SEATBACK_ADDRESS, STAKING_ADDRESS, SBK_ADDRESS, ACTIVE_CHAIN_ID, NETWORK_LABEL } from '@/contract'
 
 const EXPLORER_URL = ACTIVE_CHAIN_ID === 5042
   ? 'https://explorer.arc.io'
@@ -357,17 +357,25 @@ export function Docs() {
                 <span className="text-[var(--muted)]">Chain ID</span>
                 <p className="font-semibold text-[var(--fg)] font-mono">{ACTIVE_CHAIN_ID}</p>
               </div>
-              <div>
-                <span className="text-[var(--muted)]">Contract address</span>
-                <a
-                  href={`${EXPLORER_URL}/address/${SEATBACK_ADDRESS}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="block font-semibold text-[var(--accent)] hover:underline font-mono text-xs mt-0.5 break-all"
-                >
-                  {SEATBACK_ADDRESS ?? 'Not deployed'}
-                </a>
-              </div>
+            </div>
+            <div className="flex flex-col gap-2">
+              {[
+                { label: 'SeatBack v3', addr: SEATBACK_ADDRESS },
+                { label: 'SeatBackStaking v2', addr: STAKING_ADDRESS },
+                { label: 'SBK Token', addr: SBK_ADDRESS },
+              ].map(({ label, addr }) => (
+                <div key={label}>
+                  <span className="text-[var(--muted)] text-xs">{label}</span>
+                  <a
+                    href={`${EXPLORER_URL}/address/${addr}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block font-semibold text-[var(--accent)] hover:underline font-mono text-xs mt-0.5 break-all"
+                  >
+                    {addr}
+                  </a>
+                </div>
+              ))}
             </div>
           </div>
 
@@ -378,7 +386,7 @@ export function Docs() {
             <li><strong>EIP-712 domain separator</strong> bound to chain ID and contract address — fork-safe.</li>
             <li><strong>Nonce replay protection</strong> — per-reservation nonce mapping, consumed on first use.</li>
             <li><strong>ERC-1271 support</strong> with safe try/catch — non-conformant contracts return false, not revert.</li>
-            <li><strong>No admin keys</strong> — no owner, no upgrade proxy, no pause mechanism. Rules are immutable.</li>
+            <li><strong>Minimal admin</strong> — the admin key can only rotate the staking pool address. Event rules, deposits, and escrow are immutable. No upgrade proxy, no pause mechanism.</li>
             <li><strong>No native value</strong> — the contract never accepts ETH/native; deposits are ERC-20 only.</li>
           </ul>
 
@@ -441,9 +449,13 @@ export function Docs() {
 
         {/* ── Tokenomics ── */}
         <Section id="tokenomics" title="Tokenomics — SEATBACK (SBK)" icon={<Layers size={18} className="text-[var(--accent)]" />}>
-          <Callout type="info">
-            SBK is a planned utility token. The contracts and airdrop have not yet been deployed. This section describes the intended design.
-          </Callout>
+          <div className="rounded-xl border border-teal-200 bg-teal-50 dark:bg-teal-950/30 dark:border-teal-800 p-4 text-sm text-teal-800 dark:text-teal-300 flex flex-col gap-2">
+            <div className="font-semibold">Contracts live on {NETWORK_LABEL}</div>
+            <div className="flex flex-col gap-1 font-mono text-xs">
+              <div>SBK Token: <a href={`${EXPLORER_URL}/address/${SBK_ADDRESS}`} target="_blank" rel="noopener noreferrer" className="text-[var(--accent)] hover:underline break-all">{SBK_ADDRESS}</a></div>
+              <div>Staking: <a href={`${EXPLORER_URL}/address/${STAKING_ADDRESS}`} target="_blank" rel="noopener noreferrer" className="text-[var(--accent)] hover:underline break-all">{STAKING_ADDRESS}</a></div>
+            </div>
+          </div>
 
           <H3>Overview</H3>
           <P>
@@ -555,7 +567,7 @@ export function Docs() {
         {/* ── Airdrop ── */}
         <Section id="airdrop" title="Airdrop — Early User Rewards" icon={<Gift size={18} className="text-[var(--accent)]" />}>
           <Callout type="info">
-            The airdrop has not yet been distributed. The snapshot date, Merkle root, and claim contract will be announced before launch.
+            The airdrop has not yet been distributed. Onchain activity on SeatBack from now until the snapshot counts toward your allocation. The snapshot date, Merkle root, and claim contract will be announced publicly before launch.
           </Callout>
 
           <H3>Who is eligible</H3>

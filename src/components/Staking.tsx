@@ -10,34 +10,14 @@ import { useState, useCallback } from 'react'
 import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi'
 import { parseUnits, formatUnits } from 'viem'
 import { Layers, Lock, Unlock, Coins, TrendingUp, AlertTriangle, ExternalLink, RefreshCw } from 'lucide-react'
-import { ACTIVE_CHAIN_ID, NETWORK_LABEL } from '@/contract'
-
-// ─── Contract addresses (set after deploy) ────────────────────────────────────
-
-const SBK_ADDRESS = (import.meta.env.VITE_MAINNET_SBK_ADDRESS || '') as `0x${string}`
-const STAKING_ADDRESS = (import.meta.env.VITE_MAINNET_STAKING_ADDRESS || '') as `0x${string}`
+import { ACTIVE_CHAIN_ID, NETWORK_LABEL, SBK_ADDRESS, STAKING_ADDRESS, STAKING_ABI, SBK_ABI } from '@/contract'
 
 const EXPLORER = ACTIVE_CHAIN_ID === 5042 ? 'https://explorer.arc.io' : 'https://explorer.testnet.arc.io'
 
-// ─── ABIs (minimal) ───────────────────────────────────────────────────────────
+// ─── Minimal subset ABIs used by this component ───────────────────────────────
 
-const ERC20_ABI = [
-  { name: 'balanceOf', type: 'function', stateMutability: 'view', inputs: [{ name: 'account', type: 'address' }], outputs: [{ type: 'uint256' }] },
-  { name: 'allowance', type: 'function', stateMutability: 'view', inputs: [{ name: 'owner', type: 'address' }, { name: 'spender', type: 'address' }], outputs: [{ type: 'uint256' }] },
-  { name: 'approve', type: 'function', stateMutability: 'nonpayable', inputs: [{ name: 'spender', type: 'address' }, { name: 'amount', type: 'uint256' }], outputs: [{ type: 'bool' }] },
-  { name: 'totalSupply', type: 'function', stateMutability: 'view', inputs: [], outputs: [{ type: 'uint256' }] },
-] as const
+const ERC20_ABI = SBK_ABI
 
-const STAKING_ABI = [
-  { name: 'totalStaked', type: 'function', stateMutability: 'view', inputs: [], outputs: [{ type: 'uint256' }] },
-  { name: 'stakedBalance', type: 'function', stateMutability: 'view', inputs: [{ name: 'user', type: 'address' }], outputs: [{ type: 'uint256' }] },
-  { name: 'pendingReward', type: 'function', stateMutability: 'view', inputs: [{ name: 'user', type: 'address' }], outputs: [{ type: 'uint256' }] },
-  { name: 'undistributedProceeds', type: 'function', stateMutability: 'view', inputs: [], outputs: [{ type: 'uint256' }] },
-  { name: 'stake', type: 'function', stateMutability: 'nonpayable', inputs: [{ name: 'amount', type: 'uint256' }], outputs: [] },
-  { name: 'unstake', type: 'function', stateMutability: 'nonpayable', inputs: [{ name: 'amount', type: 'uint256' }], outputs: [] },
-  { name: 'claimReward', type: 'function', stateMutability: 'nonpayable', inputs: [], outputs: [] },
-  { name: 'exit', type: 'function', stateMutability: 'nonpayable', inputs: [], outputs: [] },
-] as const
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -56,8 +36,6 @@ function fmt6(val: bigint | undefined, decimals = 4): string {
 export function Staking() {
   const { address, chainId, isConnected } = useAccount()
   const wrongChain = isConnected && chainId !== ACTIVE_CHAIN_ID
-
-  const notDeployed = !SBK_ADDRESS || !STAKING_ADDRESS
 
   // ── Read state ──────────────────────────────────────────────────────────────
 
@@ -194,39 +172,6 @@ export function Staking() {
       abi: STAKING_ABI,
       functionName: 'exit',
     })
-  }
-
-  // ── Not yet deployed ─────────────────────────────────────────────────────────
-
-  if (notDeployed) {
-    return (
-      <div className="max-w-2xl mx-auto px-4 py-12 flex flex-col items-center gap-6 text-center">
-        <div className="w-16 h-16 rounded-2xl flex items-center justify-center" style={{ background: 'var(--accent-light)' }}>
-          <Layers size={28} className="text-[var(--accent)]" />
-        </div>
-        <h1 className="text-2xl font-bold text-[var(--ink)]" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
-          SBK Staking
-        </h1>
-        <p className="text-[var(--muted)] text-sm max-w-md">
-          The SBK token and staking contracts have not yet been deployed on {NETWORK_LABEL}.
-          Once deployed, this page lets you stake SBK to earn USDC from event no-show proceeds.
-        </p>
-        <div className="card p-5 w-full text-left">
-          <p className="text-sm font-semibold text-[var(--fg)] mb-3">Planned tokenomics</p>
-          <ul className="text-sm text-[var(--muted)] space-y-2">
-            <li>• <strong className="text-[var(--fg)]">100,000,000 SBK</strong> fixed supply</li>
-            <li>• <strong className="text-[var(--fg)]">80%</strong> of no-show USDC proceeds → staking pool</li>
-            <li>• <strong className="text-[var(--fg)]">20%</strong> of no-show USDC proceeds → event organiser</li>
-            <li>• Stake SBK → earn proportional USDC share</li>
-            <li>• No lock-up — unstake anytime</li>
-            <li>• 30M SBK airdrop for early users (reserve / check-in before snapshot)</li>
-          </ul>
-        </div>
-        <a href="#docs" className="text-sm text-[var(--accent)] hover:underline flex items-center gap-1">
-          Read the Tokenomics docs <ExternalLink size={13} />
-        </a>
-      </div>
-    )
   }
 
   // ── Connected UI ─────────────────────────────────────────────────────────────
