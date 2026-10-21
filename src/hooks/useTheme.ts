@@ -18,7 +18,8 @@ function getInitialTheme(): Theme {
   if (typeof window === 'undefined') return 'light'
   const stored = localStorage.getItem(KEY) as Theme | null
   if (stored === 'light' || stored === 'dark') return stored
-  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+  // Default is always light — user can toggle dark manually
+  return 'light'
 }
 
 function applyTheme(theme: Theme) {
@@ -38,18 +39,7 @@ export function useTheme() {
     applyTheme(theme)
   }, [theme])
 
-  // Listen to OS preference changes (only when user hasn't explicitly chosen)
-  useEffect(() => {
-    const mq = window.matchMedia('(prefers-color-scheme: dark)')
-    const handler = (e: MediaQueryListEvent) => {
-      if (!localStorage.getItem(KEY)) {
-        const next: Theme = e.matches ? 'dark' : 'light'
-        setThemeState(next)
-      }
-    }
-    mq.addEventListener('change', handler)
-    return () => mq.removeEventListener('change', handler)
-  }, [])
+
 
   const setTheme = useCallback((next: Theme) => {
     localStorage.setItem(KEY, next)
