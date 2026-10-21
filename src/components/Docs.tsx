@@ -1,5 +1,5 @@
 /**
- * Docs — SeatBack documentation. Plain English, no duplicates.
+ * Docs — SeatBack documentation. Each fact appears exactly once.
  */
 import { BookOpen, Ticket, QrCode, Coins, Shield, AlertTriangle, Code2, Calendar, ChevronRight, Layers, Gift, Star } from 'lucide-react'
 import { SEATBACK_ADDRESS, STAKING_ADDRESS, SBK_ADDRESS, ACTIVE_CHAIN_ID, NETWORK_LABEL } from '@/contract'
@@ -96,15 +96,14 @@ function ContractCard({ name, badge, desc, bullets, addr }: {
 const TOC_ITEMS = [
   { id: 'overview',    label: 'Overview' },
   { id: 'how',         label: 'How it works' },
-  { id: 'attendee',   label: 'Attendee guide' },
-  { id: 'organiser',  label: 'Organiser guide' },
-  { id: 'refunds',    label: 'Refund policy' },
-  { id: 'contracts',  label: 'Contracts' },
-  { id: 'faq',        label: 'FAQ' },
-  { id: 'points',     label: 'Points' },
-  { id: 'tokenomics', label: 'SBK token' },
-  { id: 'airdrop',    label: 'Airdrop' },
-  { id: 'source',     label: 'Source code' },
+  { id: 'attendee',    label: 'Attendee guide' },
+  { id: 'organiser',   label: 'Organiser guide' },
+  { id: 'refunds',     label: 'Refund policy' },
+  { id: 'contracts',   label: 'Contracts' },
+  { id: 'points',      label: 'Points & airdrop' },
+  { id: 'tokenomics',  label: 'SBK token' },
+  { id: 'faq',         label: 'FAQ' },
+  { id: 'source',      label: 'Source code' },
 ]
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
@@ -146,15 +145,15 @@ export function Docs() {
         <Section id="overview" title="Overview" icon={<BookOpen size={18} className="text-[var(--accent)]" />}>
           <P>
             <strong className="text-[var(--fg)]">SeatBack</strong> solves event no-shows with a USDC deposit.
-            Every attendee locks a small deposit when booking. If they show up and get checked in, they get it back.
-            If they don't show up, the deposit is split between the organiser and SBK token stakers.
-            The entire flow runs on a smart contract — no middleman holds the funds.
+            Attendees lock a deposit when booking. Show up and get checked in — full refund.
+            No-show — deposit is split 50% to the organiser and 50% to SBK stakers.
+            Everything runs on a smart contract on Arc. No middleman. No custody by any individual.
           </P>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-2">
             {[
-              { emoji: '✅', label: 'Attended', result: 'Full deposit refunded' },
-              { emoji: '⏩', label: 'Cancelled on time', result: 'Full deposit refunded' },
-              { emoji: '❌', label: 'No-show', result: '50% organiser · 50% SBK stakers' },
+              { emoji: '✅', label: 'Attended', result: 'Full deposit back' },
+              { emoji: '⏩', label: 'Cancelled on time', result: 'Full deposit back' },
+              { emoji: '❌', label: 'No-show', result: '50% organiser · 50% stakers' },
             ].map(c => (
               <div key={c.label} className="rounded-xl border border-[var(--border)] p-4 text-sm flex flex-col gap-1" style={{ background: 'var(--surface)' }}>
                 <span className="text-lg">{c.emoji}</span>
@@ -164,88 +163,82 @@ export function Docs() {
             ))}
           </div>
           <P>
-            Gas fees on Arc are paid in USDC. You do not need ETH or any other token — just USDC in your wallet.
+            Gas on Arc is paid in USDC — you only ever need USDC in your wallet. No ETH required.
           </P>
         </Section>
 
         {/* ── 2. How it works ── */}
         <Section id="how" title="How it works" icon={<QrCode size={18} className="text-[var(--accent)]" />}>
-          <P>The full lifecycle of a seat, step by step:</P>
+          <P>The full lifecycle of a seat, from booking to payout:</P>
           <div className="flex flex-col gap-3 mt-1">
-            {[
-              { n: 1, t: 'Organiser creates an event', d: 'Sets deposit amount, capacity, booking deadline, refund cutoff, and check-in window. All rules are locked onchain at creation — nothing can be changed afterwards.' },
-              { n: 2, t: 'Attendee reserves a seat', d: 'Approves and sends USDC deposit to the escrow contract. The deposit is not held by the organiser — it stays in the contract.' },
-              { n: 3, t: 'Event day: attendee generates a QR', d: 'During the check-in window, the attendee signs a message with their wallet (no gas, no transaction). This creates a QR code valid for 10 minutes.' },
-              { n: 4, t: 'Organiser scans QR', d: 'The organiser\'s app verifies the signature and submits a check-in transaction onchain. This marks the attendee as present.' },
-              { n: 5, t: 'Organiser finalises the event', d: 'After the check-in window closes, finalization calculates who showed up and who didn\'t. Anyone can trigger finalization.' },
-              { n: 6, t: 'Everyone collects what they\'re owed', d: 'Checked-in attendees claim their deposit refund. Organiser withdraws no-show proceeds. SBK stakers claim their USDC share.' },
-            ].map(({ n, t, d }) => (
-              <Step key={n} n={n} title={t}>{d}</Step>
-            ))}
+            <Step n={1} title="Organiser creates an event">Sets deposit amount, capacity, booking deadline, refund cutoff, and check-in window. All rules are locked onchain at creation.</Step>
+            <Step n={2} title="Attendee reserves a seat">Sends USDC deposit to the escrow contract. Funds stay in the contract — the organiser cannot touch them.</Step>
+            <Step n={3} title="Attendee generates a QR at the door">Signs a message with their wallet (no gas). The QR is valid for 10 minutes. If it expires, generate a new one.</Step>
+            <Step n={4} title="Organiser scans the QR">Verifies the signature and submits a check-in transaction onchain. This marks the attendee as present.</Step>
+            <Step n={5} title="Organiser finalises the event">After the check-in window closes, anyone can trigger finalisation. No-show deposits are routed to the organiser and staking pool.</Step>
+            <Step n={6} title="Everyone claims what they are owed">Checked-in attendees claim their refund. Organiser withdraws proceeds. SBK stakers claim their USDC share.</Step>
           </div>
-
-          <H3>Check-in trust model</H3>
           <Callout type="warn">
-            Only the organiser can submit a check-in transaction. There is no self-service check-in.
-            If the organiser refuses to scan a present attendee's QR, that attendee may be classified as a no-show.
-            Only attend events with organisers you trust.
+            <strong>Trust model:</strong> Only the organiser can submit a check-in transaction — there is no self-service check-in.
+            If the organiser refuses to scan a valid QR, you may be marked as a no-show.
+            Only attend events from organisers you trust.
           </Callout>
         </Section>
 
         {/* ── 3. Attendee guide ── */}
         <Section id="attendee" title="Attendee guide" icon={<Ticket size={18} className="text-[var(--accent)]" />}>
           <P>
-            You need an EVM wallet (MetaMask, Coinbase Wallet, etc.) connected to <strong>{NETWORK_LABEL}</strong>,
-            with USDC to cover the deposit and gas (also USDC on Arc).
+            You need an EVM wallet (MetaMask, Coinbase Wallet, Rainbow, etc.) connected to <strong>{NETWORK_LABEL}</strong> with enough USDC for the deposit and gas.
           </P>
           <div className="flex flex-col gap-3 mt-1">
-            <Step n={1} title="Browse and reserve">Go to Events, pick an event, click Reserve. Approve the USDC deposit then confirm the transaction. Your seat is held and the deposit is in escrow.</Step>
-            <Step n={2} title="Cancel (if needed)">Go to My Tickets and cancel before the event's refund cutoff. Cancelling after the cutoff is not allowed — your deposit stays locked until finalization.</Step>
-            <Step n={3} title="Generate your QR on event day">During the check-in window, open My Tickets → your event → tap Generate QR. Sign the message in your wallet (free, no gas). Show the QR to the organiser within 10 minutes.</Step>
-            <Step n={4} title="Claim your refund after">Once the event is finalised, go to My Tickets and click Claim Refund. Your USDC is sent back to your wallet.</Step>
+            <Step n={1} title="Browse and reserve">Go to Events → pick an event → click Reserve. Approve the USDC deposit and confirm. Your seat is held; deposit goes into escrow.</Step>
+            <Step n={2} title="Cancel if plans change">Open My Tickets and cancel before the event's refund cutoff. After the cutoff, cancellation is not allowed — your deposit stays locked.</Step>
+            <Step n={3} title="Show up and get scanned">During the check-in window, open My Tickets → your event → Generate QR. Sign with your wallet (free). Show the QR to the organiser within 10 minutes.</Step>
+            <Step n={4} title="Claim your refund">After finalisation, go to My Tickets and click Claim Refund. USDC is sent to your wallet.</Step>
           </div>
-          <Callout type="info">
-            If your QR expires before the organiser scans it, tap Generate QR again — you can generate as many as needed. Each is valid for 10 minutes.
-          </Callout>
         </Section>
 
         {/* ── 4. Organiser guide ── */}
         <Section id="organiser" title="Organiser guide" icon={<Calendar size={18} className="text-[var(--accent)]" />}>
           <H3>Creating an event</H3>
-          <P>Go to Create and fill in all fields. Once submitted, nothing can be changed.</P>
+          <P>Go to Create and fill in all fields. The contract enforces this timeline order:</P>
           <div className="rounded-xl border border-[var(--border)] overflow-hidden mt-1">
             <table className="w-full text-sm">
+              <thead>
+                <tr style={{ background: 'var(--surface-muted)' }}>
+                  <th className="px-4 py-2.5 text-left font-semibold text-[var(--fg)]">Step</th>
+                  <th className="px-4 py-2.5 text-left font-semibold text-[var(--fg)]">Field</th>
+                  <th className="px-4 py-2.5 text-left font-semibold text-[var(--fg)]">Meaning</th>
+                </tr>
+              </thead>
               <tbody className="divide-y divide-[var(--border)]">
                 {[
-                  ['Title / description / venue', 'Shown publicly'],
-                  ['Event start & end', 'When the event takes place'],
-                  ['Booking close', 'Last moment attendees can reserve'],
-                  ['Refund cutoff', 'Last moment attendees can cancel for a refund'],
-                  ['Check-in window', 'Start & end time when QR scans are accepted'],
-                  ['Capacity', 'Maximum number of seats'],
-                  ['Deposit amount', 'USDC per seat (e.g. 1 = 1 USDC)'],
-                  ['Payout wallet', 'Receives no-show proceeds'],
-                ].map(([field, note]) => (
-                  <tr key={field} style={{ background: 'var(--surface)' }}>
-                    <td className="px-4 py-2.5 font-medium text-[var(--fg)] text-sm">{field}</td>
-                    <td className="px-4 py-2.5 text-[var(--muted)] text-sm">{note}</td>
+                  ['①', 'Booking Closes',   'Last moment attendees can reserve'],
+                  ['②', 'Refund Cutoff',    'Last moment attendees can cancel for a refund (≥ ①)'],
+                  ['③', 'Check-In Opens',   'QR scans are accepted from this time (≥ ②) — set to event start'],
+                  ['④', 'Check-In Closes',  'QR scans stop; no-shows are locked; finalization available (> ③)'],
+                ].map(([s, f, m]) => (
+                  <tr key={f} style={{ background: 'var(--surface)' }}>
+                    <td className="px-4 py-2.5 font-bold text-[var(--accent)] text-sm">{s}</td>
+                    <td className="px-4 py-2.5 font-medium text-[var(--fg)] text-sm">{f}</td>
+                    <td className="px-4 py-2.5 text-[var(--muted)] text-sm">{m}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
-          <Callout type="warn">All event rules are permanently locked onchain at creation. Review everything before confirming.</Callout>
+          <Callout type="warn">All rules are permanently locked onchain at creation. Double-check everything before confirming.</Callout>
 
           <H3>Running the event</H3>
           <div className="flex flex-col gap-3 mt-1">
-            <Step n={1} title="Open check-in">Go to Organiser → your event → Open Check-In when the window starts. QR scans are not accepted before this.</Step>
-            <Step n={2} title="Scan attendee QRs">Use the Scan QR tab. Allow camera access, or use Paste Payload if no camera. Review the attendee info shown, then confirm to submit onchain.</Step>
-            <Step n={3} title="Finalise and withdraw">After the check-in window closes, click Finalise Event. Then click Withdraw Proceeds to send no-show funds to your payout wallet.</Step>
+            <Step n={1} title="Open check-in">Organiser → your event → Open Check-In. QR scans are not accepted before this.</Step>
+            <Step n={2} title="Scan attendee QRs">Use the Scan QR tab. Allow camera access, or paste the payload manually. Review the attendee details, then confirm to submit onchain.</Step>
+            <Step n={3} title="Finalise and withdraw">After Check-In Closes, click Finalise Event. Then click Withdraw Proceeds to receive no-show funds.</Step>
           </div>
 
           <H3>Cancelling an event</H3>
           <P>
-            You can cancel before the check-in window closes. All deposits immediately become refundable to attendees.
+            You can cancel before the check-in window closes. All deposits immediately become claimable by attendees.
             You receive no proceeds from a cancelled event.
           </P>
         </Section>
@@ -257,20 +250,20 @@ export function Docs() {
               <thead>
                 <tr style={{ background: 'var(--surface-muted)' }}>
                   <th className="px-4 py-3 text-left font-semibold text-[var(--fg)]">Situation</th>
-                  <th className="px-4 py-3 text-left font-semibold text-[var(--fg)]">Attendee</th>
-                  <th className="px-4 py-3 text-left font-semibold text-[var(--fg)]">Organiser</th>
+                  <th className="px-4 py-3 text-left font-semibold text-[var(--fg)]">Attendee gets</th>
+                  <th className="px-4 py-3 text-left font-semibold text-[var(--fg)]">Organiser gets</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[var(--border)]">
                 {[
-                  ['Checked in by organiser',         'Full refund',      'No proceeds from this seat'],
-                  ['Cancelled before cutoff',          'Full refund',      'No proceeds from this seat'],
-                  ['No-show (check-in was opened)',    'No refund',        '50% of deposit as proceeds'],
-                  ['No-show (check-in never opened)', 'Full refund',       'No proceeds'],
-                  ['Organiser cancels event',          'Full refund',      'No proceeds'],
+                  ['Checked in',                        'Full refund',  'Nothing from this seat'],
+                  ['Cancelled before cutoff',            'Full refund',  'Nothing from this seat'],
+                  ['No-show (check-in was opened)',      'No refund',    '50% of deposit'],
+                  ['No-show (check-in never opened)',    'Full refund',  'Nothing'],
+                  ['Organiser cancels event',            'Full refund',  'Nothing'],
                 ].map(([s, a, o]) => (
                   <tr key={s} style={{ background: 'var(--surface)' }}>
-                    <td className="px-4 py-3 font-medium text-[var(--fg-2)] text-sm">{s}</td>
+                    <td className="px-4 py-3 font-medium text-[var(--fg)] text-sm">{s}</td>
                     <td className="px-4 py-3 text-[var(--muted)] text-sm">{a}</td>
                     <td className="px-4 py-3 text-[var(--muted)] text-sm">{o}</td>
                   </tr>
@@ -278,12 +271,12 @@ export function Docs() {
               </tbody>
             </table>
           </div>
-          <P>Gas fees are always separate and non-refundable. There is no deadline to claim a refund once it is available.</P>
+          <P>Gas fees are non-refundable. There is no deadline to claim a refund once it is available.</P>
         </Section>
 
         {/* ── 6. Contracts ── */}
         <Section id="contracts" title="Contracts" icon={<Shield size={18} className="text-[var(--accent)]" />}>
-          <div className="flex flex-wrap gap-3 items-center text-sm mb-1">
+          <div className="flex flex-wrap gap-3 items-center text-sm mb-2">
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full font-medium text-[var(--accent)]" style={{ background: 'var(--accent-light)' }}>
               <span className="w-2 h-2 rounded-full bg-[var(--accent)] animate-pulse inline-block" />
               {NETWORK_LABEL}
@@ -295,23 +288,24 @@ export function Docs() {
             <ContractCard
               name="SeatBack v3"
               badge="Escrow"
-              desc="Core contract — handles all events, deposits, check-ins, refunds, and no-show proceeds."
+              desc="Core contract — events, deposits, check-ins, refunds, and no-show proceeds."
               bullets={[
-                'Holds USDC in escrow; no one can access funds outside the rules',
-                'Splits no-show proceeds: 50% to organiser, 50% to staking pool',
-                'EIP-712 QR check-in with nonce replay protection',
-                'Admin can only update the staking pool address — all other rules are immutable',
+                'Holds all USDC in escrow; funds cannot leave outside the rules',
+                'No-show split: 50% organiser · 50% staking pool',
+                'EIP-712 QR signatures — chain-bound, event-bound, single-use',
+                'Admin (deployer) can only update the staking pool address — nothing else',
+                'No upgrade proxy — deployed code is permanent',
               ]}
               addr={SEATBACK_ADDRESS ?? ''}
             />
             <ContractCard
               name="SeatBackStaking v2"
               badge="Staking"
-              desc="USDC yield pool — SBK holders stake here to earn a share of every event's no-show proceeds."
+              desc="SBK holders stake here to earn USDC from every event's no-show proceeds."
               bullets={[
-                'Minimum stake: 1 SBK · Unstake cooldown: 7,200 blocks (~24 hours)',
-                'Receives 50% of no-show USDC from SeatBack at each finalization',
-                'Distributes pro-rata to all stakers (your SBK ÷ total staked × pool)',
+                'Minimum stake: 1 SBK · Stake cooldown: 7,200 blocks (~24 h)',
+                'Receives 50% of no-show USDC from SeatBack at each finalisation',
+                'Reward = your staked SBK ÷ total staked × pool amount for that event',
                 'Undistributed proceeds carry forward — no USDC is ever stuck',
               ]}
               addr={STAKING_ADDRESS ?? ''}
@@ -319,57 +313,138 @@ export function Docs() {
             <ContractCard
               name="SeatBack Token (SBK)"
               badge="ERC-20"
-              desc="Utility and staking token. Fixed supply of 100,000,000 SBK — no minting ever."
+              desc="Utility token for staking. Fixed supply — no new SBK can ever be minted."
               bullets={[
-                '100M fixed supply, minted to deployer at launch',
-                'ERC-20Permit: gasless approvals via EIP-2612 signature',
-                'Stake SBK to earn USDC from no-show proceeds',
-                '30M SBK reserved for community airdrop (not yet distributed)',
+                '100,000,000 SBK fixed supply, minted to deployer at launch',
+                'ERC-20Permit (EIP-2612) — gasless approvals via wallet signature',
+                'Stake to earn USDC; holding without staking earns nothing',
+                '30M SBK allocated to community airdrop (not yet distributed)',
               ]}
               addr={SBK_ADDRESS ?? ''}
             />
           </div>
 
-          <H3>Security highlights</H3>
+          <H3>Security</H3>
           <ul className="text-sm text-[var(--muted)] leading-relaxed ml-4 list-disc space-y-1 mt-1">
-            <li><strong className="text-[var(--fg)]">ReentrancyGuard</strong> on all functions that move tokens.</li>
+            <li><strong className="text-[var(--fg)]">ReentrancyGuard</strong> on every function that moves tokens.</li>
             <li><strong className="text-[var(--fg)]">SafeERC20</strong> for all USDC transfers.</li>
-            <li><strong className="text-[var(--fg)]">EIP-712 + nonce</strong> — QR signatures are chain-bound, contract-bound, event-bound, and single-use.</li>
-            <li><strong className="text-[var(--fg)]">ERC-1271</strong> — smart-contract wallets (Safe, Argent) are supported for check-in.</li>
-            <li><strong className="text-[var(--fg)]">No upgrade proxy</strong> — deployed code cannot be changed by anyone.</li>
-            <li><strong className="text-[var(--fg)]">CSP + HSTS headers</strong> on the frontend; QR rendered as PNG, never as HTML.</li>
+            <li><strong className="text-[var(--fg)]">ERC-1271</strong> — smart-contract wallets (Safe, Argent) supported for check-in.</li>
+            <li><strong className="text-[var(--fg)]">CSP + HSTS headers</strong> on the frontend; QR rendered as PNG, never HTML.</li>
           </ul>
         </Section>
 
-        {/* ── 7. FAQ ── */}
-        <Section id="faq" title="FAQ" icon={<AlertTriangle size={18} className="text-[var(--accent)]" />}>
-          {[
-            { q: 'What wallet do I need?', a: 'Any EVM wallet on Arc Mainnet (chain ID 5042): MetaMask, Coinbase Wallet, Rainbow, etc. Smart-contract wallets (Safe, Argent) that implement ERC-1271 also work.' },
-            { q: 'What token is used for deposits and gas?', a: 'USDC only. On Arc, gas is also paid in USDC — you do not need ETH or any other token.' },
-            { q: 'Can I book two seats at the same event?', a: 'No. One active reservation per wallet per event. Cancel your existing one first if you need to rebook.' },
-            { q: 'What if I miss the refund cutoff?', a: 'You cannot cancel after the cutoff. Your deposit stays in escrow. If you\'re not checked in and check-in was opened, it becomes no-show proceeds after finalization.' },
-            { q: 'My QR expired — what do I do?', a: 'Tap Generate QR again. Each new QR is valid for 10 minutes. You can generate as many as you need.' },
-            { q: 'What if the organiser never finalises?', a: 'Anyone can call finalizeEvent once the check-in window ends. The app does this automatically when you try to claim your refund.' },
-            { q: 'Can the organiser change the rules after I book?', a: 'No. Deposit amount, capacity, and all deadlines are locked onchain at creation and cannot be changed.' },
-            { q: 'What is SBK and do I need it?', a: 'SBK is the staking token. You do not need it to attend events or get refunds. It is only needed if you want to earn a share of no-show proceeds by staking.' },
-          ].map(({ q, a }) => (
-            <details key={q} className="group rounded-xl border border-[var(--border)] overflow-hidden" style={{ background: 'var(--surface)' }}>
-              <summary className="flex items-center justify-between px-5 py-4 cursor-pointer font-medium text-[var(--fg)] text-sm select-none list-none" style={{ background: 'var(--surface)' }}>
-                <span>{q}</span>
-                <ChevronRight size={15} className="text-[var(--muted)] group-open:rotate-90 transition-transform flex-shrink-0 ml-3" />
-              </summary>
-              <div className="px-5 py-4 text-sm text-[var(--muted)] leading-relaxed border-t border-[var(--border)]" style={{ background: 'var(--surface-muted)' }}>
-                {a}
+        {/* ── 7. Points & Airdrop ── */}
+        <Section id="points" title="Points & Airdrop" icon={<Star size={18} className="text-[var(--accent)]" />}>
+          <P>
+            Points track your onchain activity on SeatBack and determine your share of the <strong className="text-[var(--fg)]">30,000,000 SBK community airdrop</strong>.
+            They are calculated in real time from onchain events — no server, no account required.
+            Connect your wallet and click it to see your score and breakdown instantly.
+          </P>
+
+          <Callout type="info">
+            Airdrop not yet distributed. All activity before the snapshot block counts.
+            The snapshot date and claim contract will be announced publicly at least 14 days in advance.
+          </Callout>
+
+          <H3>How points are earned</H3>
+          <div className="rounded-xl border border-[var(--border)] overflow-hidden">
+            <table className="w-full text-sm">
+              <thead>
+                <tr style={{ background: 'var(--surface-muted)' }}>
+                  <th className="px-4 py-3 text-left font-semibold text-[var(--fg)]">Action</th>
+                  <th className="px-4 py-3 text-left font-semibold text-[var(--fg)]">Points</th>
+                  <th className="px-4 py-3 text-left font-semibold text-[var(--fg)]">Condition</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[var(--border)]">
+                {[
+                  ['Reserve a seat',  '+100', 'Event finalised + you were checked in (not cancelled, not no-show)'],
+                  ['Check in',        '+300', 'Event finalised — stacks with Reserve points above'],
+                  ['Create an event', '+500', 'Event finalised + ≥5 real check-ins + event on campaign allowlist'],
+                  ['Early adopter',   '×2',   'First 500 wallets ever to reserve on SeatBack — all your points doubled'],
+                ].map(([a, p, n]) => (
+                  <tr key={a} style={{ background: 'var(--surface)' }}>
+                    <td className="px-4 py-3 font-medium text-[var(--fg)] text-sm">{a}</td>
+                    <td className="px-4 py-3 text-[var(--accent)] font-bold text-sm">{p}</td>
+                    <td className="px-4 py-3 text-[var(--muted)] text-sm">{n}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <H3>Pending vs Confirmed</H3>
+          <P>
+            Points are <strong className="text-[var(--fg)]">pending</strong> until the event is finalised. Only confirmed points count toward your airdrop allocation.
+            Your wallet badge shows both values separately.
+          </P>
+
+          <H3>What earns zero points</H3>
+          <div className="flex flex-col gap-1.5 mt-1">
+            {[
+              'Cancelled reservation — deposit refunded, no points',
+              'No-show — 0 pts even if you reserved',
+              'Event cancelled before it starts — 0 pts for everyone',
+              'Organiser with fewer than 5 real check-ins — 0 pts for create',
+              'Events not on the campaign allowlist (early phase)',
+            ].map(t => (
+              <div key={t} className="flex items-start gap-2 text-sm">
+                <span className="opacity-40 mt-0.5">✗</span>
+                <span className="opacity-70">{t}</span>
               </div>
-            </details>
-          ))}
+            ))}
+          </div>
+
+          <H3>Limits and anti-gaming</H3>
+          <div className="rounded-xl border border-[var(--border)] overflow-hidden">
+            <table className="w-full text-sm">
+              <tbody className="divide-y divide-[var(--border)]">
+                {[
+                  ['Max per wallet',     '50,000 pts',  'Hard cap — extra activity above this earns nothing'],
+                  ['Per event',          '1× each',     'Reserve, check-in, and create each count once per event'],
+                  ['Campaign allowlist', 'Early phase', 'Only approved events generate points; opens wider over time'],
+                ].map(([a, b, c]) => (
+                  <tr key={a} style={{ background: 'var(--surface)' }}>
+                    <td className="px-4 py-3 font-medium text-[var(--fg)] text-sm">{a}</td>
+                    <td className="px-4 py-3 text-[var(--accent)] font-semibold text-sm">{b}</td>
+                    <td className="px-4 py-3 text-[var(--muted)] text-sm">{c}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <P>
+            Patterns flagged for review (not auto-disqualified): same group of wallets co-appearing across many events,
+            or automated reservation/check-in timing. Flagged wallets see a warning badge and may be reviewed before the snapshot.
+            Appeals via GitHub Issues.
+          </P>
+
+          <H3>Airdrop allocation formula</H3>
+          <div className="rounded-xl border border-[var(--border)] p-4 text-sm" style={{ background: 'var(--surface)' }}>
+            <p className="font-mono text-[var(--accent)] font-semibold mb-1">your SBK = (your confirmed points ÷ total all-wallets points) × 30,000,000</p>
+            <p className="text-[var(--muted)]">Splitting across multiple wallets gives no advantage — allocation is proportional across all wallets.</p>
+          </div>
+
+          <H3>Claim process</H3>
+          <div className="flex flex-col gap-3 mt-1">
+            <Step n={1} title="Snapshot block">All activity up to this block is final. Rules locked ≥14 days before.</Step>
+            <Step n={2} title="Preliminary totals published">Allocations published publicly. 7-day appeal window before Merkle root is finalised.</Step>
+            <Step n={3} title="Claim contract live">Connect your wallet → see allocation → one transaction to receive SBK.</Step>
+            <Step n={4} title="Stake immediately">SBK in wallet → stake → start earning USDC from future no-show proceeds.</Step>
+          </div>
+
+          <Callout type="warn">
+            Unclaimed SBK after 180 days returns to Treasury.
+            Always verify the claim contract address on the official GitHub repo before interacting.
+          </Callout>
         </Section>
 
-        {/* ── 8. SBK token ── */}
+        {/* ── 8. SBK Token ── */}
         <Section id="tokenomics" title="SBK Token" icon={<Layers size={18} className="text-[var(--accent)]" />}>
           <P>
-            <strong className="text-[var(--fg)]">SEATBACK (SBK)</strong> is the staking token for SeatBack.
-            Its only purpose is to earn USDC yield from no-show proceeds. Holding SBK without staking earns nothing.
+            <strong className="text-[var(--fg)]">SEATBACK (SBK)</strong> is the staking token.
+            Stake it in SeatBackStaking to earn a share of every event's no-show USDC proceeds.
+            Holding without staking earns nothing.
           </P>
 
           <H3>Token facts</H3>
@@ -377,12 +452,12 @@ export function Docs() {
             <table className="w-full text-sm">
               <tbody className="divide-y divide-[var(--border)]">
                 {[
-                  ['Total supply',   '100,000,000 SBK', 'Fixed forever — no minting'],
-                  ['Decimals',       '18',               'Standard ERC-20'],
-                  ['Standard',       'ERC-20 + Permit',  'Gasless approvals (EIP-2612)'],
-                  ['Staking min',    '1 SBK',            'Minimum to earn rewards'],
-                  ['Unstake delay',  '7,200 blocks',     '~24 hours on Arc'],
-                  ['Yield source',   'USDC',             '50% of no-show proceeds per event'],
+                  ['Total supply',  '100,000,000 SBK', 'Fixed forever — no minting ever'],
+                  ['Decimals',      '18',               'Standard ERC-20'],
+                  ['Standard',      'ERC-20 + Permit',  'Gasless approvals via EIP-2612'],
+                  ['Minimum stake', '1 SBK',            'Below this, no rewards'],
+                  ['Unstake delay', '7,200 blocks',     '~24 hours on Arc'],
+                  ['Yield asset',   'USDC',             "50% of each event's no-show proceeds"],
                 ].map(([k, v, n]) => (
                   <tr key={k} style={{ background: 'var(--surface)' }}>
                     <td className="px-4 py-2.5 font-medium text-[var(--fg)] text-sm">{k}</td>
@@ -397,11 +472,11 @@ export function Docs() {
           <H3>Token allocation</H3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {[
-              { label: 'Community airdrop',  pct: '30%', amount: '30,000,000 SBK', desc: 'Early users who reserved, checked in, or created events before the snapshot', color: 'var(--accent)' },
-              { label: 'Ecosystem & growth', pct: '25%', amount: '25,000,000 SBK', desc: 'Grants, partnerships, liquidity, and integrations', color: '#8b5cf6' },
+              { label: 'Community airdrop',  pct: '30%', amount: '30,000,000 SBK', desc: 'Early users — see Points & Airdrop section', color: 'var(--accent)' },
+              { label: 'Ecosystem & growth', pct: '25%', amount: '25,000,000 SBK', desc: 'Grants, partnerships, liquidity, integrations', color: '#8b5cf6' },
               { label: 'Team',               pct: '20%', amount: '20,000,000 SBK', desc: '4-year linear vest with 1-year cliff', color: '#f59e0b' },
-              { label: 'Treasury reserve',   pct: '15%', amount: '15,000,000 SBK', desc: 'Future upgrades, audits, and emergencies', color: '#10b981' },
-              { label: 'Staking bootstrap',  pct: '10%', amount: '10,000,000 SBK', desc: 'Extra SBK rewards for early stakers while USDC volume grows', color: '#ef4444' },
+              { label: 'Treasury reserve',   pct: '15%', amount: '15,000,000 SBK', desc: 'Future upgrades, audits, emergencies', color: '#10b981' },
+              { label: 'Staking bootstrap',  pct: '10%', amount: '10,000,000 SBK', desc: 'Extra rewards for early stakers while USDC volume grows', color: '#ef4444' },
             ].map(({ label, pct, amount, desc, color }) => (
               <div key={label} className="rounded-xl p-4 border border-[var(--border)]" style={{ background: 'var(--surface)' }}>
                 <div className="flex items-center justify-between mb-1">
@@ -414,200 +489,32 @@ export function Docs() {
             ))}
           </div>
 
-          <H3>How no-show proceeds flow to stakers</H3>
-          <div className="rounded-xl border border-[var(--border)] p-4 text-sm" style={{ background: 'var(--surface)' }}>
-            <p className="font-semibold text-[var(--fg)] mb-3">Example: 10 attendees × 1 USDC deposit = 10 USDC escrowed</p>
-            <div className="flex flex-col gap-2 text-[var(--muted)]">
-              <div className="flex items-center gap-2"><ChevronRight size={13} className="text-[var(--accent)] flex-shrink-0" /><span>8 show up and check in → 8 USDC becomes refundable to them</span></div>
-              <div className="flex items-center gap-2"><ChevronRight size={13} className="text-[var(--accent)] flex-shrink-0" /><span>2 no-shows → 2 USDC are proceeds</span></div>
-              <div className="flex items-center gap-2"><ChevronRight size={13} className="text-[var(--accent)] flex-shrink-0" /><span className="font-semibold text-[var(--fg)]">1.00 USDC (50%) → SBK staking pool, split pro-rata to all stakers</span></div>
-              <div className="flex items-center gap-2"><ChevronRight size={13} className="text-[var(--accent)] flex-shrink-0" /><span className="font-semibold text-[var(--fg)]">1.00 USDC (50%) → organiser payout wallet</span></div>
-            </div>
-          </div>
-          <P>
-            Your USDC reward = (your staked SBK ÷ total staked SBK at finalization) × staking pool amount for that event. Rewards accumulate onchain and can be claimed at any time without unstaking.
-          </P>
-
           <Callout type="warn">
-            SBK does not represent equity or voting rights. Staking rewards depend on no-show volume — there is no guaranteed return. This is not investment advice.
+            SBK does not represent equity or voting rights. Yield depends on no-show volume — no guaranteed return. This is not investment advice.
           </Callout>
         </Section>
 
-        {/* ── 9. Points ── */}
-        <Section id="points" title="Points" icon={<Star size={18} className="text-[var(--accent)]" />}>
-          <P>
-            Points track your activity on SeatBack and determine your share of the SBK airdrop.
-            They are calculated in real time directly from onchain events — no server, no account required.
-            Connect your wallet and tap it to see your current score and breakdown instantly.
-          </P>
-
-          <H3>Earning rules</H3>
-          <div className="rounded-xl border border-[var(--border)] overflow-hidden">
-            <table className="w-full text-sm">
-              <thead>
-                <tr style={{ background: 'var(--surface-muted)' }}>
-                  <th className="px-4 py-3 text-left font-semibold text-[var(--fg)]">Action</th>
-                  <th className="px-4 py-3 text-left font-semibold text-[var(--fg)]">Points</th>
-                  <th className="px-4 py-3 text-left font-semibold text-[var(--fg)]">Condition</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[var(--border)]">
-                {[
-                  ['Reserve a seat',  '+100', 'Event finalised + you attended (checked in)'],
-                  ['Check in',        '+300', 'Event finalised only'],
-                  ['Create an event', '+500', 'Event finalised + ≥5 real check-ins + passes campaign allowlist'],
-                  ['Early adopter',   '×2',   'First 500 wallets ever to reserve — all points doubled'],
-                ].map(([a, p, n]) => (
-                  <tr key={a} style={{ background: 'var(--surface)' }}>
-                    <td className="px-4 py-3 font-medium text-[var(--fg)] text-sm">{a}</td>
-                    <td className="px-4 py-3 text-[var(--accent)] font-bold text-sm">{p}</td>
-                    <td className="px-4 py-3 text-[var(--muted)] text-sm">{n}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          <H3>Pending vs Confirmed</H3>
-          <div className="flex flex-col gap-2 mt-1">
-            <div className="rounded-xl p-4 flex gap-3" style={{ background: 'var(--surface-strong)' }}>
-              <span className="text-xl">⏳</span>
-              <div>
-                <div className="font-semibold text-sm">Pending</div>
-                <div className="text-sm opacity-70 mt-0.5">Events you reserved, created, or checked into that have not yet been finalised. Shown separately — not counted in your total until the event closes.</div>
+        {/* ── 9. FAQ ── */}
+        <Section id="faq" title="FAQ" icon={<AlertTriangle size={18} className="text-[var(--accent)]" />}>
+          {[
+            { q: 'What wallet do I need?', a: 'Any EVM wallet on Arc Mainnet (chain ID 5042): MetaMask, Coinbase Wallet, Rainbow, etc. Smart-contract wallets (Safe, Argent) that implement ERC-1271 also work for check-in.' },
+            { q: 'Can I book two seats at the same event?', a: 'No. One active reservation per wallet per event. Cancel your existing one first if you need to rebook.' },
+            { q: 'What happens if I miss the refund cutoff?', a: 'Cancellation is not allowed after the cutoff. Your deposit stays in escrow. If you are not checked in and check-in was opened, it becomes no-show proceeds after finalisation.' },
+            { q: 'What if the organiser never finalises?', a: 'Anyone can call finalizeEvent once the check-in window ends. The app does this automatically when you try to claim your refund.' },
+            { q: 'Can the organiser change the rules after I book?', a: 'No. Deposit amount, capacity, and all deadlines are permanently locked onchain at creation.' },
+            { q: 'What is SBK and do I need it to attend events?', a: 'SBK is optional — you do not need it to attend events or claim refunds. It is only useful if you want to earn USDC by staking and receiving a share of no-show proceeds.' },
+            { q: 'Does splitting across wallets increase my airdrop?', a: 'No. Allocation is proportional across all wallets — splitting gives the same total as keeping everything in one wallet.' },
+          ].map(({ q, a }) => (
+            <details key={q} className="group rounded-xl border border-[var(--border)] overflow-hidden" style={{ background: 'var(--surface)' }}>
+              <summary className="flex items-center justify-between px-5 py-4 cursor-pointer font-medium text-[var(--fg)] text-sm select-none list-none" style={{ background: 'var(--surface)' }}>
+                <span>{q}</span>
+                <ChevronRight size={15} className="text-[var(--muted)] group-open:rotate-90 transition-transform flex-shrink-0 ml-3" />
+              </summary>
+              <div className="px-5 py-4 text-sm text-[var(--muted)] leading-relaxed border-t border-[var(--border)]" style={{ background: 'var(--surface-muted)' }}>
+                {a}
               </div>
-            </div>
-            <div className="rounded-xl p-4 flex gap-3" style={{ background: 'var(--surface-strong)' }}>
-              <span className="text-xl">✅</span>
-              <div>
-                <div className="font-semibold text-sm">Confirmed</div>
-                <div className="text-sm opacity-70 mt-0.5">Event finalised and all conditions met. Counts toward your total and airdrop allocation.</div>
-              </div>
-            </div>
-          </div>
-
-          <H3>What earns zero points</H3>
-          <div className="flex flex-col gap-1.5 mt-1">
-            {[
-              'Cancelling a reservation — deposit refunded, 0 pts',
-              'No-show — 0 pts after event finalises',
-              'Event cancelled before it starts — 0 pts for everyone',
-              'Creating an event with fewer than 5 real check-ins — 0 pts for organiser',
-              'Events not on the campaign allowlist — 0 pts (early phase)',
-            ].map(t => (
-              <div key={t} className="flex items-start gap-2 text-sm">
-                <span className="opacity-40 mt-0.5">✗</span>
-                <span className="opacity-70">{t}</span>
-              </div>
-            ))}
-          </div>
-
-          <H3>Per-wallet caps</H3>
-          <div className="rounded-xl border border-[var(--border)] overflow-hidden">
-            <table className="w-full text-sm">
-              <tbody className="divide-y divide-[var(--border)]">
-                {[
-                  ['Max per wallet',       '50,000 pts', 'Limits advantage from holding many wallets'],
-                  ['Reserve per event',    '1 time',     'Only the first reservation on any event counts'],
-                  ['Check-in per event',   '1 time',     'One check-in per person per event'],
-                  ['Create per event',     '1 time',     'Must match the organiser in the EventCreated log'],
-                ].map(([a, b, c]) => (
-                  <tr key={a} style={{ background: 'var(--surface)' }}>
-                    <td className="px-4 py-3 font-medium text-[var(--fg)] text-sm">{a}</td>
-                    <td className="px-4 py-3 text-[var(--accent)] font-semibold text-sm">{b}</td>
-                    <td className="px-4 py-3 text-[var(--muted)] text-sm">{c}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          <H3>Campaign allowlist</H3>
-          <P>
-            During the early phase, only events approved for the campaign generate points.
-            Anyone can still create events normally — points start accruing once an event passes the criteria.
-            This prevents fake events at launch and will open further as data accumulates.
-          </P>
-
-          <H3>Suspicious activity flags</H3>
-          <P>The following patterns are flagged for review — they do not automatically disqualify a wallet:</P>
-          <div className="flex flex-col gap-1.5 mt-1">
-            {[
-              'Same group of wallets repeatedly reserving the same events (>3 times)',
-              'Reservation and check-in timing that looks automated (bot-like pattern)',
-              'Wallets that consistently co-appear across many events together',
-            ].map(t => (
-              <div key={t} className="flex items-start gap-2 text-sm">
-                <span className="text-yellow-500 mt-0.5">⚠️</span>
-                <span className="opacity-70">{t}</span>
-              </div>
-            ))}
-          </div>
-          <P>
-            Flagged wallets see a warning in their Points panel. They may be reviewed before the snapshot.
-            Appeals can be submitted via GitHub Issues.
-          </P>
-
-          <H3>Before the snapshot</H3>
-          <P>
-            All rules will be published and locked at least 14 days before the snapshot block.
-            Preliminary point totals will be shared publicly for review and appeal before the Merkle root is finalised.
-          </P>
-
-          <Callout type="info">
-            ⭐ Connect your wallet and tap it — confirmed and pending points appear automatically. Read directly from Arc Mainnet, no gas used.
-          </Callout>
-        </Section>
-
-        {/* ── 10. Airdrop ── */}
-        <Section id="airdrop" title="Airdrop — 30M SBK for early users" icon={<Gift size={18} className="text-[var(--accent)]" />}>
-          <Callout type="info">
-            Not yet distributed. Any onchain activity on SeatBack before the snapshot counts. The snapshot date and claim contract address will be announced publicly.
-          </Callout>
-
-          <H3>Who qualifies</H3>
-          <P>
-            Any wallet that appears in SeatBack's onchain event logs before the snapshot block. No application needed.
-            Your allocation = (your points ÷ total points across all wallets) × 30,000,000 SBK.
-          </P>
-
-          <div className="rounded-xl border border-[var(--border)] overflow-hidden">
-            <table className="w-full text-sm">
-              <thead>
-                <tr style={{ background: 'var(--surface-muted)' }}>
-                  <th className="px-4 py-3 text-left font-semibold text-[var(--fg)]">Action</th>
-                  <th className="px-4 py-3 text-left font-semibold text-[var(--fg)]">Points</th>
-                  <th className="px-4 py-3 text-left font-semibold text-[var(--fg)]">Notes</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[var(--border)]">
-                {[
-                  ['Reserve a seat',  '100', 'Event finalised + attended (not cancelled)'],
-                  ['Check in',        '300', 'Event finalised only'],
-                  ['Create an event', '500', 'Event finalised + ≥5 check-ins + passes allowlist'],
-                  ['Early adopter',   '×2',  'First 500 wallets ever to reserve — all points doubled'],
-                ].map(([a, p, n]) => (
-                  <tr key={a} style={{ background: 'var(--surface)' }}>
-                    <td className="px-4 py-3 font-medium text-[var(--fg)] text-sm">{a}</td>
-                    <td className="px-4 py-3 text-[var(--accent)] font-semibold text-sm">{p}</td>
-                    <td className="px-4 py-3 text-[var(--muted)] text-sm">{n}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          <H3>Claim process</H3>
-          <div className="flex flex-col gap-3 mt-1">
-            <Step n={1} title="Snapshot">All activity up to the snapshot block is recorded. Nothing after counts.</Step>
-            <Step n={2} title="Merkle tree published">Allocations per wallet are computed from onchain data and published publicly for anyone to verify. At least 7 days before claiming opens.</Step>
-            <Step n={3} title="Claim contract live">Connect your wallet, see your allocation, submit one transaction to receive SBK.</Step>
-            <Step n={4} title="Stake immediately">Once you have SBK, stake to start earning USDC from future no-show proceeds right away.</Step>
-          </div>
-
-          <Callout type="warn">
-            Splitting across multiple wallets gives no advantage — allocation is proportional. Unclaimed SBK after 180 days returns to Treasury. Always verify the claim contract address on the official GitHub repo before interacting.
-          </Callout>
+            </details>
+          ))}
         </Section>
 
         {/* ── 10. Source code ── */}
