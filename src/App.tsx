@@ -15,8 +15,9 @@ import { MyReservations } from './components/MyReservations'
 import { OrganizerDashboard } from './components/OrganizerDashboard'
 import { Footer } from './components/Footer'
 import { Docs } from './components/Docs'
+import { Demo } from './components/Demo'
 
-export type AppTab = 'home' | 'events' | 'create' | 'reservations' | 'organizer' | 'docs'
+export type AppTab = 'home' | 'events' | 'create' | 'reservations' | 'organizer' | 'docs' | 'demo'
 
 export default function App() {
   // Init theme on root mount — applies class to <html> immediately
@@ -74,6 +75,9 @@ export default function App() {
             )}
             {activeTab === 'docs' && (
               <Docs />
+            )}
+            {activeTab === 'demo' && (
+              <Demo />
             )}
           </>
         )}
