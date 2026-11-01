@@ -70,7 +70,7 @@ export function MyReservations({ onViewEvent }: MyReservationsProps) {
   const { data: eventsData, isLoading: eventsLoading } = useEventsBatch(ids)
 
   // Load activeReservationId for the connected wallet per event
-  const { data: activeResIds, isLoading: resLoading } = useReadContracts({
+  const { data: activeResIds, isLoading: resLoading, refetch: refetchResIds } = useReadContracts({
     contracts: address
       ? ids.map((id) => ({
           address: (SEATBACK_ADDRESS ?? undefined),
@@ -95,7 +95,7 @@ export function MyReservations({ onViewEvent }: MyReservationsProps) {
   const resIds = Array.from(resIdSet)
 
   // Load full reservation details
-  const { data: reservationData, isLoading: reservationLoading } = useReadContracts({
+  const { data: reservationData, isLoading: reservationLoading, refetch: refetchReservations } = useReadContracts({
     contracts: resIds.map((id) => ({
       address: (SEATBACK_ADDRESS ?? undefined),
       abi: SEATBACK_ABI,
@@ -177,6 +177,7 @@ export function MyReservations({ onViewEvent }: MyReservationsProps) {
           event={event}
           wrongChain={wrongChain}
           onViewEvent={onViewEvent}
+          onRefetch={() => { void refetchResIds(); void refetchReservations() }}
         />
       ))}
     </div>
@@ -192,6 +193,7 @@ interface ReservationCardProps {
   event: EventInfo
   wrongChain: boolean
   onViewEvent: (eventId: bigint) => void
+  onRefetch: () => void
 }
 
 function ReservationCard({
@@ -201,6 +203,7 @@ function ReservationCard({
   event,
   wrongChain,
   onViewEvent,
+  onRefetch,
 }: ReservationCardProps) {
   const { data: walletClient } = useWalletClient({ chainId: ACTIVE_CHAIN_ID })
   const [showQR, setShowQR] = useState(false)
@@ -247,7 +250,7 @@ function ReservationCard({
       },
       {
         onError: (e) => setTxError(parseOnchainError(e)),
-        onSuccess: () => toast.success('Refund claimed — USDC sent to your wallet.'),
+        onSuccess: () => { toast.success('Refund claimed — USDC sent to your wallet.'); onRefetch() },
       },
     )
   }

@@ -31,7 +31,7 @@ export function OrganizerDashboard() {
     if (ids.length >= 50) break
   }
 
-  const { data: eventsData, isLoading: eventsLoading } = useEventsBatch(ids)
+  const { data: eventsData, isLoading: eventsLoading, refetch: refetchEvents } = useEventsBatch(ids)
 
   // Filter to only events where organizer === address
   const myEventIds = ids.filter((id, i) => {
@@ -81,6 +81,7 @@ export function OrganizerDashboard() {
           event={event}
           wrongChain={wrongChain}
           onSwitchChain={() => switchChain({ chainId: ACTIVE_CHAIN_ID })}
+          onRefetchEvents={refetchEvents}
         />
       ))}
     </div>
@@ -92,9 +93,10 @@ interface OrganizerEventPanelProps {
   event: EventInfo
   wrongChain: boolean
   onSwitchChain: () => void
+  onRefetchEvents: () => void
 }
 
-function OrganizerEventPanel({ eventId, event, wrongChain, onSwitchChain }: OrganizerEventPanelProps) {
+function OrganizerEventPanel({ eventId, event, wrongChain, onSwitchChain, onRefetchEvents }: OrganizerEventPanelProps) {
   const [expanded, setExpanded] = useState(false)
   const [checkInMode, setCheckInMode] = useState<'qr' | 'manual'>('qr')
   const [checkInAddress, setCheckInAddress] = useState('')
@@ -160,7 +162,7 @@ function OrganizerEventPanel({ eventId, event, wrongChain, onSwitchChain }: Orga
       functionName: 'openCheckIn',
       args: [eventId],
       chainId: ACTIVE_CHAIN_ID,
-    }, { onError: (e) => setTxError(parseOnchainError(e)), onSuccess: () => { toast.success('Check-in opened!'); void refetchAccounting() } }))
+    }, { onError: (e) => setTxError(parseOnchainError(e)), onSuccess: () => { toast.success('Check-in opened!'); void refetchAccounting(); void onRefetchEvents() } }))
 
   const handleCheckIn = () => {
     if (!/^0x[0-9a-fA-F]{40}$/.test(checkInAddress)) {
@@ -173,7 +175,7 @@ function OrganizerEventPanel({ eventId, event, wrongChain, onSwitchChain }: Orga
       functionName: 'checkIn',
       args: [eventId, checkInAddress as `0x${string}`],
       chainId: ACTIVE_CHAIN_ID,
-    }, { onError: (e) => setTxError(parseOnchainError(e)), onSuccess: () => { toast.success('Attendee checked in!'); setCheckInAddress('') } }))
+    }, { onError: (e) => setTxError(parseOnchainError(e)), onSuccess: () => { toast.success('Attendee checked in!'); setCheckInAddress(''); void refetchAccounting() } }))
   }
 
   const handleCancelEvent = () =>
@@ -205,7 +207,6 @@ function OrganizerEventPanel({ eventId, event, wrongChain, onSwitchChain }: Orga
 
   // phase === 'check_in_open' means now is in checkIn window (may or may not be opened by organizer)
   const inCheckInWindow = phase === 'check_in_open'
-  const isOver = phase === 'finalized' || phase === 'check_in_closed' || phase === 'cancelled'
   const canOpenCheckIn = !event.checkInOpened && !event.cancelled && inCheckInWindow
   const canCheckIn = event.checkInOpened && !event.cancelled && inCheckInWindow
   const canCancel = !event.cancelled && !event.finalized && phase !== 'check_in_closed'

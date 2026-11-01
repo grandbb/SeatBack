@@ -25,8 +25,7 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
  *  - ReentrancyGuard on all state-mutating external functions.
  *  - SafeERC20 for all token transfers.
  *  - Only the authorised SeatBack contract can call receiveProceeds().
- *  - Owner can update the SeatBack contract address (for upgrades); cannot
- *    withdraw user funds.
+ *  - seatBack is immutable after deployment.
  *
  * Precision:
  *  - SBK uses 18 decimals; USDC uses 6 decimals.
@@ -47,7 +46,7 @@ contract SeatBackStaking is ReentrancyGuard, Ownable {
     IERC20 public immutable usdc;
 
     /// @notice Address of the SeatBack escrow contract authorised to push proceeds.
-    address public seatBack;
+    address public immutable seatBack;
 
     /// @notice Total SBK currently staked across all stakers.
     uint256 public totalStaked;
@@ -55,8 +54,11 @@ contract SeatBackStaking is ReentrancyGuard, Ownable {
     /// @notice Accumulated USDC reward per SBK token staked (scaled by PRECISION).
     uint256 public rewardPerTokenStored;
 
-    /// @notice USDC received while totalStaked == 0, carried forward to the next distribution.
+    /// @notice USDC dust from rounding that remains after a distribution cycle.
     uint256 public undistributedProceeds;
+
+    /// @notice USDC proceeds received while no stakers exist; claimable only by owner.
+    uint256 public ownerReserve;
 
     /// @notice SBK balance staked by each address.
     mapping(address => uint256) public stakedBalance;
@@ -84,7 +86,7 @@ contract SeatBackStaking is ReentrancyGuard, Ownable {
     event Unstaked(address indexed user, uint256 amount);
     event RewardClaimed(address indexed user, uint256 amount);
     event ProceedsReceived(uint256 amount, uint256 newRewardPerToken);
-    event SeatBackUpdated(address indexed oldAddress, address indexed newAddress);
+    event OwnerReserveWithdrawn(address indexed to, uint256 amount);
 
     // ─── Errors ───────────────────────────────────────────────────────────────
 
@@ -112,13 +114,15 @@ contract SeatBackStaking is ReentrancyGuard, Ownable {
     // ─── Owner functions ──────────────────────────────────────────────────────
 
     /**
-     * @notice Update the authorised SeatBack contract address.
-     * @dev Use when upgrading or redeploying SeatBack. Cannot access user funds.
+     * @notice Withdraw proceeds that arrived while no stakers were present.
      */
-    function setSeatBack(address _seatBack) external onlyOwner {
-        if (_seatBack == address(0)) revert InvalidAddress();
-        emit SeatBackUpdated(seatBack, _seatBack);
-        seatBack = _seatBack;
+    function withdrawOwnerReserve(address to) external onlyOwner nonReentrant {
+        if (to == address(0)) revert InvalidAddress();
+        uint256 amount = ownerReserve;
+        if (amount == 0) revert NoPendingReward();
+        ownerReserve = 0;
+        usdc.safeTransfer(to, amount);
+        emit OwnerReserveWithdrawn(to, amount);
     }
 
     // ─── Core functions ───────────────────────────────────────────────────────
@@ -204,9 +208,8 @@ contract SeatBackStaking is ReentrancyGuard, Ownable {
      * @notice Receive 50% of an event's no-show USDC proceeds from SeatBack.
      * @dev Called by SeatBack.withdrawNoShowProceeds(). Updates rewardPerToken
      *      immediately — any staker who calls after this sees the new rewards.
-     *      If no one is staking, USDC sits in this contract until someone stakes
-     *      and the next proceeds arrive (totalStaked > 0 at that point).
-     *      This is acceptable because no-show events are rare during cold-start.
+     *      If no one is staking, proceeds are held in ownerReserve and are not
+     *      distributable to future stakers.
      * @param amount USDC amount (6 decimals) to distribute to stakers.
      */
     function receiveProceeds(uint256 amount) external nonReentrant {
@@ -221,8 +224,8 @@ contract SeatBackStaking is ReentrancyGuard, Ownable {
         uint256 toDistribute = amount > bal ? bal : amount;
 
         if (totalStaked == 0) {
-            // No stakers yet — carry forward so it is included in the next distribution.
-            undistributedProceeds += toDistribute;
+            // No stakers yet — reserve these proceeds for owner withdrawal.
+            ownerReserve += toDistribute;
             emit ProceedsReceived(toDistribute, rewardPerTokenStored);
             return;
         }

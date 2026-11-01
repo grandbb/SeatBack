@@ -180,25 +180,22 @@ contract SeatBack is ReentrancyGuard {
 
     error NotAdmin();
     error InvalidStakingPool();
+    error ZeroAddress();
     error InternalCallOnly();
     error StakerCreditTransferFailed();
 
     /**
      * @notice Set or update the staking pool address.
-     *         Can be updated by admin at any time (rotatable for upgrades/recovery).
-     *         Pass address(0) to disable routing (100% to organiser).
-     * @param _pool New staking pool address, or address(0) to disable.
+     * @param _pool New staking pool address.
      */
     function setStakingPool(address _pool) external {
         if (msg.sender != admin) revert NotAdmin();
-        // allow address(0) to disable routing; require compatible contract if non-zero
-        if (_pool != address(0)) {
-            if (_pool.code.length == 0) revert InvalidAddress();
-            try ISeatBackStaking(_pool).seatBack() returns (address linkedSeatBack) {
-                if (linkedSeatBack != address(this)) revert InvalidStakingPool();
-            } catch {
-                revert InvalidStakingPool();
-            }
+        if (_pool == address(0)) revert ZeroAddress();
+        if (_pool.code.length == 0) revert InvalidAddress();
+        try ISeatBackStaking(_pool).seatBack() returns (address linkedSeatBack) {
+            if (linkedSeatBack != address(this)) revert InvalidStakingPool();
+        } catch {
+            revert InvalidStakingPool();
         }
         stakingPool = _pool;
         emit StakingPoolSet(_pool);

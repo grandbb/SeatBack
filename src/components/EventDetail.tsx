@@ -96,7 +96,7 @@ export function EventDetail({ eventId, onBack }: EventDetailProps) {
   }
 
   const evt = event
-  const seatsLeft = evt.capacity - (Number(reservedSeats ?? 0))
+  const seatsLeft = Math.max(0, evt.capacity - Number(reservedSeats ?? 0))
   const hasActiveReservation = activeResId !== undefined && activeResId > 0n
   const depositAmount = evt.depositAmount
 
@@ -175,8 +175,17 @@ export function EventDetail({ eventId, onBack }: EventDetailProps) {
     !evt.cancelled &&
     phase === 'booking_open'
 
+  // No-show: active reservation, check-in was opened, event is over, but no check-in recorded
+  const isNoShow =
+    hasActiveReservation &&
+    !reservation?.refundable &&
+    !reservation?.refundClaimed &&
+    evt.checkInOpened &&
+    (evt.finalized || phase === 'check_in_closed')
+
   const canClaimRefund =
     hasActiveReservation &&
+    !isNoShow &&
     (reservation?.refundable || evt.cancelled || phase === 'finalized' || phase === 'check_in_closed') &&
     !reservation?.refundClaimed
 

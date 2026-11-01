@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { useAccount } from 'wagmi'
 import { Logo } from './Logo'
 import { WalletMenu } from './WalletMenu'
-import { ACTIVE_CHAIN_ID, IS_MAINNET } from '@/contract'
+import { ACTIVE_CHAIN_ID, IS_MAINNET, NETWORK_LABEL } from '@/contract'
 import { useTheme } from '@/hooks/useTheme'
 import { Sun, Moon, Menu, X, BookOpen, PlayCircle } from 'lucide-react'
 
@@ -215,7 +215,7 @@ export function Header({ activeTab, onTabChange }: HeaderProps) {
                 </div>
 
                 <div style={{ borderTop: '1px solid var(--border)', padding: '8px 16px 10px', fontSize: 11, opacity: 0.4 }}>
-                  SeatBack on Arc Mainnet
+                  SeatBack on {NETWORK_LABEL}
                 </div>
               </div>
             )}

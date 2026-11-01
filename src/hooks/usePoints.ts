@@ -63,6 +63,13 @@ export const POINTS_RULES = {
 
 const POLL_INTERVAL = 60_000
 
+/**
+ * Block number at which SeatBack v3 was deployed on Arc Mainnet.
+ * Used as the lower bound for all log queries to avoid scanning from genesis.
+ * Update this after each mainnet deployment.
+ */
+const DEPLOY_BLOCK = 0n
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export interface PointsBreakdown {
@@ -137,17 +144,17 @@ export function usePoints(address: `0x${string}` | undefined) {
         eventCancelled,
       ] = await Promise.all([
         client.getLogs({ address: SEATBACK_ADDRESS, event: EVENT_CREATED,
-          args: { organizer: address }, fromBlock: 0n, toBlock: 'latest' }),
+          args: { organizer: address }, fromBlock: DEPLOY_BLOCK, toBlock: 'latest' }),
         client.getLogs({ address: SEATBACK_ADDRESS, event: RESERVED,
-          args: { attendee: address }, fromBlock: 0n, toBlock: 'latest' }),
+          args: { attendee: address }, fromBlock: DEPLOY_BLOCK, toBlock: 'latest' }),
         client.getLogs({ address: SEATBACK_ADDRESS, event: CHECKED_IN,
-          args: { attendee: address }, fromBlock: 0n, toBlock: 'latest' }),
+          args: { attendee: address }, fromBlock: DEPLOY_BLOCK, toBlock: 'latest' }),
         client.getLogs({ address: SEATBACK_ADDRESS, event: RESERVATION_CANCELLED,
-          args: { attendee: address }, fromBlock: 0n, toBlock: 'latest' }),
+          args: { attendee: address }, fromBlock: DEPLOY_BLOCK, toBlock: 'latest' }),
         client.getLogs({ address: SEATBACK_ADDRESS, event: EVENT_FINALIZED,
-          fromBlock: 0n, toBlock: 'latest' }),
+          fromBlock: DEPLOY_BLOCK, toBlock: 'latest' }),
         client.getLogs({ address: SEATBACK_ADDRESS, event: EVENT_CANCELLED,
-          fromBlock: 0n, toBlock: 'latest' }),
+          fromBlock: DEPLOY_BLOCK, toBlock: 'latest' }),
       ])
 
       // ── Build lookup sets ─────────────────────────────────────────────────
@@ -155,7 +162,7 @@ export function usePoints(address: `0x${string}` | undefined) {
       /** eventId → total check-in count across all attendees */
       const allCheckedIn = await client.getLogs({
         address: SEATBACK_ADDRESS, event: CHECKED_IN,
-        fromBlock: 0n, toBlock: 'latest',
+        fromBlock: DEPLOY_BLOCK, toBlock: 'latest',
       })
       const eventCheckInCount = new Map<string, number>()
       for (const log of allCheckedIn) {
@@ -180,6 +187,12 @@ export function usePoints(address: `0x${string}` | undefined) {
       /** reservationId keys for cancelled reservations (eventId-reservationId). */
       const cancelledReservations = new Set<string>(
         cancelled.map(l => `${l.args.eventId}-${l.args.reservationId}`)
+      )
+
+      /** eventId-reservationId keys for confirmed check-ins (this attendee only).
+       *  RESERVE points are only earned if the attendee was actually checked in. */
+      const checkedInKeys = new Set<string>(
+        checkedIn.map(l => `${l.args.eventId}-${l.args.reservationId}`)
       )
 
       // ── Check for suspicious patterns ────────────────────────────────────
@@ -207,6 +220,8 @@ export function usePoints(address: `0x${string}` | undefined) {
         if (seenReserveEvents.has(eid)) continue // per-event cap
         if (cancelledReservations.has(rid)) continue // cancelled = 0 pts
         if (!inAllowlist(log.args.eventId!)) continue
+        // RESERVE points only if the attendee was actually checked in (no no-shows)
+        if (!checkedInKeys.has(rid)) continue
         seenReserveEvents.add(eid)
         reserveCount++
         if (closedIds.has(eid)) {

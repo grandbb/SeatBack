@@ -25,6 +25,8 @@ export interface EventAccounting {
   organizerCredit: bigint
   refundsPaid: bigint
   organizerPaid: bigint
+  stakerPaid: bigint
+  poolSnapshot: `0x${string}`
 }
 
 /** Mirrors SeatBack.ReservationInfo */

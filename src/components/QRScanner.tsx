@@ -17,7 +17,7 @@ import { useState, useRef, useCallback, useEffect } from 'react'
 import { useWriteContract, useWaitForTransactionReceipt } from 'wagmi'
 import { Camera, CameraOff, ClipboardPaste, CheckCircle2, AlertTriangle, Loader2, X } from 'lucide-react'
 import { decodePayload, payloadToAuthArgs, qrSecondsLeft, PayloadDecodeError, type CheckInPayload } from '@/utils/checkin'
-import { SEATBACK_ABI, SEATBACK_ADDRESS, ACTIVE_CHAIN_ID } from '@/contract'
+import { SEATBACK_ABI, SEATBACK_ADDRESS, ACTIVE_CHAIN_ID, NETWORK_LABEL } from '@/contract'
 import { formatDateTime, parseOnchainError, shortAddress } from '@/utils/format'
 import type { EventInfo } from '@/types'
 import { toast } from 'sonner'
@@ -35,7 +35,7 @@ interface QRScannerProps {
 type ScanMode = 'idle' | 'camera' | 'paste'
 type ReviewState = 'reviewing' | 'submitting' | 'done' | 'error'
 
-export function QRScanner({ event, eventId: _eventId, onCheckedIn }: QRScannerProps) {
+export function QRScanner({ event, eventId, onCheckedIn }: QRScannerProps) {
   const [scanMode, setScanMode] = useState<ScanMode>('idle')
   const [pasteValue, setPasteValue] = useState('')
   const [payload, setPayload] = useState<CheckInPayload | null>(null)
@@ -74,6 +74,11 @@ export function QRScanner({ event, eventId: _eventId, onCheckedIn }: QRScannerPr
     setScanMode('idle')
     try {
       const p = decodePayload(raw)
+      // Validate that the scanned QR belongs to the expected event
+      if (BigInt(p.eventId) !== eventId) {
+        setDecodeError(`QR is for event #${p.eventId}, but you have event #${eventId} open.`)
+        return
+      }
       setPayload(p)
       setReviewState('reviewing')
     } catch (e) {

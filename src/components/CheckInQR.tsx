@@ -19,7 +19,7 @@ import {
   MAX_QR_VALIDITY_S,
   type CheckInPayload,
 } from '@/utils/checkin'
-import { ACTIVE_CHAIN_ID } from '@/contract'
+import { ACTIVE_CHAIN_ID, NETWORK_LABEL } from '@/contract'
 import type { EventInfo, ReservationInfo } from '@/types'
 import { computeEventPhase } from '@/types'
 import QRCode from 'qrcode'
@@ -80,7 +80,7 @@ export function CheckInQR({ eventId, reservationId, event, reservation }: CheckI
       return
     }
     if (chainId !== ACTIVE_CHAIN_ID) {
-      setErrorMsg('Switch to Arc Mainnet first.')
+      setErrorMsg(`Switch to ${NETWORK_LABEL} first.`)
       return
     }
 
