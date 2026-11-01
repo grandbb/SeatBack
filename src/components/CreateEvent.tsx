@@ -5,7 +5,7 @@ import { useState } from 'react'
 import { useAccount, useWriteContract, useWaitForTransactionReceipt, useSwitchChain } from 'wagmi'
 import { Info, AlertTriangle } from 'lucide-react'
 import { SEATBACK_ABI, SEATBACK_ADDRESS, ACTIVE_CHAIN_ID, NETWORK_LABEL } from '@/contract'
-import { parseUsdc, parseOnchainError } from '@/utils/format'
+import { parseUsdc, parseOnchainError, utcInputToUnix } from '@/utils/format'
 import { TxButton } from './TxButton'
 import { toast } from 'sonner'
 
@@ -49,12 +49,12 @@ export function CreateEvent({ onCreated }: CreateEventProps) {
     if (isNaN(cap) || cap <= 0) return 'Capacity must be at least 1.'
     if (!eventStartInput || !eventEndInput || !bookingCloseInput || !refundCutoffInput || !checkInStartInput || !checkInEndInput)
       return 'All date/time fields are required.'
-    const tEventStart = Math.floor(new Date(eventStartInput).getTime() / 1000)
-    const tEventEnd = Math.floor(new Date(eventEndInput).getTime() / 1000)
-    const tBookingClose = Math.floor(new Date(bookingCloseInput).getTime() / 1000)
-    const tRefundCutoff = Math.floor(new Date(refundCutoffInput).getTime() / 1000)
-    const tCheckInStart = Math.floor(new Date(checkInStartInput).getTime() / 1000)
-    const tCheckInEnd = Math.floor(new Date(checkInEndInput).getTime() / 1000)
+    const tEventStart = utcInputToUnix(eventStartInput)
+    const tEventEnd = utcInputToUnix(eventEndInput)
+    const tBookingClose = utcInputToUnix(bookingCloseInput)
+    const tRefundCutoff = utcInputToUnix(refundCutoffInput)
+    const tCheckInStart = utcInputToUnix(checkInStartInput)
+    const tCheckInEnd = utcInputToUnix(checkInEndInput)
     const now = Math.floor(Date.now() / 1000)
     if (tBookingClose <= now) return '① Booking Closes must be in the future.'
     if (tBookingClose > tRefundCutoff) return '① Booking Closes must be ≤ ② Refund Cutoff.'
@@ -75,12 +75,12 @@ export function CreateEvent({ onCreated }: CreateEventProps) {
     if (!SEATBACK_ADDRESS) { setFormError('Contract not deployed yet.'); return }
     if (wrongChain) { switchChain({ chainId: ACTIVE_CHAIN_ID }); return }
 
-    const tEventStart = BigInt(Math.floor(new Date(eventStartInput).getTime() / 1000))
-    const tEventEnd = BigInt(Math.floor(new Date(eventEndInput).getTime() / 1000))
-    const tBookingClose = BigInt(Math.floor(new Date(bookingCloseInput).getTime() / 1000))
-    const tRefundCutoff = BigInt(Math.floor(new Date(refundCutoffInput).getTime() / 1000))
-    const tCheckInStart = BigInt(Math.floor(new Date(checkInStartInput).getTime() / 1000))
-    const tCheckInEnd = BigInt(Math.floor(new Date(checkInEndInput).getTime() / 1000))
+    const tEventStart = BigInt(utcInputToUnix(eventStartInput))
+    const tEventEnd = BigInt(utcInputToUnix(eventEndInput))
+    const tBookingClose = BigInt(utcInputToUnix(bookingCloseInput))
+    const tRefundCutoff = BigInt(utcInputToUnix(refundCutoffInput))
+    const tCheckInStart = BigInt(utcInputToUnix(checkInStartInput))
+    const tCheckInEnd = BigInt(utcInputToUnix(checkInEndInput))
 
     writeContract({
       address: SEATBACK_ADDRESS,
@@ -219,33 +219,33 @@ export function CreateEvent({ onCreated }: CreateEventProps) {
               <li className="flex items-center gap-2"><span className="w-5 h-5 rounded-full bg-[var(--accent)] text-white flex items-center justify-center font-bold text-[10px]">4</span><span><strong>Check-In Closes</strong> — no-shows decided; finalization unlocks after this (&gt; step 3)</span></li>
             </ol>
             <p className="mt-2 text-[var(--subtle)]">Event Start/End are for display only — they do not affect on-chain logic.</p>
-            <p className="mt-1 text-[var(--subtle)]">Times are in your local timezone. The contract stores UTC Unix timestamps.</p>
+            <p className="mt-1 font-medium" style={{ color: 'var(--warning)' }}>All times on this form are UTC (GMT+0). Enter times as UTC regardless of your local timezone.</p>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
-            <Field label="Event Start" required hint="Display only — not enforced on-chain">
+            <Field label="Event Start (UTC)" required hint="Display only — enter as UTC/GMT+0">
               <input type="datetime-local" value={eventStartInput} onChange={(e) => setEventStartInput(e.target.value)} className={inputCls} aria-required="true" />
             </Field>
-            <Field label="Event End" required hint="Display only — not enforced on-chain">
+            <Field label="Event End (UTC)" required hint="Display only — enter as UTC/GMT+0">
               <input type="datetime-local" value={eventEndInput} onChange={(e) => setEventEndInput(e.target.value)} className={inputCls} aria-required="true" />
             </Field>
           </div>
 
           <div className="rounded-xl border border-[var(--border)] p-3 flex flex-col gap-3" style={{ background: 'var(--surface-muted)' }}>
-            <p className="text-xs font-semibold text-[var(--ink-2)]">On-chain enforced dates (must be in order 1 → 2 → 3 → 4):</p>
+            <p className="text-xs font-semibold text-[var(--ink-2)]">On-chain enforced dates — UTC (GMT+0) — must be in order 1 → 2 → 3 → 4:</p>
             <div className="grid grid-cols-2 gap-3">
-              <Field label="① Booking Closes" required hint="Last moment to reserve">
+              <Field label="① Booking Closes (UTC)" required hint="Last moment to reserve">
                 <input type="datetime-local" value={bookingCloseInput} onChange={(e) => setBookingCloseInput(e.target.value)} className={inputCls} aria-required="true" />
               </Field>
-              <Field label="② Refund Cutoff" required hint="After this, cancellations forfeit deposit">
+              <Field label="② Refund Cutoff (UTC)" required hint="After this, cancellations forfeit deposit">
                 <input type="datetime-local" value={refundCutoffInput} onChange={(e) => setRefundCutoffInput(e.target.value)} className={inputCls} aria-required="true" />
               </Field>
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <Field label="③ Check-In Opens" required hint="Set to your event start time">
+              <Field label="③ Check-In Opens (UTC)" required hint="Set to your event start time">
                 <input type="datetime-local" value={checkInStartInput} onChange={(e) => setCheckInStartInput(e.target.value)} className={inputCls} aria-required="true" />
               </Field>
-              <Field label="④ Check-In Closes" required hint="No-shows locked; finalization available after">
+              <Field label="④ Check-In Closes (UTC)" required hint="No-shows locked; finalization available after">
                 <input type="datetime-local" value={checkInEndInput} onChange={(e) => setCheckInEndInput(e.target.value)} className={inputCls} aria-required="true" />
               </Field>
             </div>

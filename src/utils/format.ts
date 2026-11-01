@@ -14,7 +14,11 @@ export function parseUsdc(input: string): bigint {
   return BigInt(Math.round(n * 10 ** USDC_DECIMALS))
 }
 
-/** Format a Unix timestamp to a human-readable date/time in the user's local timezone */
+/**
+ * Format a Unix timestamp in the user's LOCAL timezone (OS setting).
+ * Used on all display pages: Events, My Tickets, Organiser, etc.
+ * The timezone abbreviation (e.g. "GMT+7", "EST") is shown automatically.
+ */
 export function formatDateTime(ts: bigint | number): string {
   const ms = typeof ts === 'bigint' ? Number(ts) * 1000 : ts * 1000
   return new Intl.DateTimeFormat('en-US', {
@@ -24,11 +28,49 @@ export function formatDateTime(ts: bigint | number): string {
     year: 'numeric',
     hour: '2-digit',
     minute: '2-digit',
-    timeZoneName: 'short',
+    timeZoneName: 'shortOffset', // shows GMT+7, GMT-5, etc.
   }).format(new Date(ms))
 }
 
-/** Short date only */
+/**
+ * Format a Unix timestamp in UTC (GMT+0).
+ * Used ONLY in the Create Event form so all organisers enter times
+ * in a single unambiguous timezone.
+ */
+export function formatDateTimeUTC(ts: bigint | number): string {
+  const ms = typeof ts === 'bigint' ? Number(ts) * 1000 : ts * 1000
+  return new Intl.DateTimeFormat('en-US', {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    timeZone: 'UTC',
+    timeZoneName: 'shortOffset', // always shows GMT+0
+  }).format(new Date(ms))
+}
+
+/**
+ * Convert a "datetime-local" input value (treated as UTC by the form)
+ * to a Unix timestamp in seconds.
+ * The input value format is "YYYY-MM-DDTHH:mm" and is interpreted as UTC.
+ */
+export function utcInputToUnix(value: string): number {
+  return Math.floor(new Date(value + 'Z').getTime() / 1000)
+}
+
+/**
+ * Convert a Unix timestamp (seconds) to a "datetime-local" input value in UTC.
+ * Returns "YYYY-MM-DDTHH:mm" suitable for <input type="datetime-local">.
+ */
+export function unixToUtcInput(ts: number): string {
+  const d = new Date(ts * 1000)
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}T${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}`
+}
+
+/** Short date only, local timezone */
 export function formatDate(ts: bigint | number): string {
   const ms = typeof ts === 'bigint' ? Number(ts) * 1000 : ts * 1000
   return new Intl.DateTimeFormat('en-US', {
