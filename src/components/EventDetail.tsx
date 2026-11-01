@@ -1,7 +1,7 @@
 /**
  * Full event view: details, refund policy, booking/cancellation actions for attendees.
  */
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useAccount, useWriteContract, useWaitForTransactionReceipt, useSwitchChain, useReadContract } from 'wagmi'
 import { erc20Abi } from 'viem'
 import { ArrowLeft, MapPin, Clock, Users, Ticket, AlertTriangle, Info, CheckCircle2, XCircle } from 'lucide-react'
@@ -72,6 +72,14 @@ export function EventDetail({ eventId, onBack }: EventDetailProps) {
   const { isLoading: claimConfirming, isSuccess: claimSuccess } = useWaitForTransactionReceipt({ hash: claimHash })
 
   const [txError, setTxError] = useState<string | null>(null)
+
+  // After approve tx is confirmed on-chain, re-read allowance so the button
+  // switches from "Allow USDC" → "Reserve Seat" without a manual page refresh.
+  useEffect(() => {
+    if (approveSuccess) {
+      void refetchAllowance()
+    }
+  }, [approveSuccess, refetchAllowance])
 
   const refetchAll = () => {
     void refetchEvent()
