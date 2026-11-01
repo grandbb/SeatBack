@@ -3024,6 +3024,7 @@ library SafeERC20 {
 /// @dev Minimal interface for pushing USDC proceeds into the staking pool.
 interface ISeatBackStaking {
     function receiveProceeds(uint256 amount) external;
+    function seatBack() external view returns (address);
 }
 
 /**
@@ -3191,6 +3192,9 @@ contract SeatBack is ReentrancyGuard {
     address public immutable admin;
 
     error NotAdmin();
+    error InvalidStakingPool();
+    error InternalCallOnly();
+    error StakerCreditTransferFailed();
 
     /**
      * @notice Set or update the staking pool address.
@@ -3200,8 +3204,15 @@ contract SeatBack is ReentrancyGuard {
      */
     function setStakingPool(address _pool) external {
         if (msg.sender != admin) revert NotAdmin();
-        // allow address(0) to disable routing; require contract if non-zero
-        if (_pool != address(0) && _pool.code.length == 0) revert InvalidAddress();
+        // allow address(0) to disable routing; require compatible contract if non-zero
+        if (_pool != address(0)) {
+            if (_pool.code.length == 0) revert InvalidAddress();
+            try ISeatBackStaking(_pool).seatBack() returns (address linkedSeatBack) {
+                if (linkedSeatBack != address(this)) revert InvalidStakingPool();
+            } catch {
+                revert InvalidStakingPool();
+            }
+        }
         stakingPool = _pool;
         emit StakingPoolSet(_pool);
     }
@@ -3213,6 +3224,7 @@ contract SeatBack is ReentrancyGuard {
     uint256 public reservationCount;
 
     mapping(uint256 => EventAccounting) public accounting;
+    mapping(uint256 => uint256) public unclaimedStakerCredit;
     mapping(uint256 => uint32) public reservedSeats;
     mapping(uint256 => mapping(address => uint256)) public activeReservationId;
     mapping(uint256 => uint256[]) private eventReservationIds;
@@ -3243,6 +3255,8 @@ contract SeatBack is ReentrancyGuard {
     event ProceedsWithdrawn(uint256 indexed eventId, address indexed payoutWallet, uint256 amount);
     event StakingPoolSet(address indexed pool);
     event StakerProceedsRouted(uint256 indexed eventId, address indexed pool, uint256 stakerAmount, uint256 organiserAmount);
+    event StakerCreditAccrued(uint256 indexed eventId, address indexed pool, uint256 amount);
+    event StakerCreditReclaimed(uint256 indexed eventId, address indexed pool, uint256 amount);
 
     // ─── Constructor ──────────────────────────────────────────────────────────
 
@@ -3642,19 +3656,44 @@ contract SeatBack is ReentrancyGuard {
         }
         emit ProceedsWithdrawn(eventId, evt.payoutWallet, organiserAmount);
 
-        // ── Route staker share: transfer THEN notify (best-effort, non-blocking) ──
+        // ── Route staker share: best-effort, does not block organiser withdrawal ──
         if (stakerAmount > 0 && pool != address(0)) {
-            // Transfer USDC to staking pool, then notify it (receiveProceeds).
-            // Notify failure is caught and ignored — USDC is already at the pool;
-            // the pool operator can reconcile via balance delta.
-            acc.stakerPaid += stakerAmount;
-            usdc.safeTransfer(pool, stakerAmount);
-            try ISeatBackStaking(pool).receiveProceeds(stakerAmount) {
-                // success
+            try this._routeStakerProceeds(eventId, pool, stakerAmount) {
+                emit StakerProceedsRouted(eventId, pool, stakerAmount, organiserAmount);
             } catch {
-                // pool notify reverted — USDC already transferred, pool must reconcile
+                unclaimedStakerCredit[eventId] += stakerAmount;
+                emit StakerCreditAccrued(eventId, pool, stakerAmount);
             }
-            emit StakerProceedsRouted(eventId, pool, stakerAmount, organiserAmount);
+        }
+    }
+
+    function _routeStakerProceeds(uint256 eventId, address pool, uint256 stakerAmount) external {
+        if (msg.sender != address(this)) revert InternalCallOnly();
+        accounting[eventId].stakerPaid += stakerAmount;
+        usdc.safeTransfer(pool, stakerAmount);
+        ISeatBackStaking(pool).receiveProceeds(stakerAmount);
+    }
+
+    function reclaimStakerCredit(uint256 eventId, address newPool) external nonReentrant {
+        if (msg.sender != admin) revert NotAdmin();
+        if (newPool == address(0) || newPool.code.length == 0) revert InvalidAddress();
+
+        uint256 amount = unclaimedStakerCredit[eventId];
+        if (amount == 0) revert NoProceeds();
+
+        try ISeatBackStaking(newPool).seatBack() returns (address linkedSeatBack) {
+            if (linkedSeatBack != address(this)) revert InvalidStakingPool();
+        } catch {
+            revert InvalidStakingPool();
+        }
+
+        unclaimedStakerCredit[eventId] = 0;
+
+        try this._routeStakerProceeds(eventId, newPool, amount) {
+            emit StakerCreditReclaimed(eventId, newPool, amount);
+        } catch {
+            unclaimedStakerCredit[eventId] = amount;
+            revert StakerCreditTransferFailed();
         }
     }
 

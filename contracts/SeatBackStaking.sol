@@ -67,12 +67,12 @@ contract SeatBackStaking is ReentrancyGuard, Ownable {
     /// @notice Accumulated but unclaimed USDC rewards for each staker.
     mapping(address => uint256) public pendingRewards;
 
-    /// @notice Block number when each staker last staked. Used for MEV cooldown.
-    mapping(address => uint256) public stakeBlock;
+    /// @notice Timestamp when each staker last staked. Used for MEV cooldown.
+    mapping(address => uint256) public stakeTimestamp;
 
-    /// @notice Blocks a staker must wait before becoming eligible for new rewards.
-    ///         ~24 hours on Arc (1-second blocks). Prevents flash-stake sniping.
-    uint256 public constant STAKE_COOLDOWN_BLOCKS = 7200;
+    /// @notice Seconds a staker must wait before becoming eligible for new rewards.
+    ///         24 hours. Prevents flash-stake sniping.
+    uint256 public constant STAKE_COOLDOWN_SECONDS = 24 hours;
 
     /// @notice Minimum SBK that must be staked to participate in distributions.
     ///         Prevents dust-stake attacks on undistributedProceeds.
@@ -136,7 +136,7 @@ contract SeatBackStaking is ReentrancyGuard, Ownable {
 
         stakedBalance[msg.sender] += amount;
         totalStaked += amount;
-        stakeBlock[msg.sender] = block.number; // reset cooldown on every top-up
+        stakeTimestamp[msg.sender] = block.timestamp; // reset cooldown on every top-up
 
         sbk.safeTransferFrom(msg.sender, address(this), amount);
 
@@ -232,7 +232,9 @@ contract SeatBackStaking is ReentrancyGuard, Ownable {
         undistributedProceeds = 0;
 
         uint256 delta = (total * PRECISION) / totalStaked;
+        uint256 distributed = (delta * totalStaked) / PRECISION;
         rewardPerTokenStored += delta;
+        undistributedProceeds = total - distributed;
 
         emit ProceedsReceived(total, rewardPerTokenStored);
     }
@@ -248,7 +250,9 @@ contract SeatBackStaking is ReentrancyGuard, Ownable {
         if (carry == 0) return;
         undistributedProceeds = 0;
         uint256 delta = (carry * PRECISION) / totalStaked;
+        uint256 distributed = (delta * totalStaked) / PRECISION;
         rewardPerTokenStored += delta;
+        undistributedProceeds = carry - distributed;
         emit ProceedsReceived(carry, rewardPerTokenStored);
     }
 
@@ -269,12 +273,12 @@ contract SeatBackStaking is ReentrancyGuard, Ownable {
      *      Must be called at the start of stake(), unstake(), claimReward(), exit().
      */
     function _updateReward(address user) internal {
-        // Anti-flash-stake: stakers must wait STAKE_COOLDOWN_BLOCKS (~24h on Arc)
+        // Anti-flash-stake: stakers must wait STAKE_COOLDOWN_SECONDS (24h)
         // before earning rewards. This prevents flash-stake sniping of proceeds.
-        // New users have stakeBlock[user]==0; block.number is always >= cooldown
+        // New users have stakeTimestamp[user]==0; block.timestamp is always >= cooldown
         // so first accrual is always gated by this same condition.
         uint256 rpt = rewardPerTokenStored;
-        if (block.number >= stakeBlock[user] + STAKE_COOLDOWN_BLOCKS) {
+        if (block.timestamp >= stakeTimestamp[user] + STAKE_COOLDOWN_SECONDS) {
             uint256 accrued = (stakedBalance[user] * (rpt - rewardPerTokenPaid[user])) / PRECISION;
             pendingRewards[user] += accrued;
         }
