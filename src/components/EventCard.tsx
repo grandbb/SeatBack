@@ -1,7 +1,9 @@
-import { MapPin, Clock, Users, Ticket } from 'lucide-react'
+import { useState } from 'react'
+import { MapPin, Clock, Users, Ticket, Share2, Check } from 'lucide-react'
 import { formatUsdc, formatDateTime, countdown } from '@/utils/format'
 import type { EventInfo } from '@/types'
 import { computeEventPhase } from '@/types'
+import { buildEventUrl } from '@/App'
 
 interface EventCardProps {
   eventId: bigint
@@ -19,11 +21,21 @@ const PHASE_BADGE: Record<string, { label: string; className: string }> = {
   cancelled: { label: 'Cancelled', className: 'bg-red-50 text-red-600 border-red-200' },
 }
 
-export function EventCard({ eventId: _eventId, event, reservedSeats, onClick }: EventCardProps) {
+export function EventCard({ eventId, event, reservedSeats, onClick }: EventCardProps) {
   const phase = computeEventPhase(event)
   const badge = PHASE_BADGE[phase]
   const seatsLeft = event.capacity - (reservedSeats ?? 0)
   const bookingOpen = phase === 'booking_open'
+  const [copied, setCopied] = useState(false)
+
+  const handleShare = (e: React.MouseEvent) => {
+    e.stopPropagation() // don't open event detail
+    const url = buildEventUrl(eventId)
+    void navigator.clipboard.writeText(url).then(() => {
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    })
+  }
 
   return (
     <article
@@ -47,11 +59,19 @@ export function EventCard({ eventId: _eventId, event, reservedSeats, onClick }: 
           </h3>
           <p className="text-sm text-[var(--muted)] mt-0.5 line-clamp-2">{event.description}</p>
         </div>
-        <span
-          className={`flex-shrink-0 text-xs font-medium px-2 py-1 rounded-full border ${badge.className}`}
-        >
-          {badge.label}
-        </span>
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <span className={`text-xs font-medium px-2 py-1 rounded-full border ${badge.className}`}>
+            {badge.label}
+          </span>
+          <button
+            onClick={handleShare}
+            title={copied ? 'Link copied!' : 'Copy share link'}
+            aria-label="Copy share link"
+            className="p-1.5 rounded-lg text-[var(--muted)] hover:text-[var(--accent)] hover:bg-[var(--surface-muted)] transition-colors"
+          >
+            {copied ? <Check size={14} className="text-teal-600" /> : <Share2 size={14} />}
+          </button>
+        </div>
       </div>
 
       {/* Details */}

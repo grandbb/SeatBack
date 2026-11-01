@@ -2,9 +2,10 @@
  * SeatBack — root routing component.
  *
  * Tabs: Home | Events | Create | My Reservations | Organiser
- * A selected event ID drives a detail overlay (no URL routing needed for testnet demo).
+ * Deep-link: ?event=<id> opens that event detail directly and is kept in sync
+ * with the URL so share links work.
  */
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useTheme } from './hooks/useTheme'
 import { Header } from './components/Header'
 import { Home } from './components/Home'
@@ -19,34 +20,64 @@ import { Demo } from './components/Demo'
 
 export type AppTab = 'home' | 'events' | 'create' | 'reservations' | 'organizer' | 'docs' | 'demo'
 
-export default function App() {
-  // Init theme on root mount — applies class to <html> immediately
-  useTheme()
-  const [activeTab, setActiveTab] = useState<AppTab>('home')
-  const [selectedEventId, setSelectedEventId] = useState<bigint | null>(null)
+/** Build a shareable event URL using the current page origin. */
+export function buildEventUrl(eventId: bigint): string {
+  return `${window.location.origin}/?event=${eventId.toString()}`
+}
 
-  const handleSelectEvent = (id: bigint) => {
-    setSelectedEventId(id)
-    // Switch to events tab so the detail back-button works
-    setActiveTab('events')
+/** Read ?event=N from the URL and return as BigInt, or null. */
+function readEventParam(): bigint | null {
+  const raw = new URLSearchParams(window.location.search).get('event')
+  if (!raw || !/^\d+$/.test(raw)) return null
+  try { return BigInt(raw) } catch { return null }
+}
+
+/** Push or clear the ?event= param in the browser URL without a page reload. */
+function syncUrlParam(eventId: bigint | null) {
+  const url = new URL(window.location.href)
+  if (eventId !== null) {
+    url.searchParams.set('event', eventId.toString())
+  } else {
+    url.searchParams.delete('event')
   }
+  window.history.replaceState(null, '', url.toString())
+}
 
-  const handleEventCreated = () => {
+export default function App() {
+  useTheme()
+
+  // Initialise from URL so a shared ?event= link opens the right detail directly
+  const [activeTab, setActiveTab] = useState<AppTab>(() =>
+    readEventParam() !== null ? 'events' : 'home'
+  )
+  const [selectedEventId, setSelectedEventId] = useState<bigint | null>(readEventParam)
+
+  // Keep URL in sync whenever selectedEventId changes
+  useEffect(() => {
+    syncUrlParam(selectedEventId)
+  }, [selectedEventId])
+
+  const handleSelectEvent = useCallback((id: bigint) => {
+    setSelectedEventId(id)
+    setActiveTab('events')
+  }, [])
+
+  const handleEventCreated = useCallback(() => {
     setSelectedEventId(null)
     setActiveTab('events')
-  }
+  }, [])
 
-  const handleTabChange = (tab: string) => {
+  const handleTabChange = useCallback((tab: string) => {
     setSelectedEventId(null)
     setActiveTab(tab as AppTab)
-  }
+  }, [])
 
   return (
     <div className="min-h-dvh bg-[var(--bg)] flex flex-col">
       <Header activeTab={activeTab} onTabChange={handleTabChange} />
 
       <main className="flex-1 max-w-5xl mx-auto w-full px-4 py-8">
-        {/* Event detail overlay (renders on top of events tab) */}
+        {/* Event detail — shown when an event is selected (from any tab or share link) */}
         {activeTab === 'events' && selectedEventId !== null ? (
           <EventDetail
             eventId={selectedEventId}

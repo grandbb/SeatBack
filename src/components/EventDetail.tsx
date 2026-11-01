@@ -4,9 +4,10 @@
 import { useState, useEffect } from 'react'
 import { useAccount, useWriteContract, useWaitForTransactionReceipt, useSwitchChain, useReadContract } from 'wagmi'
 import { erc20Abi } from 'viem'
-import { ArrowLeft, MapPin, Clock, Users, Ticket, AlertTriangle, Info, CheckCircle2, XCircle } from 'lucide-react'
+import { ArrowLeft, Share2, Check, MapPin, Clock, Users, Ticket, AlertTriangle, Info, CheckCircle2, XCircle } from 'lucide-react'
 import { SEATBACK_ABI, SEATBACK_ADDRESS, ACTIVE_CHAIN_ID, USDC_ADDRESS, NETWORK_LABEL } from '@/contract'
 import { formatUsdc, formatDateTime, parseOnchainError, shortAddress } from '@/utils/format'
+import { buildEventUrl } from '@/App'
 import { useEvent, useActiveReservationId, useReservation, useReservedSeats } from '@/hooks/useEvents'
 import type { EventInfo } from '@/types'
 import { computeEventPhase } from '@/types'
@@ -72,6 +73,15 @@ export function EventDetail({ eventId, onBack }: EventDetailProps) {
   const { isLoading: claimConfirming, isSuccess: claimSuccess } = useWaitForTransactionReceipt({ hash: claimHash })
 
   const [txError, setTxError] = useState<string | null>(null)
+  const [copied, setCopied] = useState(false)
+
+  const handleShare = () => {
+    const url = buildEventUrl(eventId)
+    void navigator.clipboard.writeText(url).then(() => {
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    })
+  }
 
   // After approve tx is confirmed on-chain, re-read allowance so the button
   // switches from "Allow USDC" → "Reserve Seat" without a manual page refresh.
@@ -191,15 +201,26 @@ export function EventDetail({ eventId, onBack }: EventDetailProps) {
 
   return (
     <div className="max-w-2xl mx-auto flex flex-col gap-6">
-      {/* Back */}
-      <button
-        onClick={onBack}
-        className="self-start flex items-center gap-1.5 text-sm text-[var(--muted)] hover:text-[var(--ink)] transition-colors -ml-1"
-        aria-label="Back to event list"
-      >
-        <ArrowLeft size={16} />
-        Back to events
-      </button>
+      {/* Top bar: back + share */}
+      <div className="flex items-center justify-between">
+        <button
+          onClick={onBack}
+          className="flex items-center gap-1.5 text-sm text-[var(--muted)] hover:text-[var(--ink)] transition-colors -ml-1"
+          aria-label="Back to event list"
+        >
+          <ArrowLeft size={16} />
+          Back to events
+        </button>
+
+        <button
+          onClick={handleShare}
+          className="flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] hover:border-[var(--accent)] hover:text-[var(--accent)] transition-colors"
+          aria-label="Copy share link"
+        >
+          {copied ? <Check size={14} className="text-teal-600" /> : <Share2 size={14} />}
+          {copied ? 'Link copied!' : 'Share'}
+        </button>
+      </div>
 
       {/* Hero card */}
       <div className="rounded-2xl border border-[var(--border)] p-6 flex flex-col gap-4" style={{ background: 'var(--surface-strong)' }}>
