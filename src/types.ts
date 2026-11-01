@@ -52,7 +52,7 @@ export function computeEventPhase(evt: EventInfo): EventPhase {
   const now = BigInt(Math.floor(Date.now() / 1000))
   if (evt.cancelled) return 'cancelled'
   if (evt.finalized) return 'finalized'
-  if (now >= evt.checkInEnd) return 'finalized' // eligible for finalization
+  if (now >= evt.checkInEnd) return 'check_in_closed' // window closed, eligible for finalization
   if (evt.checkInOpened || now >= evt.checkInStart) return 'check_in_open'
   if (now >= evt.bookingClose) return 'booking_closed'
   return 'booking_open'

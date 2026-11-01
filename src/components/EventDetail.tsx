@@ -177,7 +177,7 @@ export function EventDetail({ eventId, onBack }: EventDetailProps) {
 
   const canClaimRefund =
     hasActiveReservation &&
-    (reservation?.refundable || evt.cancelled || phase === 'finalized') &&
+    (reservation?.refundable || evt.cancelled || phase === 'finalized' || phase === 'check_in_closed') &&
     !reservation?.refundClaimed
 
   return (
@@ -280,7 +280,7 @@ function PhaseBadge({ phase }: { phase: string }) {
     booking_open: { label: 'Booking Open', className: 'bg-teal-50 text-teal-700 border-teal-200' },
     booking_closed: { label: 'Booking Closed', className: 'badge-navy' },
     check_in_open: { label: 'Check-In Live', className: 'bg-blue-50 text-blue-700 border-blue-200' },
-    check_in_closed: { label: 'Ended', className: 'badge-navy' },
+    check_in_closed: { label: 'Ended', className: 'bg-orange-50 text-orange-700 border-orange-200' },
     finalized: { label: 'Finalized', className: 'badge-navy' },
     cancelled: { label: 'Cancelled', className: 'bg-red-50 text-red-600 border-red-200' },
   }

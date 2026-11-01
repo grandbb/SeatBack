@@ -213,22 +213,26 @@ function ReservationCard({
   })
 
   const phase = computeEventPhase(event)
-  const isOver = phase === 'finalized' || phase === 'cancelled'
+  const isOver = phase === 'finalized' || phase === 'check_in_closed' || phase === 'cancelled'
 
   // Derived status
+  // No-show: still active (never cancelled, never checked in), check-in was opened,
+  // and the check-in window is now closed or event is finalized.
   const isNoShow =
-    !reservation.active &&
+    reservation.active &&
     !reservation.refundable &&
     !reservation.refundClaimed &&
     event.checkInOpened &&
-    (event.finalized || isOver)
+    (event.finalized || phase === 'check_in_closed')
 
   const isActive = reservation.active && !event.cancelled
 
   const canClaimRefund =
-    (reservation.refundable && !reservation.refundClaimed) ||
-    (event.cancelled && reservation.active && !reservation.refundClaimed) ||
-    (!event.checkInOpened && !event.cancelled && isOver && reservation.active && !reservation.refundClaimed)
+    !reservation.refundClaimed && !isNoShow && (
+      (reservation.refundable) ||
+      (event.cancelled && reservation.active) ||
+      (!event.checkInOpened && !event.cancelled && (phase === 'check_in_closed' || event.finalized) && reservation.active)
+    )
 
   const handleClaimRefund = () => {
     if (!SEATBACK_ADDRESS) return
@@ -328,7 +332,7 @@ function ReservationCard({
         )}
 
         {/* Never-opened refund */}
-        {!event.cancelled && !event.checkInOpened && isOver && reservation.active && (
+        {!event.cancelled && !event.checkInOpened && (phase === 'check_in_closed' || event.finalized) && reservation.active && (
           <div className="rounded-xl p-3 text-sm flex items-center gap-2" style={{ background: "var(--surface-muted)", color: "var(--ink-2)", border: "1px solid var(--border)" }}>
             <Clock size={14} />
             Check-in was never opened. Your deposit is fully refundable.
@@ -441,7 +445,7 @@ function ReservationStatusBadge({
   phase: string
 }) {
   const evtPhase = computeEventPhase(event)
-  const isOver = evtPhase === 'finalized' || evtPhase === 'cancelled'
+  const isOver = evtPhase === 'finalized' || evtPhase === 'check_in_closed' || evtPhase === 'cancelled'
 
   if (reservation.refundClaimed) {
     return <Badge label="Refunded" className="bg-teal-50 text-teal-700 border-teal-200" />

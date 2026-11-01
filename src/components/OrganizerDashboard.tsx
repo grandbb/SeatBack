@@ -205,11 +205,11 @@ function OrganizerEventPanel({ eventId, event, wrongChain, onSwitchChain }: Orga
 
   // phase === 'check_in_open' means now is in checkIn window (may or may not be opened by organizer)
   const inCheckInWindow = phase === 'check_in_open'
-  const isOver = phase === 'finalized' || phase === 'cancelled'
+  const isOver = phase === 'finalized' || phase === 'check_in_closed' || phase === 'cancelled'
   const canOpenCheckIn = !event.checkInOpened && !event.cancelled && inCheckInWindow
   const canCheckIn = event.checkInOpened && !event.cancelled && inCheckInWindow
-  const canCancel = !event.cancelled && !isOver
-  const canFinalize = !event.cancelled && !event.finalized && isOver && phase !== 'cancelled'
+  const canCancel = !event.cancelled && !event.finalized && phase !== 'check_in_closed'
+  const canFinalize = !event.cancelled && !event.finalized && (phase === 'check_in_closed')
   const canWithdraw = !event.cancelled && event.finalized && (accounting?.organizerCredit ?? 0n) > 0n
 
   return (
@@ -407,13 +407,13 @@ function PhasePill({ phase }: { phase: string }) {
     booking_open: 'bg-teal-50 text-teal-700 border-teal-200',
     booking_closed: 'badge-navy',
     check_in_open: 'bg-blue-50 text-blue-700 border-blue-200',
-    check_in_closed: 'badge-navy',
+    check_in_closed: 'bg-orange-50 text-orange-700 border-orange-200',
     finalized: 'badge-navy',
     cancelled: 'bg-red-50 text-red-600 border-red-200',
   }
   const labels: Record<string, string> = {
     booking_open: 'Open', booking_closed: 'Closed', check_in_open: 'Check-In',
-    check_in_closed: 'Ended', finalized: 'Done', cancelled: 'Cancelled',
+    check_in_closed: 'Awaiting Finalize', finalized: 'Done', cancelled: 'Cancelled',
   }
   return (
     <span className={`text-xs font-medium px-2 py-0.5 rounded-full border ${map[phase] ?? 'badge-navy'}`}>
