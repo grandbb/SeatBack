@@ -111,7 +111,7 @@ const RESERVATION_CANCELLED = parseAbiItem(
   'event ReservationCancelled(uint256 indexed eventId, uint256 indexed reservationId, address indexed attendee)'
 )
 const EVENT_FINALIZED = parseAbiItem(
-  'event EventFinalized(uint256 indexed eventId, uint256 noShowCount, uint256 stakerPayout, uint256 organiserPayout)'
+  'event EventFinalized(uint256 indexed eventId, uint256 noShowProceeds, uint256 refundLiability)'
 )
 const EVENT_CANCELLED = parseAbiItem(
   'event EventCancelled(uint256 indexed eventId)'
@@ -220,13 +220,14 @@ export function usePoints(address: `0x${string}` | undefined) {
         if (seenReserveEvents.has(eid)) continue // per-event cap
         if (cancelledReservations.has(rid)) continue // cancelled = 0 pts
         if (!inAllowlist(log.args.eventId!)) continue
-        // RESERVE points only if the attendee was actually checked in (no no-shows)
-        if (!checkedInKeys.has(rid)) continue
         seenReserveEvents.add(eid)
         reserveCount++
         if (closedIds.has(eid)) {
+          // Closed event: only award points if the attendee was actually checked in
+          if (!checkedInKeys.has(rid)) continue
           confirmedReserve += POINTS_RULES.RESERVE
         } else {
+          // Still open: award pending points regardless (check-in hasn't happened yet)
           pendingReserve += POINTS_RULES.RESERVE
         }
       }

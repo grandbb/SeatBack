@@ -255,7 +255,7 @@ function ReservationCard({
     )
   }
 
-  const explorerBase = `https://explorer.arc.io`
+  const explorerBase = ACTIVE_CHAIN_ID === 5042 ? 'https://explorer.arc.io' : 'https://explorer.testnet.arc.io'
   const txExplorer = (hash: `0x${string}`) => `${explorerBase}/tx/${hash}`
 
   return (

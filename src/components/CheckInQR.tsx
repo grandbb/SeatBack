@@ -126,7 +126,14 @@ export function CheckInQR({ eventId, reservationId, event, reservation }: CheckI
   // Use computeEventPhase to avoid Date.now() in render (React Compiler purity)
   const evtPhase = computeEventPhase(event)
   const checkInLive = event.checkInOpened && evtPhase === 'check_in_open'
-  const alreadyCheckedIn = !reservation.active && reservation.refundable && !reservation.refundClaimed
+  // alreadyCheckedIn: active=false + refundable=true after check-in window opened.
+  // Must require checkInOpened to avoid false-positive for early-cancelled reservations
+  // (which also have active=false, refundable=true but were cancelled before check-in).
+  const alreadyCheckedIn =
+    event.checkInOpened &&
+    !reservation.active &&
+    reservation.refundable &&
+    !reservation.refundClaimed
 
   if (alreadyCheckedIn) {
     return (

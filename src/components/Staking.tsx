@@ -6,7 +6,7 @@
  *       This UI reads from .env addresses and shows a "not deployed" state
  *       when they are absent.
  */
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi'
 import { parseUnits, formatUnits } from 'viem'
 import { Layers, Lock, Unlock, Coins, TrendingUp, AlertTriangle, ExternalLink, RefreshCw } from 'lucide-react'
@@ -102,13 +102,17 @@ export function Staking() {
     void refetchTotal()
   }, [refetchSbk, refetchAllowance, refetchStaked, refetchReward, refetchTotal])
 
-  if (isTxSuccess && activeAction) {
-    setActiveAction(null)
-    resetWrite()
-    setStakeInput('')
-    setUnstakeInput('')
-    refetchAll()
-  }
+  // Reset state after tx confirms — must be in useEffect, not render body
+  // (state mutation during render triggers React double-render warnings)
+  useEffect(() => {
+    if (isTxSuccess && activeAction) {
+      setActiveAction(null)
+      resetWrite()
+      setStakeInput('')
+      setUnstakeInput('')
+      refetchAll()
+    }
+  }, [isTxSuccess, activeAction, resetWrite, refetchAll])
 
   // Share %
   const sharePercent = totalStaked && stakedBalance && totalStaked > 0n

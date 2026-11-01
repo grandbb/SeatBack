@@ -185,7 +185,7 @@ function OrganizerEventPanel({ eventId, event, wrongChain, onSwitchChain, onRefe
       functionName: 'cancelEvent',
       args: [eventId],
       chainId: ACTIVE_CHAIN_ID,
-    }, { onError: (e) => setTxError(parseOnchainError(e)), onSuccess: () => { toast.success('Event cancelled.'); void refetchAccounting() } }))
+    }, { onError: (e) => setTxError(parseOnchainError(e)), onSuccess: () => { toast.success('Event cancelled.'); void refetchAccounting(); void onRefetchEvents() } }))
 
   const handleFinalize = () =>
     call(() => finalize({
@@ -194,7 +194,7 @@ function OrganizerEventPanel({ eventId, event, wrongChain, onSwitchChain, onRefe
       functionName: 'finalizeEvent',
       args: [eventId],
       chainId: ACTIVE_CHAIN_ID,
-    }, { onError: (e) => setTxError(parseOnchainError(e)), onSuccess: () => { toast.success('Event finalized.'); void refetchAccounting() } }))
+    }, { onError: (e) => setTxError(parseOnchainError(e)), onSuccess: () => { toast.success('Event finalized.'); void refetchAccounting(); void onRefetchEvents() } }))
 
   const handleWithdraw = () =>
     call(() => withdraw({
@@ -301,7 +301,7 @@ function OrganizerEventPanel({ eventId, event, wrongChain, onSwitchChain, onRefe
                   <QRScanner
                     event={event}
                     eventId={eventId}
-                    onCheckedIn={() => { void refetchAccounting() }}
+                    onCheckedIn={() => { void refetchAccounting(); void onRefetchEvents() }}
                   />
                 )}
 

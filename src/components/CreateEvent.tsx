@@ -312,7 +312,7 @@ export function CreateEvent({ onCreated }: CreateEventProps) {
         )}
 
         <TxButton
-          onClick={() => {}}
+          onClick={() => handleSubmit({ preventDefault: () => undefined } as React.FormEvent)}
           isPending={isPending}
           isConfirming={isConfirming}
           isSuccess={isSuccess}

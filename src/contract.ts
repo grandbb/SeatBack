@@ -79,10 +79,9 @@ export const SEATBACK_ABI = [
   {
     type: 'event', name: 'EventFinalized',
     inputs: [
-      { name: 'eventId',         type: 'uint256', indexed: true  },
-      { name: 'noShowCount',     type: 'uint256', indexed: false },
-      { name: 'stakerPayout',    type: 'uint256', indexed: false },
-      { name: 'organiserPayout', type: 'uint256', indexed: false },
+      { name: 'eventId',          type: 'uint256', indexed: true  },
+      { name: 'noShowProceeds',   type: 'uint256', indexed: false },
+      { name: 'refundLiability',  type: 'uint256', indexed: false },
     ],
   },
   {
@@ -312,15 +311,16 @@ export const SEATBACK_ABI = [
   {
     type: 'event', name: 'StakerCreditAccrued',
     inputs: [
-      { name: 'eventId', type: 'uint256', indexed: true },
+      { name: 'eventId', type: 'uint256', indexed: true  },
+      { name: 'pool',    type: 'address', indexed: true  },
       { name: 'amount',  type: 'uint256', indexed: false },
     ],
   },
   {
     type: 'event', name: 'StakerCreditReclaimed',
     inputs: [
-      { name: 'eventId', type: 'uint256', indexed: true },
-      { name: 'newPool', type: 'address', indexed: true },
+      { name: 'eventId', type: 'uint256', indexed: true  },
+      { name: 'pool',    type: 'address', indexed: true  },
       { name: 'amount',  type: 'uint256', indexed: false },
     ],
   },
@@ -356,7 +356,7 @@ export const STAKING_ABI = [
   { type: 'function', name: 'claimReward', inputs: [], outputs: [], stateMutability: 'nonpayable' },
   { type: 'function', name: 'exit', inputs: [], outputs: [], stateMutability: 'nonpayable' },
   { type: 'function', name: 'syncUndistributed', inputs: [], outputs: [], stateMutability: 'nonpayable' },
-  { type: 'function', name: 'receiveProceeds', inputs: [{ name: 'amount', type: 'uint256' }], outputs: [], stateMutability: 'nonpayable' },
+  { type: 'function', name: 'receiveProceeds',   inputs: [{ name: 'amount', type: 'uint256' }], outputs: [], stateMutability: 'nonpayable' },
   {
     type: 'function', name: 'withdrawOwnerReserve',
     inputs: [{ name: 'to', type: 'address' }],
@@ -377,7 +377,11 @@ export const STAKING_ABI = [
   },
   {
     type: 'event', name: 'ProceedsReceived',
-    inputs: [{ name: 'amount', type: 'uint256', indexed: false }, { name: 'rewardPerToken', type: 'uint256', indexed: false }],
+    inputs: [{ name: 'amount', type: 'uint256', indexed: false }, { name: 'newRewardPerToken', type: 'uint256', indexed: false }],
+  },
+  {
+    type: 'event', name: 'OwnerReserveWithdrawn',
+    inputs: [{ name: 'to', type: 'address', indexed: true }, { name: 'amount', type: 'uint256', indexed: false }],
   },
 ] as const
 

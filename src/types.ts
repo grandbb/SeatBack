@@ -38,8 +38,8 @@ export interface ReservationInfo {
   refundClaimed: boolean
 }
 
-/** UI-only tab enum */
-export type AppTab = 'events' | 'create' | 'organizer'
+/** UI-only tab enum — must stay in sync with App.tsx */
+export type AppTab = 'home' | 'events' | 'create' | 'reservations' | 'organizer' | 'docs' | 'demo'
 
 /** Current phase of an event, computed from onchain state and block.timestamp */
 export type EventPhase =

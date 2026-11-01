@@ -80,8 +80,8 @@ contract SeatBack is ReentrancyGuard {
     /// @dev Magic return value required by ERC-1271
     bytes4 private constant _ERC1271_MAGIC = 0x1626ba7e;
 
-    /// @notice Maximum QR validity window in seconds (5 minutes)
-    uint256 public constant MAX_QR_VALIDITY = 5 * 60;
+    /// @notice Maximum QR validity window in seconds (10 minutes)
+    uint256 public constant MAX_QR_VALIDITY = 10 * 60;
 
     // ─── State ────────────────────────────────────────────────────────────────
 

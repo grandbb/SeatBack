@@ -281,10 +281,14 @@ contract SeatBackStaking is ReentrancyGuard, Ownable {
         // New users have stakeTimestamp[user]==0; block.timestamp is always >= cooldown
         // so first accrual is always gated by this same condition.
         uint256 rpt = rewardPerTokenStored;
-        if (block.timestamp >= stakeTimestamp[user] + STAKE_COOLDOWN_SECONDS) {
-            uint256 accrued = (stakedBalance[user] * (rpt - rewardPerTokenPaid[user])) / PRECISION;
-            pendingRewards[user] += accrued;
+        bool cooldownPassed = block.timestamp >= stakeTimestamp[user] + STAKE_COOLDOWN_SECONDS;
+
+        if (user == address(0) || cooldownPassed) {
+            if (cooldownPassed) {
+                uint256 accrued = (stakedBalance[user] * (rpt - rewardPerTokenPaid[user])) / PRECISION;
+                pendingRewards[user] += accrued;
+            }
+            rewardPerTokenPaid[user] = rpt;
         }
-        rewardPerTokenPaid[user] = rpt;
     }
 }

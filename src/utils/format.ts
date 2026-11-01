@@ -57,7 +57,9 @@ export function formatDateTimeUTC(ts: bigint | number): string {
  * The input value format is "YYYY-MM-DDTHH:mm" and is interpreted as UTC.
  */
 export function utcInputToUnix(value: string): number {
-  return Math.floor(new Date(value + 'Z').getTime() / 1000)
+  if (!value) return 0
+  const ms = new Date(value + 'Z').getTime()
+  return isNaN(ms) ? 0 : Math.floor(ms / 1000)
 }
 
 /**
