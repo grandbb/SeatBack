@@ -120,6 +120,7 @@ contract SeatBack is ReentrancyGuard {
         uint256 organizerPaid;
         uint256 stakerPaid;      // tracks USDC routed to staking pool for auditability
         address poolSnapshot;    // stakingPool address snapshotted at finalization time
+        bool noShowSettled;      // true once no-show proceeds have been split exactly once
     }
 
     /// @notice The EIP-712 typed-data struct that the attendee signs for QR check-in.
@@ -185,6 +186,7 @@ contract SeatBack is ReentrancyGuard {
     error ZeroAddress();
     error InternalCallOnly();
     error StakerCreditTransferFailed();
+    error NoShowAlreadySettled();
 
     /**
      * @notice Set or update the staking pool address.
@@ -621,6 +623,9 @@ contract SeatBack is ReentrancyGuard {
         }
 
         EventAccounting storage acc = accounting[eventId];
+        if (acc.noShowSettled) revert NoShowAlreadySettled();
+        acc.noShowSettled = true;
+
         uint256 totalAmount = acc.organizerCredit;
         if (totalAmount == 0) revert NoProceeds();
 

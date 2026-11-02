@@ -11,12 +11,21 @@ export function formatUsdc(raw: bigint): string {
   return `${whole.toLocaleString('en-US')}.${fracStr}`
 }
 
-/** Parse a user input string like "5" or "5.50" into raw USDC bigint */
+/** Parse a user input string like "5" or "5.50" into raw USDC bigint.
+ *  Uses pure BigInt arithmetic — no floating-point rounding. */
 export function parseUsdc(input: string): bigint {
   const cleaned = input.replace(/[^0-9.]/g, '')
-  const n = parseFloat(cleaned)
-  if (isNaN(n) || n < 0) return 0n
-  return BigInt(Math.round(n * 10 ** USDC_DECIMALS))
+  if (!cleaned || cleaned === '.') return 0n
+  const [wholePart, fracPart = ''] = cleaned.split('.')
+  // Guard: reject if more than one decimal point was in the original
+  if (cleaned.split('.').length > 2) return 0n
+  try {
+    const whole = wholePart ? BigInt(wholePart) : 0n
+    const frac = fracPart.slice(0, USDC_DECIMALS).padEnd(USDC_DECIMALS, '0')
+    return whole * BigInt(10 ** USDC_DECIMALS) + BigInt(frac)
+  } catch {
+    return 0n
+  }
 }
 
 /**
@@ -117,7 +126,15 @@ export function parseOnchainError(error: unknown): string {
   if (msg.includes('notattendee')) return 'You are not the attendee for this reservation.'
   if (msg.includes('reverted')) {
     const m = msg.match(/reason="([^"]+)"/)
-    return m ? `Failed: ${m[1]}` : 'Transaction failed. Check your wallet and try again.'
+    if (m) {
+      // Sanitize: truncate, strip URLs, strip HTML to prevent phishing via revert reasons
+      const reason = m[1]
+        .slice(0, 200)
+        .replace(/https?:\/\/\S+/gi, '[link removed]')
+        .replace(/<[^>]+>/g, '')
+      return `Failed: ${reason}`
+    }
+    return 'Transaction failed. Check your wallet and try again.'
   }
   if (msg.includes('network') || msg.includes('timeout')) return 'Network issue. Please retry.'
   return 'Something went wrong. Please try again.'

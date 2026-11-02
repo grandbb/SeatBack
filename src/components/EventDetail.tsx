@@ -104,9 +104,26 @@ export function EventDetail({ eventId, onBack }: EventDetailProps) {
     void refetchAllowance()
   }
 
-  if (isLoading || !event) {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center py-16 text-[var(--muted)]">Loading…</div>
+    )
+  }
+
+  if (!event || event.organizer === '0x0000000000000000000000000000000000000000') {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 gap-4">
+        <XCircle size={36} className="text-[var(--muted)]" />
+        <p className="font-semibold text-[var(--ink)]">Event not found</p>
+        <p className="text-sm text-[var(--muted)]">Event #{eventId.toString()} does not exist.</p>
+        <button
+          type="button"
+          onClick={onBack}
+          className="mt-2 text-sm text-[var(--accent)] underline underline-offset-2"
+        >
+          Back to events
+        </button>
+      </div>
     )
   }
 

@@ -14,7 +14,7 @@
  * Falls back to paste mode gracefully when the browser reports no camera.
  */
 import { useState, useRef, useCallback, useEffect } from 'react'
-import { useWriteContract, useWaitForTransactionReceipt } from 'wagmi'
+import { useWriteContract, useWaitForTransactionReceipt, useReadContract } from 'wagmi'
 import { Camera, CameraOff, ClipboardPaste, CheckCircle2, AlertTriangle, Loader2, X } from 'lucide-react'
 import { decodePayload, payloadToAuthArgs, qrSecondsLeft, PayloadDecodeError, type CheckInPayload } from '@/utils/checkin'
 import { SEATBACK_ABI, SEATBACK_ADDRESS, ACTIVE_CHAIN_ID, NETWORK_LABEL } from '@/contract'
@@ -189,11 +189,26 @@ export function QRScanner({ event, eventId, onCheckedIn }: QRScannerProps) {
     setPasteValue('')
   }
 
+  // ── Pre-validate: fetch reservation before showing Confirm ───────────────────
+  const auth = payload ? payloadToAuthArgs(payload) : null
+  const { data: reservationCheck, isLoading: resCheckLoading } = useReadContract({
+    address: SEATBACK_ADDRESS ?? undefined,
+    abi: SEATBACK_ABI,
+    functionName: 'getReservation',
+    args: auth ? [auth.reservationId] : undefined,
+    chainId: ACTIVE_CHAIN_ID,
+    query: { enabled: !!payload && !!SEATBACK_ADDRESS },
+  })
+  const resValid = !!reservationCheck &&
+    (reservationCheck as { active: boolean; attendee: string; eventId: bigint }).active &&
+    (reservationCheck as { active: boolean; attendee: string; eventId: bigint }).eventId === eventId &&
+    (reservationCheck as { active: boolean; attendee: string; eventId: bigint }).attendee.toLowerCase() === (auth?.attendee ?? '').toLowerCase()
+  const resInvalid = !!payload && !resCheckLoading && !resValid
+
   // ── Review panel ──────────────────────────────────────────────────────────────
   if (payload) {
     const secsLeft = qrSecondsLeft(payload)
     const expired = secsLeft <= 0
-    const auth = payloadToAuthArgs(payload)
 
     return (
       <div className="rounded-2xl border border-[var(--border)] p-5 flex flex-col gap-4" style={{ background: 'var(--surface-strong)' }}>
@@ -211,11 +226,11 @@ export function QRScanner({ event, eventId, onCheckedIn }: QRScannerProps) {
         {/* Details */}
         <div className="rounded-xl bg-[var(--surface-muted)] p-4 flex flex-col gap-2 text-sm">
           <Row label="Event" value={event.title} />
-          <Row label="Event ID" value={String(auth.eventId)} mono />
-          <Row label="Reservation ID" value={String(auth.reservationId)} mono />
-          <Row label="Attendee wallet" value={shortAddress(auth.attendee)} mono />
-          <Row label="Valid after" value={formatDateTime(Number(auth.validAfter))} />
-          <Row label="Expires" value={formatDateTime(Number(auth.validUntil))} />
+          <Row label="Event ID" value={String(auth!.eventId)} mono />
+          <Row label="Reservation ID" value={String(auth!.reservationId)} mono />
+          <Row label="Attendee wallet" value={shortAddress(auth!.attendee)} mono />
+          <Row label="Valid after" value={formatDateTime(Number(auth!.validAfter))} />
+          <Row label="Expires" value={formatDateTime(Number(auth!.validUntil))} />
           <Row
             label="Status"
             value={expired ? 'EXPIRED' : `${secsLeft}s remaining`}
@@ -227,6 +242,19 @@ export function QRScanner({ event, eventId, onCheckedIn }: QRScannerProps) {
           <strong>Note:</strong> The QR signature proves wallet control, not physical presence.
           You as organiser are attesting attendance. Submitting this transaction is your confirmation.
         </div>
+
+        {resCheckLoading && (
+          <div className="rounded-xl bg-[var(--surface-muted)] p-3 text-sm text-[var(--muted)] flex items-center gap-2">
+            <Loader2 size={14} className="animate-spin" /> Verifying reservation on-chain…
+          </div>
+        )}
+
+        {resInvalid && (
+          <div className="rounded-xl bg-red-50 border border-red-200 p-3 text-sm text-red-700 flex items-center gap-2">
+            <AlertTriangle size={14} />
+            Reservation not found or already used. This QR cannot be checked in.
+          </div>
+        )}
 
         {expired && (
           <div className="rounded-xl bg-red-50 border border-red-200 p-3 text-sm text-red-700 flex items-center gap-2">
@@ -257,7 +285,7 @@ export function QRScanner({ event, eventId, onCheckedIn }: QRScannerProps) {
               isConfirming={isConfirming}
               isSuccess={isSuccess}
               isError={isTxError}
-              disabled={expired || reviewState === 'submitting'}
+              disabled={expired || resInvalid || resCheckLoading || reviewState === 'submitting'}
               label="Confirm Check-In"
               confirmingLabel="Confirming on-chain…"
               successLabel="Checked in!"

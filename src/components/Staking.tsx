@@ -120,7 +120,12 @@ export function Staking() {
     : '0.00'
 
   // Approve needed for stake
-  const stakeAmountBigint = stakeInput ? parseUnits(stakeInput, 18) : 0n
+  const stakeAmountBigint = (() => {
+    try {
+      const v = stakeInput ? parseUnits(stakeInput, 18) : 0n
+      return v > 0n ? v : 0n
+    } catch { return 0n }
+  })()
   const needsApproval = stakeAmountBigint > 0n && (sbkAllowance ?? 0n) < stakeAmountBigint
 
   const busy = isPending || isTxLoading
@@ -138,7 +143,7 @@ export function Staking() {
   }
 
   const handleStake = () => {
-    if (!STAKING_ADDRESS || stakeAmountBigint === 0n) return
+    if (!STAKING_ADDRESS || stakeAmountBigint <= 0n) return
     setActiveAction('stake')
     writeContract({
       address: STAKING_ADDRESS,

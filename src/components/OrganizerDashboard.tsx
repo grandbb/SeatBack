@@ -3,7 +3,7 @@
  * Allows: openCheckIn, checkIn via QR scanner, checkIn via address, cancelEvent,
  *         withdrawNoShowProceeds, finalizeEvent.
  */
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { useAccount, useWriteContract, useWaitForTransactionReceipt, useSwitchChain } from 'wagmi'
 import { XCircle, AlertTriangle, ChevronDown, ChevronUp, Loader2, QrCode } from 'lucide-react'
 import { SEATBACK_ABI, SEATBACK_ADDRESS, ACTIVE_CHAIN_ID, NETWORK_LABEL } from '@/contract'
@@ -81,7 +81,7 @@ export function OrganizerDashboard() {
           event={event}
           wrongChain={wrongChain}
           onSwitchChain={() => switchChain({ chainId: ACTIVE_CHAIN_ID })}
-          onRefetchEvents={refetchEvents}
+          onRefetchEvents={() => { void refetchEvents() }}
         />
       ))}
     </div>
@@ -101,6 +101,8 @@ function OrganizerEventPanel({ eventId, event, wrongChain, onSwitchChain, onRefe
   const [checkInMode, setCheckInMode] = useState<'qr' | 'manual'>('qr')
   const [checkInAddress, setCheckInAddress] = useState('')
   const [txError, setTxError] = useState<string | null>(null)
+  // Confirmation state for irreversible actions
+  const [confirmPending, setConfirmPending] = useState<'cancel' | 'finalize' | null>(null)
 
   const phase = computeEventPhase(event)
 
@@ -180,7 +182,9 @@ function OrganizerEventPanel({ eventId, event, wrongChain, onSwitchChain, onRefe
     }, { onError: (e) => setTxError(parseOnchainError(e)), onSuccess: () => { toast.success('Attendee checked in!'); setCheckInAddress(''); void refetchAccounting() } }))
   }
 
-  const handleCancelEvent = () => {
+  const handleCancelEvent = useCallback(() => {
+    if (confirmPending !== 'cancel') { setConfirmPending('cancel'); return }
+    setConfirmPending(null)
     if (!SEATBACK_ADDRESS) return
     call(() => cancelEvt({
       address: SEATBACK_ADDRESS,
@@ -189,9 +193,11 @@ function OrganizerEventPanel({ eventId, event, wrongChain, onSwitchChain, onRefe
       args: [eventId],
       chainId: ACTIVE_CHAIN_ID,
     }, { onError: (e) => setTxError(parseOnchainError(e)), onSuccess: () => { toast.success('Event cancelled.'); void refetchAccounting(); void onRefetchEvents() } }))
-  }
+  }, [confirmPending, cancelEvt, eventId, refetchAccounting, onRefetchEvents])
 
-  const handleFinalize = () => {
+  const handleFinalize = useCallback(() => {
+    if (confirmPending !== 'finalize') { setConfirmPending('finalize'); return }
+    setConfirmPending(null)
     if (!SEATBACK_ADDRESS) return
     call(() => finalize({
       address: SEATBACK_ADDRESS,
@@ -200,7 +206,7 @@ function OrganizerEventPanel({ eventId, event, wrongChain, onSwitchChain, onRefe
       args: [eventId],
       chainId: ACTIVE_CHAIN_ID,
     }, { onError: (e) => setTxError(parseOnchainError(e)), onSuccess: () => { toast.success('Event finalized.'); void refetchAccounting(); void onRefetchEvents() } }))
-  }
+  }, [confirmPending, finalize, eventId, refetchAccounting, onRefetchEvents])
 
   const handleWithdraw = () => {
     if (!SEATBACK_ADDRESS) return
@@ -345,16 +351,29 @@ function OrganizerEventPanel({ eventId, event, wrongChain, onSwitchChain, onRefe
             )}
 
             {canFinalize && (
-              <TxButton
-                onClick={handleFinalize}
-                isPending={finalizePending}
-                isConfirming={finalizeConfirming}
-                isSuccess={finalizeSuccess}
-                disabled={wrongChain}
-                label="Finalize Event"
-                variant="ghost"
-                className="w-full"
-              />
+              confirmPending === 'finalize' ? (
+                <div className="flex gap-2">
+                  <button type="button" onClick={handleFinalize}
+                    className="flex-1 rounded-xl px-4 py-2.5 text-sm font-semibold bg-[var(--accent)] text-white">
+                    Confirm Finalize
+                  </button>
+                  <button type="button" onClick={() => setConfirmPending(null)}
+                    className="flex-1 rounded-xl px-4 py-2.5 text-sm border border-[var(--border-strong)] text-[var(--ink)]">
+                    Cancel
+                  </button>
+                </div>
+              ) : (
+                <TxButton
+                  onClick={handleFinalize}
+                  isPending={finalizePending}
+                  isConfirming={finalizeConfirming}
+                  isSuccess={finalizeSuccess}
+                  disabled={wrongChain}
+                  label="Finalize Event"
+                  variant="ghost"
+                  className="w-full"
+                />
+              )
             )}
 
             {canWithdraw && (
@@ -370,16 +389,29 @@ function OrganizerEventPanel({ eventId, event, wrongChain, onSwitchChain, onRefe
             )}
 
             {canCancel && (
-              <TxButton
-                onClick={handleCancelEvent}
-                isPending={cancelPending}
-                isConfirming={cancelConfirming}
-                isSuccess={cancelSuccess}
-                disabled={wrongChain}
-                label="Cancel Event"
-                variant="danger"
-                className="w-full"
-              />
+              confirmPending === 'cancel' ? (
+                <div className="flex gap-2">
+                  <button type="button" onClick={handleCancelEvent}
+                    className="flex-1 rounded-xl px-4 py-2.5 text-sm font-semibold bg-[var(--danger)] text-white">
+                    Confirm Cancel
+                  </button>
+                  <button type="button" onClick={() => setConfirmPending(null)}
+                    className="flex-1 rounded-xl px-4 py-2.5 text-sm border border-[var(--border-strong)] text-[var(--ink)]">
+                    Keep Event
+                  </button>
+                </div>
+              ) : (
+                <TxButton
+                  onClick={handleCancelEvent}
+                  isPending={cancelPending}
+                  isConfirming={cancelConfirming}
+                  isSuccess={cancelSuccess}
+                  disabled={wrongChain}
+                  label="Cancel Event"
+                  variant="danger"
+                  className="w-full"
+                />
+              )
             )}
           </div>
 

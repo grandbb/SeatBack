@@ -32,8 +32,8 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { createPublicClient, http, parseAbiItem } from 'viem'
-import { arc } from 'viem/chains'
-import { SEATBACK_ADDRESS } from '@/contract'
+import { arc, arcTestnet } from 'viem/chains'
+import { SEATBACK_ADDRESS, ACTIVE_CHAIN_ID } from '@/contract'
 
 // ─── Campaign & Rule Constants (exported for Docs) ───────────────────────────
 
@@ -91,9 +91,10 @@ export interface PointsBreakdown {
 
 // ─── Client ───────────────────────────────────────────────────────────────────
 
+const IS_MAINNET = ACTIVE_CHAIN_ID === 5042
 const client = createPublicClient({
-  chain: arc,
-  transport: http('https://rpc.mainnet.arc.io'),
+  chain: IS_MAINNET ? arc : arcTestnet,
+  transport: http(IS_MAINNET ? 'https://rpc.mainnet.arc.io' : 'https://rpc.testnet.arc.io'),
 })
 
 // ─── ABI items ────────────────────────────────────────────────────────────────

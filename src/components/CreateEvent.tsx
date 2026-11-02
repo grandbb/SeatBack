@@ -47,6 +47,7 @@ export function CreateEvent({ onCreated }: CreateEventProps) {
     if (!depositInput || parseUsdc(depositInput) === 0n) return 'Enter a deposit amount greater than 0.'
     const cap = parseInt(capacityInput, 10)
     if (isNaN(cap) || cap <= 0) return 'Capacity must be at least 1.'
+    if (cap > 10000) return 'Capacity cannot exceed 10,000.'
     if (!eventStartInput || !eventEndInput || !bookingCloseInput || !refundCutoffInput || !checkInStartInput || !checkInEndInput)
       return 'All date/time fields are required.'
     const tEventStart = utcInputToUnix(eventStartInput)
@@ -56,6 +57,8 @@ export function CreateEvent({ onCreated }: CreateEventProps) {
     const tCheckInStart = utcInputToUnix(checkInStartInput)
     const tCheckInEnd = utcInputToUnix(checkInEndInput)
     const now = Math.floor(Date.now() / 1000)
+    const TWO_YEARS = 2 * 365 * 24 * 3600
+    if (tEventEnd > now + TWO_YEARS) return 'Event End must be within 2 years from now.'
     if (tBookingClose <= now) return '① Booking Closes must be in the future.'
     if (tBookingClose > tRefundCutoff) return '① Booking Closes must be ≤ ② Refund Cutoff.'
     if (tRefundCutoff > tCheckInStart) return '② Refund Cutoff must be ≤ ③ Check-In Opens.'
@@ -261,7 +264,7 @@ export function CreateEvent({ onCreated }: CreateEventProps) {
               <input
                 type="number"
                 min={1}
-                max={9999}
+                max={10000}
                 value={capacityInput}
                 onChange={(e) => setCapacityInput(e.target.value)}
                 className={inputCls}
