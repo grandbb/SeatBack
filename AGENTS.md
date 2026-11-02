@@ -78,6 +78,28 @@ SEATBACK_ADDRESS points to v3: `0x6Fdb06A9Ce387937C2261F489E502e53cA1F0Bbc`.
 - `contracts/SeatBackToken.sol` — SBK source
 - `public/remix/` — Flatten+pragma-fixed files for Remix deploy
 
+## Security Audit History
+
+| Round | Commit | Key Fixes |
+|---|---|---|
+| Round 3 | `12a45b5` | Cooldown semantics, push→pull payout, createEvent timing |
+| Round 4 | `9387f5f` | withdrawNoShowProceeds settled flag, formatUsdc BigInt, clipboard, TxButton, circular import, getLogs parallel, chainId, CSS vars |
+| Pentest | `df28a9a` | CSP unsafe-inline removed, parseUsdc BigInt, capacity cap, QR pre-validate, event-not-found, confirmation dialogs |
+| Round 5 | current | Cooldown gate moved to claim/unstake, 18/18 unit tests, isInCooldown view, Staking UI lockout |
+
+## Cooldown Design Note
+
+SeatBackStaking cooldown (24h) **gates claim and unstake** — stakers cannot claim or unstake within 24h of their last stake. Rewards accrue normally during the cooldown window; they become claimable once 24h passes. This blocks same-block flash-stake attacks. Truly forfeiting mid-cooldown accruals would require O(n) updates on every `receiveProceeds()` call — not feasible at scale with accumulator-based distribution.
+
+## Contracts to Redeploy (PENDING)
+
+Both SeatBack and SeatBackStaking have multiple rounds of security fixes since last deploy.
+Files ready: `public/remix/2_SeatBackStaking.sol` and `public/remix/3_SeatBack.sol`.
+
+After redeploy:
+1. Call `SeatBack.setStakingPool(new_staking_address)` — verifies `pool.seatBack() == address(this)`
+2. Update `DEPLOY_BLOCK` in `src/hooks/usePoints.ts` to actual block number
+
 ## To Run
 
 ```bash

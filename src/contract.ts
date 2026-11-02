@@ -356,6 +356,8 @@ export const STAKING_ABI = [
   { type: 'function', name: 'claimReward', inputs: [], outputs: [], stateMutability: 'nonpayable' },
   { type: 'function', name: 'exit', inputs: [], outputs: [], stateMutability: 'nonpayable' },
   { type: 'function', name: 'syncUndistributed', inputs: [], outputs: [], stateMutability: 'nonpayable' },
+  { type: 'function', name: 'isInCooldown', inputs: [{ name: 'user', type: 'address' }], outputs: [{ type: 'bool' }], stateMutability: 'view' },
+  { type: 'error', name: 'StillInCooldown', inputs: [] },
   { type: 'function', name: 'receiveProceeds',   inputs: [{ name: 'amount', type: 'uint256' }], outputs: [], stateMutability: 'nonpayable' },
   {
     type: 'function', name: 'withdrawOwnerReserve',

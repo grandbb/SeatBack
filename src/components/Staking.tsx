@@ -85,6 +85,15 @@ export function Staking() {
     query: { enabled: !!STAKING_ADDRESS },
   })
 
+  const { data: inCooldown, refetch: refetchCooldown } = useReadContract({
+    address: STAKING_ADDRESS || undefined,
+    abi: STAKING_ABI,
+    functionName: 'isInCooldown',
+    args: address ? [address] : undefined,
+    chainId: ACTIVE_CHAIN_ID,
+    query: { enabled: !!STAKING_ADDRESS && !!address },
+  })
+
   // ── Write state ─────────────────────────────────────────────────────────────
 
   const { writeContract, data: txHash, isPending, reset: resetWrite } = useWriteContract()
@@ -100,7 +109,8 @@ export function Staking() {
     void refetchStaked()
     void refetchReward()
     void refetchTotal()
-  }, [refetchSbk, refetchAllowance, refetchStaked, refetchReward, refetchTotal])
+    void refetchCooldown()
+  }, [refetchSbk, refetchAllowance, refetchStaked, refetchReward, refetchTotal, refetchCooldown])
 
   // Reset state after tx confirms — must be in useEffect, not render body
   // (state mutation during render triggers React double-render warnings)
@@ -285,6 +295,11 @@ export function Staking() {
           {/* Unstake */}
           <div className="card p-5 flex flex-col gap-4">
             <h2 className="font-semibold text-[var(--ink)] flex items-center gap-2"><Unlock size={15} /> Unstake SBK</h2>
+            {inCooldown && (
+              <div className="rounded-xl p-3 text-xs flex items-center gap-2" style={{ background: 'var(--warning-bg)', color: 'var(--warning)' }}>
+                24-hour cooldown active — unstake and claim are locked until your cooldown ends.
+              </div>
+            )}
             <div className="flex gap-2">
               <input
                 type="number"
@@ -292,15 +307,16 @@ export function Staking() {
                 placeholder="Amount SBK"
                 value={unstakeInput}
                 onChange={e => setUnstakeInput(e.target.value)}
-                className="flex-1 rounded-xl border border-[var(--border)] bg-[var(--surface)] px-4 py-2.5 text-sm text-[var(--ink)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
+                className="flex-1 rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-4 py-2.5 text-sm text-[var(--ink)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
               />
               <button
+                type="button"
                 onClick={() => setUnstakeInput(fmt18(stakedBalance, 0).replace(/,/g, ''))}
                 className="text-xs px-3 py-2 rounded-xl border border-[var(--border)] text-[var(--muted)] hover:text-[var(--ink)]"
               >Max</button>
             </div>
-            <button onClick={handleUnstake} disabled={busy || !unstakeInput || wrongChain} className="btn-ghost py-3 text-sm border border-[var(--border)] disabled:opacity-50">
-              {busy && activeAction === 'unstake' ? 'Unstaking…' : 'Unstake SBK'}
+            <button type="button" onClick={handleUnstake} disabled={busy || !unstakeInput || wrongChain || !!inCooldown} className="btn-ghost py-3 text-sm border border-[var(--border)] disabled:opacity-50">
+              {busy && activeAction === 'unstake' ? 'Unstaking…' : inCooldown ? 'Cooldown Active' : 'Unstake SBK'}
             </button>
           </div>
 
@@ -309,15 +325,15 @@ export function Staking() {
             <div className="card p-5 flex flex-col gap-3">
               <h2 className="font-semibold text-[var(--ink)] text-sm flex items-center gap-2"><Coins size={14} /> Claim USDC</h2>
               <p className="text-xs text-[var(--muted)]">Claim {fmt6(pendingReward)} USDC without unstaking.</p>
-              <button onClick={handleClaim} disabled={busy || !pendingReward || (pendingReward) === 0n || wrongChain} className="btn-primary py-2.5 text-sm disabled:opacity-50">
-                {busy && activeAction === 'claim' ? 'Claiming…' : 'Claim USDC'}
+              <button type="button" onClick={handleClaim} disabled={busy || !pendingReward || (pendingReward) === 0n || wrongChain || !!inCooldown} className="btn-primary py-2.5 text-sm disabled:opacity-50">
+                {busy && activeAction === 'claim' ? 'Claiming…' : inCooldown ? 'Locked' : 'Claim USDC'}
               </button>
             </div>
             <div className="card p-5 flex flex-col gap-3">
               <h2 className="font-semibold text-[var(--ink)] text-sm flex items-center gap-2"><Unlock size={14} /> Exit All</h2>
               <p className="text-xs text-[var(--muted)]">Unstake all SBK and claim all USDC in one transaction.</p>
-              <button onClick={handleExit} disabled={busy || (!stakedBalance && !pendingReward) || wrongChain} className="btn-ghost py-2.5 text-sm border border-[var(--border)] disabled:opacity-50">
-                {busy && activeAction === 'exit' ? 'Exiting…' : 'Exit All'}
+              <button type="button" onClick={handleExit} disabled={busy || (!stakedBalance && !pendingReward) || wrongChain || !!inCooldown} className="btn-ghost py-2.5 text-sm border border-[var(--border)] disabled:opacity-50">
+                {busy && activeAction === 'exit' ? 'Exiting…' : inCooldown ? 'Locked' : 'Exit All'}
               </button>
             </div>
           </div>

@@ -798,8 +798,8 @@ library SafeERC20 {
  *    `receiveProceeds()`, called internally by SeatBack.withdrawNoShowProceeds().
  *  - Stakers earn USDC proportional to their share of total staked SBK at the
  *    time each deposit arrives (reward-per-token accumulator pattern).
- *  - There is no lock-up period; stakers may unstake at any time.
- *    Pending USDC rewards are automatically harvested on every stake/unstake/claim.
+ *  - Stakers may claim rewards or unstake only after a 24-hour cooldown since
+ *    their last stake/top-up.
  *
  * Security properties:
  *  - Uses a standard reward-per-token accumulator (like Synthetix StakingRewards)
@@ -854,8 +854,13 @@ contract SeatBackStaking is ReentrancyGuard, Ownable {
     /// @notice Timestamp when each staker last staked. Used for MEV cooldown.
     mapping(address => uint256) public stakeTimestamp;
 
-    /// @notice Seconds a staker must wait before becoming eligible for new rewards.
-    ///         24 hours. Prevents flash-stake sniping.
+    /// @notice Seconds a staker must wait before claiming rewards or unstaking after stake.
+    ///         24 hours. Prevents same-block flash-stake-and-claim attacks.
+    ///         Note: rewards distributed during the cooldown window accrue normally
+    ///         and are claimable once the 24h gate passes. Truly forfeiting mid-cooldown
+    ///         rewards would require O(n) per-staker updates on every receiveProceeds(),
+    ///         which is not feasible at scale. The protection is: no staker can claim
+    ///         within 24h of their last stake, blocking atomic/near-atomic sniping.
     uint256 public constant STAKE_COOLDOWN_SECONDS = 24 hours;
 
     /// @notice Minimum SBK that must be staked to participate in distributions.
@@ -879,6 +884,7 @@ contract SeatBackStaking is ReentrancyGuard, Ownable {
     error Unauthorized();
     error InvalidAddress();
     error NoStakers();
+    error StillInCooldown();
 
     // ─── Constructor ──────────────────────────────────────────────────────────
 
@@ -918,11 +924,14 @@ contract SeatBackStaking is ReentrancyGuard, Ownable {
         // Enforce minimum stake to prevent dust-stake attacks on undistributedProceeds
         if (stakedBalance[msg.sender] + amount < MIN_STAKE) revert BelowMinStake();
 
+        // Harvest rewards earned up to the current accumulator before mutating stake.
         _updateReward(msg.sender);
 
         stakedBalance[msg.sender] += amount;
         totalStaked += amount;
-        stakeTimestamp[msg.sender] = block.timestamp; // reset cooldown on every top-up
+
+        // Reset cooldown on every stake / top-up.
+        stakeTimestamp[msg.sender] = block.timestamp;
 
         sbk.safeTransferFrom(msg.sender, address(this), amount);
 
@@ -936,6 +945,7 @@ contract SeatBackStaking is ReentrancyGuard, Ownable {
     function unstake(uint256 amount) external nonReentrant {
         if (amount == 0) revert ZeroAmount();
         if (stakedBalance[msg.sender] < amount) revert InsufficientStake();
+        if (isInCooldown(msg.sender)) revert StillInCooldown();
 
         _updateReward(msg.sender);
 
@@ -951,6 +961,8 @@ contract SeatBackStaking is ReentrancyGuard, Ownable {
      * @notice Claim all accumulated USDC rewards without changing stake.
      */
     function claimReward() external nonReentrant {
+        if (isInCooldown(msg.sender)) revert StillInCooldown();
+
         _updateReward(msg.sender);
 
         uint256 reward = pendingRewards[msg.sender];
@@ -967,6 +979,8 @@ contract SeatBackStaking is ReentrancyGuard, Ownable {
      * @notice Convenience: unstake all SBK and claim all USDC in one transaction.
      */
     function exit() external nonReentrant {
+        if (isInCooldown(msg.sender)) revert StillInCooldown();
+
         _updateReward(msg.sender);
 
         uint256 staked = stakedBalance[msg.sender];
@@ -1047,8 +1061,16 @@ contract SeatBackStaking is ReentrancyGuard, Ownable {
      * @notice Current pending USDC reward for a staker (including unaccrued).
      */
     function pendingReward(address user) external view returns (uint256) {
-        uint256 accrued = (stakedBalance[user] * (rewardPerTokenStored - rewardPerTokenPaid[user])) / PRECISION;
+        uint256 accrued = (stakedBalance[user] * (rewardPerTokenStored - rewardPerTokenPaid[user]))
+            / PRECISION;
         return pendingRewards[user] + accrued;
+    }
+
+    /**
+     * @notice Whether a staker is still within cooldown after their last stake/top-up.
+     */
+    function isInCooldown(address user) public view returns (bool) {
+        return block.timestamp < stakeTimestamp[user] + STAKE_COOLDOWN_SECONDS;
     }
 
     // ─── Internal ─────────────────────────────────────────────────────────────
@@ -1058,24 +1080,13 @@ contract SeatBackStaking is ReentrancyGuard, Ownable {
      *      Must be called at the start of stake(), unstake(), claimReward(), exit().
      */
     function _updateReward(address user) internal {
-        // Anti-flash-stake: stakers must wait STAKE_COOLDOWN_SECONDS (24h)
-        // before earning rewards. This prevents flash-stake sniping of proceeds.
-        // New users have stakeTimestamp[user]==0; block.timestamp is always >= cooldown
-        // so first accrual is always gated by this same condition.
-        uint256 rpt = rewardPerTokenStored;
-
         if (user == address(0)) {
             return;
         }
 
-        bool cooldownPassed = block.timestamp >= stakeTimestamp[user] + STAKE_COOLDOWN_SECONDS;
-
-        if (cooldownPassed) {
-            uint256 accrued = (stakedBalance[user] * (rpt - rewardPerTokenPaid[user])) / PRECISION;
-            pendingRewards[user] += accrued;
-        }
-
-        // Always advance checkpoint so rewards accrued during cooldown are forfeited.
+        uint256 rpt = rewardPerTokenStored;
+        uint256 accrued = (stakedBalance[user] * (rpt - rewardPerTokenPaid[user])) / PRECISION;
+        pendingRewards[user] += accrued;
         rewardPerTokenPaid[user] = rpt;
     }
 }
