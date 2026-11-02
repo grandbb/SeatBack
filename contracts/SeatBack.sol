@@ -137,6 +137,8 @@ contract SeatBack is ReentrancyGuard {
     error InvalidDeposit();
     error InvalidMetadata(string field);
     error InvalidTimestamps();
+    error InvalidEventTimes();
+    error CheckInWindowTooShort();
     error EventNotFound();
     error EventCancelled_();
     error EventNotCancelled();
@@ -297,6 +299,10 @@ contract SeatBack is ReentrancyGuard {
         ) {
             revert InvalidTimestamps();
         }
+
+        if (p.eventStart >= p.eventEnd) revert InvalidEventTimes();
+        if (p.bookingClose > p.eventStart) revert InvalidEventTimes();
+        if (p.checkInEnd - p.checkInStart < 5 minutes) revert CheckInWindowTooShort();
 
         eventId = eventCount;
         eventCount = eventId + 1;
@@ -633,11 +639,9 @@ contract SeatBack is ReentrancyGuard {
             organiserAmount = totalAmount - stakerAmount;
         }
 
-        // ── Pay organiser first (isolation: organiser share is never at risk) ──
+        // Credit organiser proceeds for pull-based withdrawal.
+        acc.organizerCredit += organiserAmount;
         acc.organizerPaid += organiserAmount;
-        if (organiserAmount > 0) {
-            usdc.safeTransfer(evt.payoutWallet, organiserAmount);
-        }
         emit ProceedsWithdrawn(eventId, evt.payoutWallet, organiserAmount);
 
         // ── Route staker share: best-effort, does not block organiser withdrawal ──
@@ -649,6 +653,24 @@ contract SeatBack is ReentrancyGuard {
                 emit StakerCreditAccrued(eventId, pool, stakerAmount);
             }
         }
+    }
+
+    function withdrawOrganizerCredit(uint256 eventId) external nonReentrant {
+        if (eventId >= eventCount) revert EventNotFound();
+
+        EventInfo storage evt = events[eventId];
+        if (msg.sender != evt.organizer && msg.sender != evt.payoutWallet) revert NotOrganizer();
+
+        EventAccounting storage acc = accounting[eventId];
+        uint256 amount = acc.organizerCredit;
+        if (amount == 0) revert NoProceeds();
+
+        acc.organizerCredit = 0;
+
+        address recipient = msg.sender == evt.organizer ? msg.sender : evt.payoutWallet;
+        usdc.safeTransfer(recipient, amount);
+
+        emit ProceedsWithdrawn(eventId, recipient, amount);
     }
 
     function _routeStakerProceeds(uint256 eventId, address pool, uint256 stakerAmount) external {

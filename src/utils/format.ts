@@ -1,9 +1,14 @@
 import { USDC_DECIMALS } from '@/contract'
 
-/** Format a raw USDC bigint (6 decimals) to a display string like "5.00" */
+/** Format a raw USDC bigint (6 decimals) to a display string like "5.00".
+ *  Uses pure BigInt arithmetic to avoid Number precision loss on large values. */
 export function formatUsdc(raw: bigint): string {
-  const n = Number(raw) / 10 ** USDC_DECIMALS
-  return n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+  if (raw < 0n) raw = 0n
+  const scale = BigInt(10 ** USDC_DECIMALS)
+  const whole = raw / scale
+  const frac  = raw % scale
+  const fracStr = frac.toString().padStart(USDC_DECIMALS, '0').slice(0, 2)
+  return `${whole.toLocaleString('en-US')}.${fracStr}`
 }
 
 /** Parse a user input string like "5" or "5.50" into raw USDC bigint */

@@ -10,7 +10,7 @@ export function WalletMenu() {
   const { setOpen } = useModal()
   const [open, setMenuOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
-  const { breakdown, loading, lastFetched, refresh } = usePoints(address)
+  const { breakdown, loading, lastFetched, refresh, error: pointsError } = usePoints(address)
 
   useEffect(() => {
     function handler(e: MouseEvent) {
@@ -118,6 +118,13 @@ export function WalletMenu() {
                 <RefreshCw size={14} className={loading ? 'animate-spin' : ''} style={{ color: 'var(--muted)' }} />
               </button>
             </div>
+
+            {/* Points fetch error */}
+            {pointsError && (
+              <div className="text-xs rounded-xl p-3" style={{ background: 'var(--warning-bg)', color: 'var(--warning)', border: '1px solid var(--warning-bg)' }}>
+                {pointsError} — try refreshing.
+              </div>
+            )}
 
             {/* Suspicious flag */}
             {breakdown.suspiciousFlag && (

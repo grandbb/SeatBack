@@ -135,6 +135,9 @@ export function CheckInQR({ eventId, reservationId, event, reservation }: CheckI
     reservation.refundable &&
     !reservation.refundClaimed
 
+  // If wallet disconnects after mount, hide gracefully
+  if (!walletClient) return null
+
   if (alreadyCheckedIn) {
     return (
       <div className="rounded-2xl border border-teal-200 bg-teal-50 p-5 flex items-center gap-3">

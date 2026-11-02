@@ -67,7 +67,7 @@ export function MyReservations({ onViewEvent }: MyReservationsProps) {
   }
 
   // Load all events to get activeReservationId per event
-  const { data: eventsData, isLoading: eventsLoading } = useEventsBatch(ids)
+  const { data: eventsData, isLoading: eventsLoading, refetch: refetchEvents } = useEventsBatch(ids)
 
   // Load activeReservationId for the connected wallet per event
   const { data: activeResIds, isLoading: resLoading, refetch: refetchResIds } = useReadContracts({
@@ -177,7 +177,7 @@ export function MyReservations({ onViewEvent }: MyReservationsProps) {
           event={event}
           wrongChain={wrongChain}
           onViewEvent={onViewEvent}
-          onRefetch={() => { void refetchResIds(); void refetchReservations() }}
+          onRefetch={() => { void refetchResIds(); void refetchReservations(); void refetchEvents() }}
         />
       ))}
     </div>

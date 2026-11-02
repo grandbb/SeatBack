@@ -128,6 +128,7 @@ export function usePoints(address: `0x${string}` | undefined) {
   })
   const [loading, setLoading] = useState(false)
   const [lastFetched, setLastFetched] = useState<Date | null>(null)
+  const [fetchError, setFetchError] = useState<string | null>(null)
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   const fetchPoints = useCallback(async () => {
@@ -135,6 +136,8 @@ export function usePoints(address: `0x${string}` | undefined) {
     setLoading(true)
     try {
       // ── Fetch all event logs in parallel ──────────────────────────────────
+      // All 7 queries run in parallel — allCheckedIn (no address filter) merged here
+      // to avoid a serial 7th call that would timeout on mainnet with DEPLOY_BLOCK=0.
       const [
         created,
         reserved,
@@ -142,6 +145,7 @@ export function usePoints(address: `0x${string}` | undefined) {
         cancelled,
         finalized,
         eventCancelled,
+        allCheckedIn,
       ] = await Promise.all([
         client.getLogs({ address: SEATBACK_ADDRESS, event: EVENT_CREATED,
           args: { organizer: address }, fromBlock: DEPLOY_BLOCK, toBlock: 'latest' }),
@@ -155,15 +159,10 @@ export function usePoints(address: `0x${string}` | undefined) {
           fromBlock: DEPLOY_BLOCK, toBlock: 'latest' }),
         client.getLogs({ address: SEATBACK_ADDRESS, event: EVENT_CANCELLED,
           fromBlock: DEPLOY_BLOCK, toBlock: 'latest' }),
+        // Global CheckedIn — no address filter, used for per-event check-in counts
+        client.getLogs({ address: SEATBACK_ADDRESS, event: CHECKED_IN,
+          fromBlock: DEPLOY_BLOCK, toBlock: 'latest' }),
       ])
-
-      // ── Build lookup sets ─────────────────────────────────────────────────
-
-      /** eventId → total check-in count across all attendees */
-      const allCheckedIn = await client.getLogs({
-        address: SEATBACK_ADDRESS, event: CHECKED_IN,
-        fromBlock: DEPLOY_BLOCK, toBlock: 'latest',
-      })
       const eventCheckInCount = new Map<string, number>()
       for (const log of allCheckedIn) {
         const eid = String(log.args.eventId)
@@ -297,8 +296,9 @@ export function usePoints(address: `0x${string}` | undefined) {
         suspiciousFlag,
       })
       setLastFetched(new Date())
+      setFetchError(null)
     } catch {
-      // Non-critical: Points display fails gracefully
+      setFetchError('Points temporarily unavailable')
     } finally {
       setLoading(false)
     }
@@ -314,5 +314,5 @@ export function usePoints(address: `0x${string}` | undefined) {
     }
   }, [address, fetchPoints])
 
-  return { breakdown, loading, lastFetched, refresh: fetchPoints }
+  return { breakdown, loading, lastFetched, refresh: fetchPoints, error: fetchError }
 }

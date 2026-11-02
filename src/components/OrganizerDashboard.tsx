@@ -155,7 +155,8 @@ function OrganizerEventPanel({ eventId, event, wrongChain, onSwitchChain, onRefe
     fn()
   }
 
-  const handleOpenCheckIn = () =>
+  const handleOpenCheckIn = () => {
+    if (!SEATBACK_ADDRESS) return
     call(() => openCI({
       address: SEATBACK_ADDRESS,
       abi: SEATBACK_ABI,
@@ -163,6 +164,7 @@ function OrganizerEventPanel({ eventId, event, wrongChain, onSwitchChain, onRefe
       args: [eventId],
       chainId: ACTIVE_CHAIN_ID,
     }, { onError: (e) => setTxError(parseOnchainError(e)), onSuccess: () => { toast.success('Check-in opened!'); void refetchAccounting(); void onRefetchEvents() } }))
+  }
 
   const handleCheckIn = () => {
     if (!/^0x[0-9a-fA-F]{40}$/.test(checkInAddress)) {
@@ -178,7 +180,8 @@ function OrganizerEventPanel({ eventId, event, wrongChain, onSwitchChain, onRefe
     }, { onError: (e) => setTxError(parseOnchainError(e)), onSuccess: () => { toast.success('Attendee checked in!'); setCheckInAddress(''); void refetchAccounting() } }))
   }
 
-  const handleCancelEvent = () =>
+  const handleCancelEvent = () => {
+    if (!SEATBACK_ADDRESS) return
     call(() => cancelEvt({
       address: SEATBACK_ADDRESS,
       abi: SEATBACK_ABI,
@@ -186,8 +189,10 @@ function OrganizerEventPanel({ eventId, event, wrongChain, onSwitchChain, onRefe
       args: [eventId],
       chainId: ACTIVE_CHAIN_ID,
     }, { onError: (e) => setTxError(parseOnchainError(e)), onSuccess: () => { toast.success('Event cancelled.'); void refetchAccounting(); void onRefetchEvents() } }))
+  }
 
-  const handleFinalize = () =>
+  const handleFinalize = () => {
+    if (!SEATBACK_ADDRESS) return
     call(() => finalize({
       address: SEATBACK_ADDRESS,
       abi: SEATBACK_ABI,
@@ -195,8 +200,10 @@ function OrganizerEventPanel({ eventId, event, wrongChain, onSwitchChain, onRefe
       args: [eventId],
       chainId: ACTIVE_CHAIN_ID,
     }, { onError: (e) => setTxError(parseOnchainError(e)), onSuccess: () => { toast.success('Event finalized.'); void refetchAccounting(); void onRefetchEvents() } }))
+  }
 
-  const handleWithdraw = () =>
+  const handleWithdraw = () => {
+    if (!SEATBACK_ADDRESS) return
     call(() => withdraw({
       address: SEATBACK_ADDRESS,
       abi: SEATBACK_ABI,
@@ -204,6 +211,7 @@ function OrganizerEventPanel({ eventId, event, wrongChain, onSwitchChain, onRefe
       args: [eventId],
       chainId: ACTIVE_CHAIN_ID,
     }, { onError: (e) => setTxError(parseOnchainError(e)), onSuccess: () => { toast.success('Proceeds withdrawn to payout wallet!'); void refetchAccounting() } }))
+  }
 
   // phase === 'check_in_open' means now is in checkIn window (may or may not be opened by organizer)
   const inCheckInWindow = phase === 'check_in_open'

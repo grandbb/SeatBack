@@ -55,6 +55,7 @@ export function TxButton({
 
   return (
     <button
+      type="button"
       onClick={onClick}
       disabled={isDisabled}
       className={`${base} ${variants[variant]} ${className}`}

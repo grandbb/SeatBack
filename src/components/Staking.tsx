@@ -133,6 +133,7 @@ export function Staking() {
       abi: ERC20_ABI,
       functionName: 'approve',
       args: [STAKING_ADDRESS, stakeAmountBigint],
+      chainId: ACTIVE_CHAIN_ID,
     })
   }
 
@@ -144,6 +145,7 @@ export function Staking() {
       abi: STAKING_ABI,
       functionName: 'stake',
       args: [stakeAmountBigint],
+      chainId: ACTIVE_CHAIN_ID,
     })
   }
 
@@ -155,6 +157,7 @@ export function Staking() {
       abi: STAKING_ABI,
       functionName: 'unstake',
       args: [parseUnits(unstakeInput, 18)],
+      chainId: ACTIVE_CHAIN_ID,
     })
   }
 
@@ -165,6 +168,7 @@ export function Staking() {
       address: STAKING_ADDRESS,
       abi: STAKING_ABI,
       functionName: 'claimReward',
+      chainId: ACTIVE_CHAIN_ID,
     })
   }
 
@@ -175,6 +179,7 @@ export function Staking() {
       address: STAKING_ADDRESS,
       abi: STAKING_ABI,
       functionName: 'exit',
+      chainId: ACTIVE_CHAIN_ID,
     })
   }
 
@@ -228,11 +233,11 @@ export function Staking() {
       <div className="card p-4 flex items-center justify-between flex-wrap gap-3 text-sm">
         <div className="flex flex-col gap-0.5">
           <span className="text-[var(--muted)] text-xs">Total SBK staked</span>
-          <span className="font-semibold text-[var(--fg)]">{fmt18(totalStaked)} SBK</span>
+          <span className="font-semibold text-[var(--ink)]">{fmt18(totalStaked)} SBK</span>
         </div>
         <div className="flex flex-col gap-0.5">
           <span className="text-[var(--muted)] text-xs">Undistributed (cold-start)</span>
-          <span className="font-semibold text-[var(--fg)]">{fmt6(undistributed)} USDC</span>
+          <span className="font-semibold text-[var(--ink)]">{fmt6(undistributed)} USDC</span>
         </div>
         <a href={`${EXPLORER}/address/${STAKING_ADDRESS}`} target="_blank" rel="noopener noreferrer"
           className="text-xs text-[var(--accent)] hover:underline flex items-center gap-1">
@@ -246,7 +251,7 @@ export function Staking() {
         <>
           {/* Stake */}
           <div className="card p-5 flex flex-col gap-4">
-            <h2 className="font-semibold text-[var(--fg)] flex items-center gap-2"><Lock size={15} /> Stake SBK</h2>
+            <h2 className="font-semibold text-[var(--ink)] flex items-center gap-2"><Lock size={15} /> Stake SBK</h2>
             <div className="flex gap-2">
               <input
                 type="number"
@@ -254,11 +259,11 @@ export function Staking() {
                 placeholder="Amount SBK"
                 value={stakeInput}
                 onChange={e => setStakeInput(e.target.value)}
-                className="flex-1 rounded-xl border border-[var(--border)] bg-[var(--surface)] px-4 py-2.5 text-sm text-[var(--fg)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
+                className="flex-1 rounded-xl border border-[var(--border)] bg-[var(--surface)] px-4 py-2.5 text-sm text-[var(--ink)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
               />
               <button
                 onClick={() => setStakeInput(fmt18(sbkBalance, 0).replace(/,/g, ''))}
-                className="text-xs px-3 py-2 rounded-xl border border-[var(--border)] text-[var(--muted)] hover:text-[var(--fg)]"
+                className="text-xs px-3 py-2 rounded-xl border border-[var(--border)] text-[var(--muted)] hover:text-[var(--ink)]"
               >Max</button>
             </div>
             {needsApproval ? (
@@ -274,7 +279,7 @@ export function Staking() {
 
           {/* Unstake */}
           <div className="card p-5 flex flex-col gap-4">
-            <h2 className="font-semibold text-[var(--fg)] flex items-center gap-2"><Unlock size={15} /> Unstake SBK</h2>
+            <h2 className="font-semibold text-[var(--ink)] flex items-center gap-2"><Unlock size={15} /> Unstake SBK</h2>
             <div className="flex gap-2">
               <input
                 type="number"
@@ -282,11 +287,11 @@ export function Staking() {
                 placeholder="Amount SBK"
                 value={unstakeInput}
                 onChange={e => setUnstakeInput(e.target.value)}
-                className="flex-1 rounded-xl border border-[var(--border)] bg-[var(--surface)] px-4 py-2.5 text-sm text-[var(--fg)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
+                className="flex-1 rounded-xl border border-[var(--border)] bg-[var(--surface)] px-4 py-2.5 text-sm text-[var(--ink)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
               />
               <button
                 onClick={() => setUnstakeInput(fmt18(stakedBalance, 0).replace(/,/g, ''))}
-                className="text-xs px-3 py-2 rounded-xl border border-[var(--border)] text-[var(--muted)] hover:text-[var(--fg)]"
+                className="text-xs px-3 py-2 rounded-xl border border-[var(--border)] text-[var(--muted)] hover:text-[var(--ink)]"
               >Max</button>
             </div>
             <button onClick={handleUnstake} disabled={busy || !unstakeInput || wrongChain} className="btn-ghost py-3 text-sm border border-[var(--border)] disabled:opacity-50">
@@ -297,14 +302,14 @@ export function Staking() {
           {/* Claim + Exit */}
           <div className="grid grid-cols-2 gap-3">
             <div className="card p-5 flex flex-col gap-3">
-              <h2 className="font-semibold text-[var(--fg)] text-sm flex items-center gap-2"><Coins size={14} /> Claim USDC</h2>
+              <h2 className="font-semibold text-[var(--ink)] text-sm flex items-center gap-2"><Coins size={14} /> Claim USDC</h2>
               <p className="text-xs text-[var(--muted)]">Claim {fmt6(pendingReward)} USDC without unstaking.</p>
               <button onClick={handleClaim} disabled={busy || !pendingReward || (pendingReward) === 0n || wrongChain} className="btn-primary py-2.5 text-sm disabled:opacity-50">
                 {busy && activeAction === 'claim' ? 'Claiming…' : 'Claim USDC'}
               </button>
             </div>
             <div className="card p-5 flex flex-col gap-3">
-              <h2 className="font-semibold text-[var(--fg)] text-sm flex items-center gap-2"><Unlock size={14} /> Exit All</h2>
+              <h2 className="font-semibold text-[var(--ink)] text-sm flex items-center gap-2"><Unlock size={14} /> Exit All</h2>
               <p className="text-xs text-[var(--muted)]">Unstake all SBK and claim all USDC in one transaction.</p>
               <button onClick={handleExit} disabled={busy || (!stakedBalance && !pendingReward) || wrongChain} className="btn-ghost py-2.5 text-sm border border-[var(--border)] disabled:opacity-50">
                 {busy && activeAction === 'exit' ? 'Exiting…' : 'Exit All'}

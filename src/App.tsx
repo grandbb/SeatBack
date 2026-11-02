@@ -20,10 +20,7 @@ import { Demo } from './components/Demo'
 
 export type AppTab = 'home' | 'events' | 'create' | 'reservations' | 'organizer' | 'docs' | 'demo'
 
-/** Build a shareable event URL using the current page origin. */
-export function buildEventUrl(eventId: bigint): string {
-  return `${window.location.origin}/?event=${eventId.toString()}`
-}
+export { buildEventUrl } from '@/utils/url'
 
 /** Read ?event=N from the URL and return as BigInt, or null. */
 function readEventParam(): bigint | null {

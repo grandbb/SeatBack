@@ -7,7 +7,7 @@ import { erc20Abi } from 'viem'
 import { ArrowLeft, Share2, Check, MapPin, Clock, Users, Ticket, AlertTriangle, Info, CheckCircle2, XCircle } from 'lucide-react'
 import { SEATBACK_ABI, SEATBACK_ADDRESS, ACTIVE_CHAIN_ID, USDC_ADDRESS, NETWORK_LABEL } from '@/contract'
 import { formatUsdc, formatDateTime, parseOnchainError, shortAddress } from '@/utils/format'
-import { buildEventUrl } from '@/App'
+import { buildEventUrl } from '@/utils/url'
 import { useEvent, useActiveReservationId, useReservation, useReservedSeats } from '@/hooks/useEvents'
 import type { EventInfo } from '@/types'
 import { computeEventPhase } from '@/types'
@@ -77,10 +77,15 @@ export function EventDetail({ eventId, onBack }: EventDetailProps) {
 
   const handleShare = () => {
     const url = buildEventUrl(eventId)
-    void navigator.clipboard.writeText(url).then(() => {
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
-    })
+    const markCopied = () => { setCopied(true); setTimeout(() => setCopied(false), 2000) }
+    const fallback = () => {
+      const ta = document.createElement('textarea')
+      ta.value = url; ta.style.cssText = 'position:fixed;opacity:0'
+      document.body.appendChild(ta); ta.select()
+      try { document.execCommand('copy'); markCopied() } finally { document.body.removeChild(ta) }
+    }
+    if (!navigator.clipboard) { fallback(); return }
+    navigator.clipboard.writeText(url).then(markCopied).catch(fallback)
   }
 
   // After approve tx is confirmed on-chain, re-read allowance so the button

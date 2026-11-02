@@ -3,7 +3,7 @@ import { MapPin, Clock, Users, Ticket, Share2, Check } from 'lucide-react'
 import { formatUsdc, formatDateTime, countdown } from '@/utils/format'
 import type { EventInfo } from '@/types'
 import { computeEventPhase } from '@/types'
-import { buildEventUrl } from '@/App'
+import { buildEventUrl } from '@/utils/url'
 
 interface EventCardProps {
   eventId: bigint
@@ -31,10 +31,15 @@ export function EventCard({ eventId, event, reservedSeats, onClick }: EventCardP
   const handleShare = (e: React.MouseEvent) => {
     e.stopPropagation() // don't open event detail
     const url = buildEventUrl(eventId)
-    void navigator.clipboard.writeText(url).then(() => {
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
-    })
+    const markCopied = () => { setCopied(true); setTimeout(() => setCopied(false), 2000) }
+    const fallback = () => {
+      const ta = document.createElement('textarea')
+      ta.value = url; ta.style.cssText = 'position:fixed;opacity:0'
+      document.body.appendChild(ta); ta.select()
+      try { document.execCommand('copy'); markCopied() } finally { document.body.removeChild(ta) }
+    }
+    if (!navigator.clipboard) { fallback(); return }
+    navigator.clipboard.writeText(url).then(markCopied).catch(fallback)
   }
 
   return (
