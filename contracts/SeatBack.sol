@@ -12,6 +12,7 @@ import {IERC1271} from "@openzeppelin/contracts/interfaces/IERC1271.sol";
 interface ISeatBackStaking {
     function receiveProceeds(uint256 amount) external;
     function seatBack() external view returns (address);
+    function usdc() external view returns (address);
 }
 
 /**
@@ -22,7 +23,7 @@ interface ISeatBackStaking {
  *  1. Attendee signs a CheckInAuthorization struct off-chain (EIP-712).
  *     The payload is bound to: chainId, this contract, eventId, reservationId,
  *     attendee wallet, a nonce (unique per reservation), validAfter, validUntil
- *     (max 5 minutes, capped to checkInEnd).
+ *     (max 10 minutes, capped to checkInEnd).
  *  2. The signed payload is encoded as a QR code shown to the organizer.
  *  3. Organizer scans and explicitly submits checkInWithSig(), which verifies:
  *     - caller is the event organizer
@@ -171,8 +172,8 @@ contract SeatBack is ReentrancyGuard {
     // ─── Staking pool ─────────────────────────────────────────────────────────
 
     /// @notice Address of the SeatBackStaking contract.
-    ///         When set, 50% of no-show proceeds are pushed here; organiser gets 50%.
-    ///         When zero, 100% goes to the organiser (backward-compatible).
+    ///         Set once by the admin. Events cannot be created until it is set.
+    ///         50% of each event's no-show proceeds go here; the organiser gets 50%.
     address public stakingPool;
 
     /// @notice Numerator of the staker share (out of 100). Default 50 (50% stakers / 50% organiser).
@@ -187,22 +188,39 @@ contract SeatBack is ReentrancyGuard {
     error InternalCallOnly();
     error StakerCreditTransferFailed();
     error NoShowAlreadySettled();
+    error NoShowNotSettled();
+    error StakingPoolNotSet();
+    error StakingPoolAlreadySet();
 
     /**
-     * @notice Set or update the staking pool address.
-     * @param _pool New staking pool address.
+     * @notice Set the staking pool address. Can be called exactly once.
+     * @dev One-time on purpose: the admin can never swap the destination of the
+     *      staker share after events exist. The pool must be genuine: it must
+     *      point back at this escrow and use the same USDC token.
+     * @param _pool Staking pool address.
      */
     function setStakingPool(address _pool) external {
         if (msg.sender != admin) revert NotAdmin();
+        if (stakingPool != address(0)) revert StakingPoolAlreadySet();
         if (_pool == address(0)) revert ZeroAddress();
-        if (_pool.code.length == 0) revert InvalidAddress();
-        try ISeatBackStaking(_pool).seatBack() returns (address linkedSeatBack) {
+        _validateStakingPool(_pool);
+        stakingPool = _pool;
+        emit StakingPoolSet(_pool);
+    }
+
+    /// @dev Pool must be a contract bound to this escrow and to the same USDC token.
+    function _validateStakingPool(address pool) internal view {
+        if (pool == address(0) || pool.code.length == 0) revert InvalidStakingPool();
+        try ISeatBackStaking(pool).seatBack() returns (address linkedSeatBack) {
             if (linkedSeatBack != address(this)) revert InvalidStakingPool();
         } catch {
             revert InvalidStakingPool();
         }
-        stakingPool = _pool;
-        emit StakingPoolSet(_pool);
+        try ISeatBackStaking(pool).usdc() returns (address poolUsdc) {
+            if (poolUsdc != address(usdc)) revert InvalidStakingPool();
+        } catch {
+            revert InvalidStakingPool();
+        }
     }
 
     uint256 public eventCount;
@@ -245,6 +263,7 @@ contract SeatBack is ReentrancyGuard {
     event StakerProceedsRouted(uint256 indexed eventId, address indexed pool, uint256 stakerAmount, uint256 organiserAmount);
     event StakerCreditAccrued(uint256 indexed eventId, address indexed pool, uint256 amount);
     event StakerCreditReclaimed(uint256 indexed eventId, address indexed pool, uint256 amount);
+    event NoShowSettled(uint256 indexed eventId, uint256 organiserAmount, uint256 stakerAmount);
 
     // ─── Constructor ──────────────────────────────────────────────────────────
 
@@ -285,6 +304,9 @@ contract SeatBack is ReentrancyGuard {
     }
 
     function createEvent(CreateEventParams calldata p) external returns (uint256 eventId) {
+        // Events must not exist before the staking pool is bound, otherwise the
+        // staker share of their no-show proceeds would silently go to the organiser.
+        if (stakingPool == address(0)) revert StakingPoolNotSet();
         if (p.payoutWallet == address(0)) revert InvalidAddress();
         if (p.capacity == 0) revert InvalidCapacity();
         if (p.depositAmount == 0) revert InvalidDeposit();
@@ -610,11 +632,18 @@ contract SeatBack is ReentrancyGuard {
         emit RefundClaimed(eventId, reservationId, attendee, amount);
     }
 
+    /**
+     * @notice Settle an event's no-show proceeds exactly once: split between the
+     *         staking pool and the organiser's pull credit.
+     * @dev Permissionless on purpose. The caller receives nothing and cannot change
+     *      the outcome (pool is snapshotted at finalization, split is fixed), so an
+     *      absent organiser cannot withhold the staker share. The organiser then
+     *      collects their credit with withdrawOrganizerCredit().
+     */
     function withdrawNoShowProceeds(uint256 eventId) external nonReentrant {
         if (eventId >= eventCount) revert EventNotFound();
 
         EventInfo storage evt = events[eventId];
-        if (msg.sender != evt.organizer) revert NotOrganizer();
         if (evt.cancelled) revert EventCancelled_();
 
         if (!evt.finalized) {
@@ -644,10 +673,9 @@ contract SeatBack is ReentrancyGuard {
             organiserAmount = totalAmount - stakerAmount;
         }
 
-        // Credit organiser proceeds for pull-based withdrawal.
+        // Credit organiser proceeds for pull-based withdrawal (withdrawOrganizerCredit).
         acc.organizerCredit += organiserAmount;
-        acc.organizerPaid += organiserAmount;
-        emit ProceedsWithdrawn(eventId, evt.payoutWallet, organiserAmount);
+        emit NoShowSettled(eventId, organiserAmount, stakerAmount);
 
         // ── Route staker share: best-effort, does not block organiser withdrawal ──
         if (stakerAmount > 0 && pool != address(0)) {
@@ -667,10 +695,13 @@ contract SeatBack is ReentrancyGuard {
         if (msg.sender != evt.organizer && msg.sender != evt.payoutWallet) revert NotOrganizer();
 
         EventAccounting storage acc = accounting[eventId];
+        // The staker share must be split off first; otherwise the whole pot is withdrawable.
+        if (!acc.noShowSettled) revert NoShowNotSettled();
         uint256 amount = acc.organizerCredit;
         if (amount == 0) revert NoProceeds();
 
         acc.organizerCredit = 0;
+        acc.organizerPaid += amount;
 
         address recipient = msg.sender == evt.organizer ? msg.sender : evt.payoutWallet;
         usdc.safeTransfer(recipient, amount);
@@ -685,18 +716,36 @@ contract SeatBack is ReentrancyGuard {
         ISeatBackStaking(pool).receiveProceeds(stakerAmount);
     }
 
-    function reclaimStakerCredit(uint256 eventId, address newPool) external nonReentrant {
-        if (msg.sender != admin) revert NotAdmin();
-        if (newPool == address(0) || newPool.code.length == 0) revert InvalidAddress();
-
+    /**
+     * @notice Retry delivering a failed staker share to the pool snapshotted for
+     *         this event. Permissionless; reverts (and changes nothing) if delivery
+     *         fails again, so it cannot be used to misroute funds.
+     */
+    function retryStakerCredit(uint256 eventId) external nonReentrant {
         uint256 amount = unclaimedStakerCredit[eventId];
         if (amount == 0) revert NoProceeds();
+        address pool = accounting[eventId].poolSnapshot;
+        if (pool == address(0)) revert InvalidStakingPool();
 
-        try ISeatBackStaking(newPool).seatBack() returns (address linkedSeatBack) {
-            if (linkedSeatBack != address(this)) revert InvalidStakingPool();
+        unclaimedStakerCredit[eventId] = 0;
+        try this._routeStakerProceeds(eventId, pool, amount) {
+            emit StakerCreditReclaimed(eventId, pool, amount);
         } catch {
-            revert InvalidStakingPool();
+            unclaimedStakerCredit[eventId] = amount;
+            revert StakerCreditTransferFailed();
         }
+    }
+
+    /**
+     * @notice Emergency only: admin delivers a stuck staker share to another
+     *         genuine pool (same escrow, same USDC) if the snapshotted pool can no
+     *         longer receive funds. Prefer retryStakerCredit when the pool still works.
+     */
+    function reclaimStakerCredit(uint256 eventId, address newPool) external nonReentrant {
+        if (msg.sender != admin) revert NotAdmin();
+        uint256 amount = unclaimedStakerCredit[eventId];
+        if (amount == 0) revert NoProceeds();
+        _validateStakingPool(newPool);
 
         unclaimedStakerCredit[eventId] = 0;
 

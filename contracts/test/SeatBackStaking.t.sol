@@ -464,4 +464,102 @@ contract SeatBackStakingTest is Test {
         assertEq(staking.STAKE_COOLDOWN_SECONDS(), 24 hours,     "cooldown mismatch");
         assertEq(staking.MIN_STAKE(),        1e18,               "MIN_STAKE mismatch");
     }
+
+    // =========================================================================
+    // 14. REWARD ACCOUNTING — no inflation (rewardRemainderScaled design)
+    // =========================================================================
+
+    function test_noRewardInflationFromSync() public {
+        vm.prank(alice);
+        staking.stake(3e18);
+        vm.warp(block.timestamp + COOLDOWN + 1);
+
+        _sendProceeds(1_000_000);
+
+        assertLe(staking.pendingReward(alice), 1_000_000, "claimable exceeds deposit");
+
+        uint256 before = usdc.balanceOf(alice);
+        vm.prank(alice);
+        staking.claimReward();
+        uint256 received = usdc.balanceOf(alice) - before;
+
+        assertLe(received, 1_000_000, "received exceeds deposit");
+        assertLe(received, 1_000_000 - 0, "bounded");
+        assertEq(usdc.balanceOf(address(staking)), 1_000_000 - received, "staking balance fully accounted");
+    }
+
+    function testFuzz_rewardsNeverExceedDeposits(
+        uint96 stakeA,
+        uint96 stakeB,
+        uint64 p1,
+        uint64 p2,
+        uint64 p3
+    ) public {
+        uint256 sA = bound(uint256(stakeA), 1e18, 1e27);
+        uint256 sB = bound(uint256(stakeB), 1e18, 1e27);
+        uint256 a1 = bound(uint256(p1), 1, 1e12);
+        uint256 a2 = bound(uint256(p2), 1, 1e12);
+        uint256 a3 = bound(uint256(p3), 1, 1e12);
+
+        // Dedicated SBK so large stakes are possible.
+        MockERC20 bigSbk = new MockERC20("Big SBK", "BSBK", 18);
+        SeatBackStaking s = new SeatBackStaking(address(bigSbk), address(usdc), address(this), address(this));
+        bigSbk.mint(alice, sA);
+        bigSbk.mint(bob, sB);
+        vm.prank(alice);
+        bigSbk.approve(address(s), type(uint256).max);
+        vm.prank(bob);
+        bigSbk.approve(address(s), type(uint256).max);
+
+        vm.prank(alice);
+        s.stake(sA);
+
+        usdc.mint(address(s), a1);
+        s.receiveProceeds(a1);
+
+        // totalStaked changes between deposits.
+        vm.prank(bob);
+        s.stake(sB);
+
+        usdc.mint(address(s), a2);
+        s.receiveProceeds(a2);
+        usdc.mint(address(s), a3);
+        s.receiveProceeds(a3);
+
+        uint256 total = a1 + a2 + a3;
+        vm.warp(block.timestamp + COOLDOWN + 1);
+
+        assertLe(s.pendingReward(alice) + s.pendingReward(bob), total, "claimable > deposited");
+
+        uint256 claimed;
+        address[2] memory users = [alice, bob];
+        for (uint256 i = 0; i < 2; i++) {
+            uint256 b = usdc.balanceOf(users[i]);
+            vm.prank(users[i]);
+            try s.claimReward() {} catch (bytes memory err) {
+                assertEq(bytes4(err), SeatBackStaking.NoPendingReward.selector, "unexpected revert");
+            }
+            claimed += usdc.balanceOf(users[i]) - b;
+        }
+
+        assertLe(claimed, total, "claimed > deposited");
+        assertEq(usdc.balanceOf(address(s)), total - claimed, "staking balance mismatch");
+    }
+
+    // =========================================================================
+    // 15. OWNERSHIP
+    // =========================================================================
+
+    function test_renounceOwnershipDisabled() public {
+        vm.expectRevert(SeatBackStaking.OwnershipRenunciationDisabled.selector);
+        staking.renounceOwnership();
+        assertEq(staking.owner(), address(this));
+
+        // Two-step handover: ownership only moves once the new owner accepts.
+        staking.transferOwnership(alice);
+        assertEq(staking.owner(), address(this));
+        vm.prank(alice);
+        staking.acceptOwnership();
+        assertEq(staking.owner(), alice);
+    }
 }

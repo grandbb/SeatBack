@@ -284,7 +284,7 @@ export function Demo() {
           {
             number: 7, role: 'organiser' as const, icon: <Wallet size={16} />,
             title: 'Organiser withdraws no-show proceeds',
-            body: 'After finalisation the organiser calls withdrawNoShowProceeds() to receive 50% of forfeited deposits. The remaining 50% is sent to the staking contract automatically.',
+            body: 'After finalisation, anyone can settle the forfeited deposits of an event: 50% goes to the staking contract and 50% becomes the organiser credit. The organiser then withdraws their 50% to the payout wallet.',
           },
         ].map((step, i) => (
           <Reveal key={step.number} delay={i * 60}>

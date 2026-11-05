@@ -508,6 +508,71 @@ abstract contract Ownable is Context {
     }
 }
 
+// node_modules/@openzeppelin/contracts/access/Ownable2Step.sol
+
+// OpenZeppelin Contracts (last updated v5.1.0) (access/Ownable2Step.sol)
+
+/**
+ * @dev Contract module which provides access control mechanism, where
+ * there is an account (an owner) that can be granted exclusive access to
+ * specific functions.
+ *
+ * This extension of the {Ownable} contract includes a two-step mechanism to transfer
+ * ownership, where the new owner must call {acceptOwnership} in order to replace the
+ * old one. This can help prevent common mistakes, such as transfers of ownership to
+ * incorrect accounts, or to contracts that are unable to interact with the
+ * permission system.
+ *
+ * The initial owner is specified at deployment time in the constructor for `Ownable`. This
+ * can later be changed with {transferOwnership} and {acceptOwnership}.
+ *
+ * This module is used through inheritance. It will make available all functions
+ * from parent (Ownable).
+ */
+abstract contract Ownable2Step is Ownable {
+    address private _pendingOwner;
+
+    event OwnershipTransferStarted(address indexed previousOwner, address indexed newOwner);
+
+    /**
+     * @dev Returns the address of the pending owner.
+     */
+    function pendingOwner() public view virtual returns (address) {
+        return _pendingOwner;
+    }
+
+    /**
+     * @dev Starts the ownership transfer of the contract to a new account. Replaces the pending transfer if there is one.
+     * Can only be called by the current owner.
+     *
+     * Setting `newOwner` to the zero address is allowed; this can be used to cancel an initiated ownership transfer.
+     */
+    function transferOwnership(address newOwner) public virtual override onlyOwner {
+        _pendingOwner = newOwner;
+        emit OwnershipTransferStarted(owner(), newOwner);
+    }
+
+    /**
+     * @dev Transfers ownership of the contract to a new account (`newOwner`) and deletes any pending owner.
+     * Internal function without access restriction.
+     */
+    function _transferOwnership(address newOwner) internal virtual override {
+        delete _pendingOwner;
+        super._transferOwnership(newOwner);
+    }
+
+    /**
+     * @dev The new owner accepts the ownership transfer.
+     */
+    function acceptOwnership() public virtual {
+        address sender = _msgSender();
+        if (pendingOwner() != sender) {
+            revert OwnableUnauthorizedAccount(sender);
+        }
+        _transferOwnership(sender);
+    }
+}
+
 // node_modules/@openzeppelin/contracts/interfaces/IERC1363.sol
 
 // OpenZeppelin Contracts (last updated v5.1.0) (interfaces/IERC1363.sol)
@@ -814,7 +879,7 @@ library SafeERC20 {
  *  - rewardPerTokenStored uses a PRECISION multiplier of 1e30 to preserve
  *    accuracy when dividing small USDC amounts across large SBK stakes.
  */
-contract SeatBackStaking is ReentrancyGuard, Ownable {
+contract SeatBackStaking is ReentrancyGuard, Ownable2Step {
     using SafeERC20 for IERC20;
 
     // ─── Constants ────────────────────────────────────────────────────────────
@@ -836,8 +901,10 @@ contract SeatBackStaking is ReentrancyGuard, Ownable {
     /// @notice Accumulated USDC reward per SBK token staked (scaled by PRECISION).
     uint256 public rewardPerTokenStored;
 
-    /// @notice USDC dust from rounding that remains after a distribution cycle.
-    uint256 public undistributedProceeds;
+    /// @notice Rounding remainder carried to the next distribution, in USDC units
+    ///         scaled by PRECISION (always < totalStaked at the time it was left).
+    ///         Never exceeds what has actually been deposited, so rewards stay fully backed.
+    uint256 public rewardRemainderScaled;
 
     /// @notice USDC proceeds received while no stakers exist; claimable only by owner.
     uint256 public ownerReserve;
@@ -885,6 +952,7 @@ contract SeatBackStaking is ReentrancyGuard, Ownable {
     error InvalidAddress();
     error NoStakers();
     error StillInCooldown();
+    error OwnershipRenunciationDisabled();
 
     // ─── Constructor ──────────────────────────────────────────────────────────
 
@@ -900,6 +968,12 @@ contract SeatBackStaking is ReentrancyGuard, Ownable {
     }
 
     // ─── Owner functions ──────────────────────────────────────────────────────
+
+    /// @dev Renouncing would permanently strand ownerReserve (present and future).
+    ///      Ownership can still be handed over, with a two-step accept to avoid typos.
+    function renounceOwnership() public pure override {
+        revert OwnershipRenunciationDisabled();
+    }
 
     /**
      * @notice Withdraw proceeds that arrived while no stakers were present.
@@ -1026,33 +1100,20 @@ contract SeatBackStaking is ReentrancyGuard, Ownable {
             return;
         }
 
-        // Include any previously undistributed proceeds.
-        uint256 total = toDistribute + undistributedProceeds;
-        undistributedProceeds = 0;
+        _distribute(toDistribute);
 
-        uint256 delta = (total * PRECISION) / totalStaked;
-        uint256 distributed = (delta * totalStaked) / PRECISION;
-        rewardPerTokenStored += delta;
-        undistributedProceeds = total - distributed;
-
-        emit ProceedsReceived(total, rewardPerTokenStored);
+        emit ProceedsReceived(toDistribute, rewardPerTokenStored);
     }
 
     /**
-     * @notice Distribute any undistributed proceeds accumulated during zero-staker periods.
-     * @dev Permissionless: anyone can call when totalStaked > 0 and undistributedProceeds > 0.
-     *      This ensures proceeds that arrived while no one was staked are never permanently stuck.
+     * @dev Add `amount` USDC to the reward accumulator without ever allocating more
+     *      than was deposited. The division remainder is carried in scaled units, so
+     *      it is added once and cannot be counted twice.
      */
-    function syncUndistributed() external nonReentrant {
-        if (totalStaked == 0) revert NoStakers();
-        uint256 carry = undistributedProceeds;
-        if (carry == 0) return;
-        undistributedProceeds = 0;
-        uint256 delta = (carry * PRECISION) / totalStaked;
-        uint256 distributed = (delta * totalStaked) / PRECISION;
-        rewardPerTokenStored += delta;
-        undistributedProceeds = carry - distributed;
-        emit ProceedsReceived(carry, rewardPerTokenStored);
+    function _distribute(uint256 amount) internal {
+        uint256 numerator = amount * PRECISION + rewardRemainderScaled;
+        rewardPerTokenStored += numerator / totalStaked;
+        rewardRemainderScaled = numerator % totalStaked;
     }
 
     // ─── Views ────────────────────────────────────────────────────────────────

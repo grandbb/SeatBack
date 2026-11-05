@@ -5,6 +5,7 @@ import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {Ownable2Step} from "@openzeppelin/contracts/access/Ownable2Step.sol";
 
 /**
  * @title SeatBackStaking
@@ -32,7 +33,7 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
  *  - rewardPerTokenStored uses a PRECISION multiplier of 1e30 to preserve
  *    accuracy when dividing small USDC amounts across large SBK stakes.
  */
-contract SeatBackStaking is ReentrancyGuard, Ownable {
+contract SeatBackStaking is ReentrancyGuard, Ownable2Step {
     using SafeERC20 for IERC20;
 
     // ─── Constants ────────────────────────────────────────────────────────────
@@ -54,8 +55,10 @@ contract SeatBackStaking is ReentrancyGuard, Ownable {
     /// @notice Accumulated USDC reward per SBK token staked (scaled by PRECISION).
     uint256 public rewardPerTokenStored;
 
-    /// @notice USDC dust from rounding that remains after a distribution cycle.
-    uint256 public undistributedProceeds;
+    /// @notice Rounding remainder carried to the next distribution, in USDC units
+    ///         scaled by PRECISION (always < totalStaked at the time it was left).
+    ///         Never exceeds what has actually been deposited, so rewards stay fully backed.
+    uint256 public rewardRemainderScaled;
 
     /// @notice USDC proceeds received while no stakers exist; claimable only by owner.
     uint256 public ownerReserve;
@@ -103,6 +106,7 @@ contract SeatBackStaking is ReentrancyGuard, Ownable {
     error InvalidAddress();
     error NoStakers();
     error StillInCooldown();
+    error OwnershipRenunciationDisabled();
 
     // ─── Constructor ──────────────────────────────────────────────────────────
 
@@ -118,6 +122,12 @@ contract SeatBackStaking is ReentrancyGuard, Ownable {
     }
 
     // ─── Owner functions ──────────────────────────────────────────────────────
+
+    /// @dev Renouncing would permanently strand ownerReserve (present and future).
+    ///      Ownership can still be handed over, with a two-step accept to avoid typos.
+    function renounceOwnership() public pure override {
+        revert OwnershipRenunciationDisabled();
+    }
 
     /**
      * @notice Withdraw proceeds that arrived while no stakers were present.
@@ -244,33 +254,20 @@ contract SeatBackStaking is ReentrancyGuard, Ownable {
             return;
         }
 
-        // Include any previously undistributed proceeds.
-        uint256 total = toDistribute + undistributedProceeds;
-        undistributedProceeds = 0;
+        _distribute(toDistribute);
 
-        uint256 delta = (total * PRECISION) / totalStaked;
-        uint256 distributed = (delta * totalStaked) / PRECISION;
-        rewardPerTokenStored += delta;
-        undistributedProceeds = total - distributed;
-
-        emit ProceedsReceived(total, rewardPerTokenStored);
+        emit ProceedsReceived(toDistribute, rewardPerTokenStored);
     }
 
     /**
-     * @notice Distribute any undistributed proceeds accumulated during zero-staker periods.
-     * @dev Permissionless: anyone can call when totalStaked > 0 and undistributedProceeds > 0.
-     *      This ensures proceeds that arrived while no one was staked are never permanently stuck.
+     * @dev Add `amount` USDC to the reward accumulator without ever allocating more
+     *      than was deposited. The division remainder is carried in scaled units, so
+     *      it is added once and cannot be counted twice.
      */
-    function syncUndistributed() external nonReentrant {
-        if (totalStaked == 0) revert NoStakers();
-        uint256 carry = undistributedProceeds;
-        if (carry == 0) return;
-        undistributedProceeds = 0;
-        uint256 delta = (carry * PRECISION) / totalStaked;
-        uint256 distributed = (delta * totalStaked) / PRECISION;
-        rewardPerTokenStored += delta;
-        undistributedProceeds = carry - distributed;
-        emit ProceedsReceived(carry, rewardPerTokenStored);
+    function _distribute(uint256 amount) internal {
+        uint256 numerator = amount * PRECISION + rewardRemainderScaled;
+        rewardPerTokenStored += numerator / totalStaked;
+        rewardRemainderScaled = numerator % totalStaked;
     }
 
     // ─── Views ────────────────────────────────────────────────────────────────

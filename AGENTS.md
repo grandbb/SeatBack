@@ -85,7 +85,8 @@ SEATBACK_ADDRESS points to v3: `0x6Fdb06A9Ce387937C2261F489E502e53cA1F0Bbc`.
 | Round 3 | `12a45b5` | Cooldown semantics, push→pull payout, createEvent timing |
 | Round 4 | `9387f5f` | withdrawNoShowProceeds settled flag, formatUsdc BigInt, clipboard, TxButton, circular import, getLogs parallel, chainId, CSS vars |
 | Pentest | `df28a9a` | CSP unsafe-inline removed, parseUsdc BigInt, capacity cap, QR pre-validate, event-not-found, confirmation dialogs |
-| Round 5 | current | Cooldown gate moved to claim/unstake, 18/18 unit tests, isInCooldown view, Staking UI lockout |
+| Round 5 | `6a6ed51` | Cooldown gate moved to claim/unstake, isInCooldown view, Staking UI lockout |
+| Round 6 | current | Organizer split bypass (Critical), reward double-count (Critical), permissionless settlement, one-time pool, 29 tests. See docs/pre-deploy-audit-round5.md |
 
 ## Cooldown Design Note
 
@@ -93,12 +94,18 @@ SeatBackStaking cooldown (24h) **gates claim and unstake** — stakers cannot cl
 
 ## Contracts to Redeploy (PENDING)
 
-Both SeatBack and SeatBackStaking have multiple rounds of security fixes since last deploy.
+Round 6 fixed two Critical bugs, so ALL earlier deployments of SeatBack and SeatBackStaking are unsafe. Do not use them.
 Files ready: `public/remix/2_SeatBackStaking.sol` and `public/remix/3_SeatBack.sol`.
 
-After redeploy:
-1. Call `SeatBack.setStakingPool(new_staking_address)` — verifies `pool.seatBack() == address(this)`
-2. Update `DEPLOY_BLOCK` in `src/hooks/usePoints.ts` to actual block number
+Deploy order (important):
+1. Deploy `3_SeatBack.sol` (usdc, admin) -> address A
+2. Deploy `2_SeatBackStaking.sol` (sbk, usdc, A, owner) -> address B
+3. Admin calls `SeatBack.setStakingPool(B)`. This works only once and cannot be undone, so double-check B first.
+4. Only then create events (createEvent reverts until the pool is set).
+5. Update addresses in `src/contract.ts` and set `DEPLOY_BLOCK` in `src/hooks/usePoints.ts`.
+
+Settlement flow: finalize, then anyone calls `withdrawNoShowProceeds(eventId)` once (splits 50/50),
+then the organizer calls `withdrawOrganizerCredit(eventId)`. Failed pool deliveries: anyone calls `retryStakerCredit`.
 
 ## To Run
 

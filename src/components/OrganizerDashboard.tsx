@@ -148,7 +148,11 @@ function OrganizerEventPanel({ eventId, event, wrongChain, onSwitchChain, onRefe
   const { writeContract: finalize, data: finalizeHash, isPending: finalizePending } = useWriteContract()
   const { isLoading: finalizeConfirming, isSuccess: finalizeSuccess } = useWaitForTransactionReceipt({ hash: finalizeHash })
 
-  // Withdraw proceeds
+  // Step 1: settle no-show proceeds (split between stakers and organiser credit)
+  const { writeContract: settle, data: settleHash, isPending: settlePending } = useWriteContract()
+  const { isLoading: settleConfirming, isSuccess: settleSuccess } = useWaitForTransactionReceipt({ hash: settleHash })
+
+  // Step 2: withdraw the organiser credit to the payout wallet
   const { writeContract: withdraw, data: withdrawHash, isPending: withdrawPending } = useWriteContract()
   const { isLoading: withdrawConfirming, isSuccess: withdrawSuccess } = useWaitForTransactionReceipt({ hash: withdrawHash })
 
@@ -208,15 +212,26 @@ function OrganizerEventPanel({ eventId, event, wrongChain, onSwitchChain, onRefe
     }, { onError: (e) => setTxError(parseOnchainError(e)), onSuccess: () => { toast.success('Event finalized.'); void refetchAccounting(); void onRefetchEvents() } }))
   }, [confirmPending, finalize, eventId, refetchAccounting, onRefetchEvents])
 
-  const handleWithdraw = () => {
+  const handleSettle = () => {
     if (!SEATBACK_ADDRESS) return
-    call(() => withdraw({
+    call(() => settle({
       address: SEATBACK_ADDRESS,
       abi: SEATBACK_ABI,
       functionName: 'withdrawNoShowProceeds',
       args: [eventId],
       chainId: ACTIVE_CHAIN_ID,
-    }, { onError: (e) => setTxError(parseOnchainError(e)), onSuccess: () => { toast.success('Proceeds withdrawn to payout wallet!'); void refetchAccounting() } }))
+    }, { onError: (e) => setTxError(parseOnchainError(e)), onSuccess: () => { toast.success('No-show proceeds split. You can now withdraw your share.'); void refetchAccounting() } }))
+  }
+
+  const handleWithdraw = () => {
+    if (!SEATBACK_ADDRESS) return
+    call(() => withdraw({
+      address: SEATBACK_ADDRESS,
+      abi: SEATBACK_ABI,
+      functionName: 'withdrawOrganizerCredit',
+      args: [eventId],
+      chainId: ACTIVE_CHAIN_ID,
+    }, { onError: (e) => setTxError(parseOnchainError(e)), onSuccess: () => { toast.success('Proceeds sent to your payout wallet!'); void refetchAccounting() } }))
   }
 
   // phase === 'check_in_open' means now is in checkIn window (may or may not be opened by organizer)
@@ -225,7 +240,10 @@ function OrganizerEventPanel({ eventId, event, wrongChain, onSwitchChain, onRefe
   const canCheckIn = event.checkInOpened && !event.cancelled && inCheckInWindow
   const canCancel = !event.cancelled && !event.finalized && phase !== 'check_in_closed'
   const canFinalize = !event.cancelled && !event.finalized && (phase === 'check_in_closed')
-  const canWithdraw = !event.cancelled && event.finalized && (accounting?.organizerCredit ?? 0n) > 0n
+  const noShowSettled = accounting?.noShowSettled ?? false
+  const hasCredit = (accounting?.organizerCredit ?? 0n) > 0n
+  const canSettle = !event.cancelled && event.finalized && !noShowSettled && hasCredit
+  const canWithdraw = !event.cancelled && event.finalized && noShowSettled && hasCredit
 
   return (
     <div className="rounded-2xl border border-[var(--border)] overflow-hidden" style={{ background: 'var(--surface-strong)' }}>
@@ -374,6 +392,18 @@ function OrganizerEventPanel({ eventId, event, wrongChain, onSwitchChain, onRefe
                   className="w-full"
                 />
               )
+            )}
+
+            {canSettle && (
+              <TxButton
+                onClick={handleSettle}
+                isPending={settlePending}
+                isConfirming={settleConfirming}
+                isSuccess={settleSuccess}
+                disabled={wrongChain}
+                label="Settle No-Show Proceeds (50% stakers / 50% you)"
+                className="w-full"
+              />
             )}
 
             {canWithdraw && (

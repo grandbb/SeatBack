@@ -78,13 +78,6 @@ export function Staking() {
     query: { enabled: !!STAKING_ADDRESS },
   })
 
-  const { data: undistributed } = useReadContract({
-    address: STAKING_ADDRESS || undefined,
-    abi: STAKING_ABI,
-    functionName: 'undistributedProceeds',
-    query: { enabled: !!STAKING_ADDRESS },
-  })
-
   const { data: inCooldown, refetch: refetchCooldown } = useReadContract({
     address: STAKING_ADDRESS || undefined,
     abi: STAKING_ABI,
@@ -251,8 +244,8 @@ export function Staking() {
           <span className="font-semibold text-[var(--ink)]">{fmt18(totalStaked)} SBK</span>
         </div>
         <div className="flex flex-col gap-0.5">
-          <span className="text-[var(--muted)] text-xs">Undistributed (cold-start)</span>
-          <span className="font-semibold text-[var(--ink)]">{fmt6(undistributed)} USDC</span>
+          <span className="text-[var(--muted)] text-xs">Claim / unstake lock</span>
+          <span className="font-semibold text-[var(--ink)]">24 hours after each stake</span>
         </div>
         <a href={`${EXPLORER}/address/${STAKING_ADDRESS}`} target="_blank" rel="noopener noreferrer"
           className="text-xs text-[var(--accent)] hover:underline flex items-center gap-1">

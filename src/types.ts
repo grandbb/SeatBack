@@ -27,6 +27,7 @@ export interface EventAccounting {
   organizerPaid: bigint
   stakerPaid: bigint
   poolSnapshot: `0x${string}`
+  noShowSettled: boolean
 }
 
 /** Mirrors SeatBack.ReservationInfo */

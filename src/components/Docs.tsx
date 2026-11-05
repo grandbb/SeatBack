@@ -307,7 +307,7 @@ export function Docs() {
                 'Minimum stake: 1 SBK · Stake cooldown: 7,200 blocks (~24 h)',
                 'Receives 50% of no-show USDC from SeatBack at each finalisation',
                 'Reward = your staked SBK ÷ total staked × pool amount for that event',
-                'Undistributed proceeds carry forward — no USDC is ever stuck',
+                'Rounding remainders carry forward exactly once, so rewards are always fully backed by deposited USDC',
               ]}
               addr={STAKING_ADDRESS ?? ''}
             />
