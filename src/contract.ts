@@ -1,10 +1,10 @@
 /*
  * SeatBack contract config — Arc Mainnet production build.
- * SeatBack v3 + SeatBackStaking v2 + SeatBackToken (SBK)
+ * SeatBack v4 + SeatBackStaking v3 + SeatBackToken (SBK)
  *
  * Contract addresses (Arc Mainnet, chain 5042):
- *   SeatBack v3:        0x6Fdb06A9Ce387937C2261F489E502e53cA1F0Bbc
- *   SeatBackStaking v2: 0x4ae8f1dA7699f3a78a12f8fD28C83F159c84F177
+ *   SeatBack v4:        0xAD55d8959c56da02E730A2354CE430bfD42976FA
+ *   SeatBackStaking v3: 0xa9442b3d23DDAA65D5cE7cc766ABbCb1f7720099
  *   SeatBackToken (SBK):0x6AB94508cB97756873316f6819F258BCE444363f
  */
 import { getUsdc, requireChain } from '@/onchain-facts'
@@ -22,17 +22,17 @@ export const CHAIN = requireChain(ACTIVE_CHAIN_ID)
 
 // ─── Contract addresses ───────────────────────────────────────────────────────
 
-/** SeatBack v3 — deployed 2026-10-21, with 50/50 staking split + poolSnapshot */
-export const SEATBACK_ADDRESS: `0x${string}` = '0x6Fdb06A9Ce387937C2261F489E502e53cA1F0Bbc'
+/** SeatBack v4 — deployed 2026-11-10 (block 30541040). Admin must call setStakingPool once. */
+export const SEATBACK_ADDRESS: `0x${string}` = '0xAD55d8959c56da02E730A2354CE430bfD42976FA'
 
-/** SeatBackStaking v2 — deployed 2026-10-21, with 24h cooldown + MIN_STAKE */
-export const STAKING_ADDRESS: `0x${string}` = '0x4ae8f1dA7699f3a78a12f8fD28C83F159c84F177'
+/** SeatBackStaking v3 — deployed 2026-11-10, bound to SeatBack v4 */
+export const STAKING_ADDRESS: `0x${string}` = '0xa9442b3d23DDAA65D5cE7cc766ABbCb1f7720099'
 
 /**
  * Block at which SeatBack was deployed. Lower bound for all log queries
  * (reservations, organiser events, points). UPDATE after every deployment.
  */
-export const DEPLOY_BLOCK = 0n
+export const DEPLOY_BLOCK = 30541040n
 
 /** SeatBackToken (SBK) — 100M fixed supply */
 export const SBK_ADDRESS: `0x${string}` = '0x6AB94508cB97756873316f6819F258BCE444363f'

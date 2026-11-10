@@ -13,7 +13,6 @@ interface HeaderProps {
 
 // Primary nav tabs — always visible
 const PRIMARY_TABS = [
-  { id: 'home',         label: 'Home' },
   { id: 'events',       label: 'Events' },
   { id: 'create',       label: 'Create' },
   { id: 'reservations', label: 'My Tickets' },
@@ -81,9 +80,9 @@ export function Header({ activeTab, onTabChange }: HeaderProps) {
 
         {/* Logo */}
         <button
-          onClick={() => navigate('home')}
+          onClick={() => navigate('events')}
           className="flex-shrink-0 focus-visible:outline-none"
-          aria-label="Go to home"
+          aria-label="Go to events"
         >
           <Logo size="sm" />
         </button>

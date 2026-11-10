@@ -93,7 +93,15 @@ SEATBACK_ADDRESS points to v3: `0x6Fdb06A9Ce387937C2261F489E502e53cA1F0Bbc`.
 
 SeatBackStaking cooldown (24h) **gates claim and unstake** — stakers cannot claim or unstake within 24h of their last stake. Rewards accrue normally during the cooldown window; they become claimable once 24h passes. This blocks same-block flash-stake attacks. Truly forfeiting mid-cooldown accruals would require O(n) updates on every `receiveProceeds()` call — not feasible at scale with accumulator-based distribution.
 
-## Contracts to Redeploy (PENDING)
+## Deployed (Arc Mainnet, 2026-11-10)
+
+- SeatBack v4: `0xAD55d8959c56da02E730A2354CE430bfD42976FA` (block 30541040, admin 0x11315Cce8f009e4CB4234FFEAF2E860b84E5b0f6)
+- SeatBackStaking v3: `0xa9442b3d23DDAA65D5cE7cc766ABbCb1f7720099` (owner = same wallet)
+- SBK: `0x6AB94508cB97756873316f6819F258BCE444363f`
+- PENDING: admin must call `SeatBack.setStakingPool(<Staking v3>)` once; until then createEvent reverts.
+- Old v3/v2 and earlier deployments are unsafe. Do not use.
+
+## Contracts to Redeploy (historical notes)
 
 Round 6 fixed two Critical bugs, so ALL earlier deployments of SeatBack and SeatBackStaking are unsafe. Do not use them.
 Files ready: `public/remix/2_SeatBackStaking.sol` and `public/remix/3_SeatBack.sol`.

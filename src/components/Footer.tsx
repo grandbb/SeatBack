@@ -2,6 +2,8 @@
  * Footer — developer credits for SeatBack.
  */
 
+import { SEATBACK_ADDRESS } from '@/contract'
+
 export function Footer() {
   return (
     <footer className="mt-auto border-t border-[var(--border)] bg-[var(--surface)]">
@@ -52,12 +54,12 @@ export function Footer() {
             <span className="text-[var(--muted)]">Arc Mainnet</span>
           </div>
           <a
-            href="https://explorer.arc.io/address/0x6Fdb06A9Ce387937C2261F489E502e53cA1F0Bbc"
+            href={`https://explorer.arc.io/address/${SEATBACK_ADDRESS}`}
             target="_blank"
             rel="noopener noreferrer"
             className="font-mono text-[var(--muted)] hover:text-[var(--accent)] transition-colors"
           >
-            0x6Fdb…Bbc
+            {SEATBACK_ADDRESS.slice(0, 6)}…{SEATBACK_ADDRESS.slice(-4)}
           </a>
         </div>
       </div>

@@ -372,14 +372,14 @@ export function Demo() {
           <div className="space-y-3">
             {[
               {
-                name: 'SeatBack v3',
+                name: 'SeatBack v4',
                 role: 'Event escrow — holds deposits, manages check-in, splits no-show proceeds',
-                address: '0x6Fdb06A9Ce387937C2261F489E502e53cA1F0Bbc',
+                address: '0xAD55d8959c56da02E730A2354CE430bfD42976FA',
               },
               {
-                name: 'SeatBackStaking v2',
+                name: 'SeatBackStaking v3',
                 role: 'Staking pool — receives 50% of no-show fees, distributes USDC to SBK stakers',
-                address: '0x4ae8f1dA7699f3a78a12f8fD28C83F159c84F177',
+                address: '0xa9442b3d23DDAA65D5cE7cc766ABbCb1f7720099',
               },
               {
                 name: 'SBK Token',

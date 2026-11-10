@@ -287,24 +287,24 @@ export function Docs() {
 
           <div className="flex flex-col gap-3">
             <ContractCard
-              name="SeatBack v3"
+              name="SeatBack v4"
               badge="Escrow"
               desc="Core contract — events, deposits, check-ins, refunds, and no-show proceeds."
               bullets={[
                 'Holds all USDC in escrow; funds cannot leave outside the rules',
                 'No-show split: 50% organiser · 50% staking pool',
                 'EIP-712 QR signatures — chain-bound, event-bound, single-use',
-                'Admin (deployer) can only update the staking pool address — nothing else',
+                'Admin can set the staking pool exactly once — it can never be changed, and the admin cannot move anyone\'s funds',
                 'No upgrade proxy — deployed code is permanent',
               ]}
               addr={SEATBACK_ADDRESS ?? ''}
             />
             <ContractCard
-              name="SeatBackStaking v2"
+              name="SeatBackStaking v3"
               badge="Staking"
               desc="SBK holders stake here to earn USDC from every event's no-show proceeds."
               bullets={[
-                'Minimum stake: 1 SBK · Stake cooldown: 7,200 blocks (~24 h)',
+                'Minimum stake: 1 SBK · Claim and unstake unlock 24 h after your last stake',
                 'Receives 50% of no-show USDC from SeatBack at each finalisation',
                 'Reward = your staked SBK ÷ total staked × pool amount for that event',
                 'Rounding remainders carry forward exactly once, so rewards are always fully backed by deposited USDC',
