@@ -2,7 +2,8 @@
  * Create Event form — for organizers.
  */
 import { useState } from 'react'
-import { useAccount, useWriteContract, useWaitForTransactionReceipt, useSwitchChain } from 'wagmi'
+import { useAccount, useWriteContract, useWaitForTransactionReceipt, useSwitchChain, useReadContract } from 'wagmi'
+import { useModal } from 'connectkit'
 import { Info, AlertTriangle } from 'lucide-react'
 import { SEATBACK_ABI, SEATBACK_ADDRESS, ACTIVE_CHAIN_ID, NETWORK_LABEL } from '@/contract'
 import { parseUsdc, parseOnchainError, utcInputToUnix } from '@/utils/format'
@@ -14,8 +15,20 @@ interface CreateEventProps {
 }
 
 export function CreateEvent({ onCreated }: CreateEventProps) {
-  const { address, chainId, isConnected } = useAccount()
+  const { address, chainId, isConnected, status } = useAccount()
   const { switchChain } = useSwitchChain()
+  const { setOpen: openConnectModal } = useModal()
+  const walletConnecting = status === 'connecting' || status === 'reconnecting'
+
+  // Event creation is only open once the admin has linked the staking pool
+  const { data: stakingPoolAddr, isLoading: poolLoading } = useReadContract({
+    address: SEATBACK_ADDRESS ?? undefined,
+    abi: SEATBACK_ABI,
+    functionName: 'stakingPool',
+    chainId: ACTIVE_CHAIN_ID,
+    query: { enabled: !!SEATBACK_ADDRESS },
+  })
+  const poolReady = !!stakingPoolAddr && stakingPoolAddr !== '0x0000000000000000000000000000000000000000'
   const wrongChain = isConnected && chainId !== ACTIVE_CHAIN_ID
 
   // Form state
@@ -317,21 +330,37 @@ export function CreateEvent({ onCreated }: CreateEventProps) {
           </div>
         )}
 
-        <TxButton
-          onClick={() => handleSubmit({ preventDefault: () => undefined } as React.FormEvent)}
-          isPending={isPending}
-          isConfirming={isConfirming}
-          isSuccess={isSuccess}
-          isError={isError}
-          disabled={!isConnected || wrongChain}
-          label="Publish Event"
-          confirmingLabel="Publishing on-chain…"
-          successLabel="Event published!"
-          className="w-full"
-        />
-        <p className="text-xs text-center text-[var(--subtle)]">
-          This calls <span className="mono">createEvent</span> on the SeatBack contract — gas is paid in USDC on {NETWORK_LABEL}.
-        </p>
+        {/* Always-visible action bar: the button says what is needed and does it */}
+        <div
+          className="sticky bottom-3 z-10 flex flex-col gap-2 rounded-2xl border border-[var(--border)] p-3 shadow-lg"
+          style={{ background: 'var(--surface-strong)' }}
+        >
+          {!poolLoading && !poolReady && (
+            <p className="text-xs text-center" style={{ color: 'var(--warning)' }}>
+              Event creation is not open yet: the staking pool has not been linked to this contract.
+            </p>
+          )}
+          <TxButton
+            onClick={() => {
+              if (!isConnected) { openConnectModal(true); return }
+              if (wrongChain) { switchChain({ chainId: ACTIVE_CHAIN_ID }); return }
+              handleSubmit({ preventDefault: () => undefined } as React.FormEvent)
+            }}
+            isPending={isPending || walletConnecting}
+            pendingLabel={walletConnecting ? 'Connecting wallet…' : undefined}
+            isConfirming={isConfirming}
+            isSuccess={isSuccess}
+            isError={isError}
+            disabled={walletConnecting || (isConnected && !wrongChain && !poolReady)}
+            label={!isConnected ? 'Connect wallet to publish' : wrongChain ? `Switch to ${NETWORK_LABEL}` : 'Publish Event'}
+            confirmingLabel="Publishing on-chain…"
+            successLabel="Event published!"
+            className="w-full"
+          />
+          <p className="text-xs text-center text-[var(--subtle)]">
+            This calls <span className="mono">createEvent</span> on the SeatBack contract — gas is paid in USDC on {NETWORK_LABEL}.
+          </p>
+        </div>
       </form>
     </div>
   )
