@@ -5,6 +5,7 @@
  */
 
 import { http, createConfig } from 'wagmi'
+import { mainnet } from 'wagmi/chains'
 import { arc } from 'viem/chains'
 import { injected } from 'wagmi/connectors'
 import { registerChain } from './tracing'
@@ -15,9 +16,10 @@ registerChain(arc.id, arc.rpcUrls.default.http[0])
 export const INITIAL_CHAIN_ID = arc.id // 5042
 
 export const config = createConfig({
-  chains: [arc],
+  chains: [arc, mainnet], // Ethereum mainnet is only for ENS name lookups
   connectors: [injected()],
   transports: {
     [arc.id]: http('https://rpc.mainnet.arc.io'),
+    [mainnet.id]: http(), // ENS resolution only
   },
 })
