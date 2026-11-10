@@ -41,10 +41,12 @@ export function CreateEvent({ onCreated }: CreateEventProps) {
   const effectivePayoutWallet = payoutWallet || address || ''
 
   const validate = (): string | null => {
-    if (!title.trim() || title.length > 120) return 'Title is required (max 120 chars).'
-    if (!description.trim() || description.length > 500) return 'Description is required (max 500 chars).'
-    if (!venue.trim() || venue.length > 200) return 'Venue is required (max 200 chars).'
-    if (!depositInput || parseUsdc(depositInput) === 0n) return 'Enter a deposit amount greater than 0.'
+    // The contract limits are in UTF-8 bytes, not characters (e.g. Thai text is 3 bytes per character).
+    const bytes = (v: string) => new TextEncoder().encode(v).length
+    if (!title.trim() || bytes(title) > 120) return 'Title is required (max 120 bytes; non-English characters use up to 3 bytes each).'
+    if (!description.trim() || bytes(description) > 500) return 'Description is required (max 500 bytes; non-English characters use up to 3 bytes each).'
+    if (!venue.trim() || bytes(venue) > 200) return 'Venue is required (max 200 bytes; non-English characters use up to 3 bytes each).'
+    if (parseUsdc(depositInput) === 0n) return 'Enter a deposit as a plain number such as 5 or 5.50 (max 6 decimals).'
     const cap = parseInt(capacityInput, 10)
     if (isNaN(cap) || cap <= 0) return 'Capacity must be at least 1.'
     if (cap > 10000) return 'Capacity cannot exceed 10,000.'
@@ -60,9 +62,11 @@ export function CreateEvent({ onCreated }: CreateEventProps) {
     const TWO_YEARS = 2 * 365 * 24 * 3600
     if (tEventEnd > now + TWO_YEARS) return 'Event End must be within 2 years from now.'
     if (tBookingClose <= now) return '① Booking Closes must be in the future.'
+    if (tBookingClose > tEventStart) return '① Booking Closes must be on or before Event Start.'
     if (tBookingClose > tRefundCutoff) return '① Booking Closes must be ≤ ② Refund Cutoff.'
     if (tRefundCutoff > tCheckInStart) return '② Refund Cutoff must be ≤ ③ Check-In Opens.'
     if (tCheckInStart >= tCheckInEnd) return '③ Check-In Opens must be before ④ Check-In Closes.'
+    if (tCheckInEnd - tCheckInStart < 300) return 'The check-in window must be at least 5 minutes long.'
     if (tEventEnd <= tEventStart) return 'Event End must be after Event Start.'
     if (!/^0x[0-9a-fA-F]{40}$/.test(effectivePayoutWallet)) return 'Enter a valid payout wallet address.'
     return null
@@ -274,9 +278,8 @@ export function CreateEvent({ onCreated }: CreateEventProps) {
             </Field>
             <Field label="Deposit (USDC)" required hint="Per attendee, fully refundable">
               <input
-                type="number"
-                min={0.01}
-                step={0.01}
+                type="text"
+                inputMode="decimal"
                 value={depositInput}
                 onChange={(e) => setDepositInput(e.target.value)}
                 className={inputCls}

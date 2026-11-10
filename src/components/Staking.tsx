@@ -11,6 +11,7 @@ import { useAccount, useReadContract, useWriteContract, useWaitForTransactionRec
 import { parseUnits, formatUnits } from 'viem'
 import { Layers, Lock, Unlock, Coins, TrendingUp, AlertTriangle, ExternalLink, RefreshCw } from 'lucide-react'
 import { ACTIVE_CHAIN_ID, NETWORK_LABEL, SBK_ADDRESS, STAKING_ADDRESS, STAKING_ABI, SBK_ABI } from '@/contract'
+import { formatDateTime } from '@/utils/format'
 
 const EXPLORER = ACTIVE_CHAIN_ID === 5042 ? 'https://explorer.arc.io' : 'https://explorer.testnet.arc.io'
 
@@ -44,6 +45,7 @@ export function Staking() {
     abi: ERC20_ABI,
     functionName: 'balanceOf',
     args: address ? [address] : undefined,
+    chainId: ACTIVE_CHAIN_ID,
     query: { enabled: !!address && !!SBK_ADDRESS },
   })
 
@@ -52,6 +54,7 @@ export function Staking() {
     abi: ERC20_ABI,
     functionName: 'allowance',
     args: address && STAKING_ADDRESS ? [address, STAKING_ADDRESS] : undefined,
+    chainId: ACTIVE_CHAIN_ID,
     query: { enabled: !!address && !!SBK_ADDRESS && !!STAKING_ADDRESS },
   })
 
@@ -60,6 +63,7 @@ export function Staking() {
     abi: STAKING_ABI,
     functionName: 'stakedBalance',
     args: address ? [address] : undefined,
+    chainId: ACTIVE_CHAIN_ID,
     query: { enabled: !!address && !!STAKING_ADDRESS },
   })
 
@@ -68,6 +72,7 @@ export function Staking() {
     abi: STAKING_ABI,
     functionName: 'pendingReward',
     args: address ? [address] : undefined,
+    chainId: ACTIVE_CHAIN_ID,
     query: { enabled: !!address && !!STAKING_ADDRESS },
   })
 
@@ -75,17 +80,29 @@ export function Staking() {
     address: STAKING_ADDRESS || undefined,
     abi: STAKING_ABI,
     functionName: 'totalStaked',
+    chainId: ACTIVE_CHAIN_ID,
     query: { enabled: !!STAKING_ADDRESS },
   })
 
-  const { data: inCooldown, refetch: refetchCooldown } = useReadContract({
+  const { data: stakeTs, refetch: refetchCooldown } = useReadContract({
     address: STAKING_ADDRESS || undefined,
     abi: STAKING_ABI,
-    functionName: 'isInCooldown',
+    functionName: 'stakeTimestamp',
     args: address ? [address] : undefined,
     chainId: ACTIVE_CHAIN_ID,
     query: { enabled: !!STAKING_ADDRESS && !!address },
   })
+
+  // Ticking clock so the lock lifts on screen the moment the cooldown ends
+  const [nowSec, setNowSec] = useState(() => Math.floor(Date.now() / 1000))
+  useEffect(() => {
+    const t = setInterval(() => setNowSec(Math.floor(Date.now() / 1000)), 15_000)
+    return () => clearInterval(t)
+  }, [])
+  const COOLDOWN_SECONDS = 24 * 3600
+  const cooldownEnd = stakeTs !== undefined && stakeTs > 0n ? Number(stakeTs) + COOLDOWN_SECONDS : 0
+  const inCooldown = stakeTs !== undefined && cooldownEnd > nowSec
+  const cooldownLabel = inCooldown ? formatDateTime(cooldownEnd) : ''
 
   // ── Write state ─────────────────────────────────────────────────────────────
 
@@ -130,6 +147,23 @@ export function Staking() {
     } catch { return 0n }
   })()
   const needsApproval = stakeAmountBigint > 0n && (sbkAllowance ?? 0n) < stakeAmountBigint
+  const MIN_STAKE = 10n ** 18n
+  const stakeError =
+    stakeInput && stakeAmountBigint === 0n ? 'Enter a valid amount.'
+    : stakeAmountBigint > (sbkBalance ?? 0n) ? 'Amount exceeds your SBK balance.'
+    : stakeAmountBigint > 0n && (stakedBalance ?? 0n) + stakeAmountBigint < MIN_STAKE ? 'Minimum total stake is 1 SBK.'
+    : null
+
+  const unstakeAmountBigint = (() => {
+    try {
+      const v = unstakeInput ? parseUnits(unstakeInput, 18) : 0n
+      return v > 0n ? v : 0n
+    } catch { return 0n }
+  })()
+  const unstakeError =
+    unstakeInput && unstakeAmountBigint === 0n ? 'Enter a valid amount.'
+    : unstakeAmountBigint > (stakedBalance ?? 0n) ? 'Amount exceeds your staked balance.'
+    : null
 
   const busy = isPending || isTxLoading
 
@@ -146,7 +180,7 @@ export function Staking() {
   }
 
   const handleStake = () => {
-    if (!STAKING_ADDRESS || stakeAmountBigint <= 0n) return
+    if (!STAKING_ADDRESS || stakeAmountBigint <= 0n || stakeError) return
     setActiveAction('stake')
     writeContract({
       address: STAKING_ADDRESS,
@@ -158,13 +192,13 @@ export function Staking() {
   }
 
   const handleUnstake = () => {
-    if (!STAKING_ADDRESS || !unstakeInput) return
+    if (!STAKING_ADDRESS || unstakeAmountBigint <= 0n || unstakeError) return
     setActiveAction('unstake')
     writeContract({
       address: STAKING_ADDRESS,
       abi: STAKING_ABI,
       functionName: 'unstake',
-      args: [parseUnits(unstakeInput, 18)],
+      args: [unstakeAmountBigint],
       chainId: ACTIVE_CHAIN_ID,
     })
   }
@@ -270,16 +304,17 @@ export function Staking() {
                 className="flex-1 rounded-xl border border-[var(--border)] bg-[var(--surface)] px-4 py-2.5 text-sm text-[var(--ink)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
               />
               <button
-                onClick={() => setStakeInput(fmt18(sbkBalance, 0).replace(/,/g, ''))}
+                onClick={() => setStakeInput(formatUnits(sbkBalance ?? 0n, 18))}
                 className="text-xs px-3 py-2 rounded-xl border border-[var(--border)] text-[var(--muted)] hover:text-[var(--ink)]"
               >Max</button>
             </div>
+            {stakeError && <p className="text-xs text-[var(--danger)]">{stakeError}</p>}
             {needsApproval ? (
               <button onClick={handleApprove} disabled={busy || wrongChain} className="btn-primary py-3 text-sm disabled:opacity-50">
                 {busy && activeAction === 'stake' ? 'Approving…' : 'Approve SBK'}
               </button>
             ) : (
-              <button onClick={handleStake} disabled={busy || !stakeInput || stakeAmountBigint === 0n || wrongChain} className="btn-primary py-3 text-sm disabled:opacity-50">
+              <button onClick={handleStake} disabled={busy || !stakeInput || stakeAmountBigint === 0n || !!stakeError || wrongChain} className="btn-primary py-3 text-sm disabled:opacity-50">
                 {busy && activeAction === 'stake' ? 'Staking…' : 'Stake SBK'}
               </button>
             )}
@@ -290,7 +325,7 @@ export function Staking() {
             <h2 className="font-semibold text-[var(--ink)] flex items-center gap-2"><Unlock size={15} /> Unstake SBK</h2>
             {inCooldown && (
               <div className="rounded-xl p-3 text-xs flex items-center gap-2" style={{ background: 'var(--warning-bg)', color: 'var(--warning)' }}>
-                24-hour cooldown active — unstake and claim are locked until your cooldown ends.
+                24-hour lock after your last stake. Unstake and claim unlock at {cooldownLabel}.
               </div>
             )}
             <div className="flex gap-2">
@@ -304,11 +339,12 @@ export function Staking() {
               />
               <button
                 type="button"
-                onClick={() => setUnstakeInput(fmt18(stakedBalance, 0).replace(/,/g, ''))}
+                onClick={() => setUnstakeInput(formatUnits(stakedBalance ?? 0n, 18))}
                 className="text-xs px-3 py-2 rounded-xl border border-[var(--border)] text-[var(--muted)] hover:text-[var(--ink)]"
               >Max</button>
             </div>
-            <button type="button" onClick={handleUnstake} disabled={busy || !unstakeInput || wrongChain || !!inCooldown} className="btn-ghost py-3 text-sm border border-[var(--border)] disabled:opacity-50">
+            {unstakeError && <p className="text-xs text-[var(--danger)]">{unstakeError}</p>}
+            <button type="button" onClick={handleUnstake} disabled={busy || !unstakeInput || !!unstakeError || wrongChain || !!inCooldown} className="btn-ghost py-3 text-sm border border-[var(--border)] disabled:opacity-50">
               {busy && activeAction === 'unstake' ? 'Unstaking…' : inCooldown ? 'Cooldown Active' : 'Unstake SBK'}
             </button>
           </div>

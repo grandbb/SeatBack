@@ -66,7 +66,7 @@ export function QRScanner({ event, eventId, onCheckedIn }: QRScannerProps) {
   }, [stopCamera])
 
   const { writeContract, data: txHash, isPending, isError: isTxError, error: txErr } = useWriteContract()
-  const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash: txHash })
+  const { data: receipt, isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash: txHash })
 
   const handleDecoded = useCallback((raw: string) => {
     setDecodeError(null)
@@ -171,12 +171,25 @@ export function QRScanner({ event, eventId, onCheckedIn }: QRScannerProps) {
         setReviewState('error')
       },
       onSuccess: () => {
+        toast.success('Check-in transaction sent. Waiting for confirmation…')
+      },
+    })
+  }, [payload, writeContract])
+
+  // Only mark the check-in as done once the transaction is actually mined
+  useEffect(() => {
+    if (isSuccess && reviewState === 'submitting') {
+      if (receipt?.status === 'success') {
         setReviewState('done')
         toast.success('Attendee checked in on-chain!')
         onCheckedIn()
-      },
-    })
-  }, [payload, writeContract, onCheckedIn])
+      } else {
+        // A mined-but-reverted transaction still counts as "found" by the receipt hook
+        setTxError('The transaction was rejected onchain. The attendee was not checked in.')
+        setReviewState('error')
+      }
+    }
+  }, [isSuccess, receipt, reviewState, onCheckedIn])
 
   const reset = () => {
     stopCamera()

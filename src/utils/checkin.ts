@@ -175,8 +175,8 @@ const MAX_PAYLOAD_BYTES = 4096
 const RE_ADDRESS = /^0x[0-9a-fA-F]{40}$/
 /** Decimal uint256 string (no leading zeros except "0" itself, max 78 digits) */
 const RE_UINT256 = /^(0|[1-9][0-9]{0,77})$/
-/** EIP-712 signature: 0x + 130 hex chars (65 bytes) */
-const RE_SIG = /^0x[0-9a-fA-F]{130}$/
+/** Signature: 65-byte ECDSA, or a longer even-length blob from an ERC-1271 smart wallet (max 1024 bytes) */
+const RE_SIG = /^0x(?:[0-9a-fA-F]{2}){65,1024}$/
 
 export function decodePayload(raw: string): CheckInPayload {
   // 1. Size guard — prevent DoS from huge inputs
@@ -231,11 +231,13 @@ export function decodePayload(raw: string): CheckInPayload {
   if (!RE_UINT256.test(p.nonce as string))    throw new PayloadDecodeError('Invalid nonce format.')
   if (!RE_UINT256.test(p.validAfter as string)) throw new PayloadDecodeError('Invalid validAfter format.')
   if (!RE_UINT256.test(p.validUntil as string)) throw new PayloadDecodeError('Invalid validUntil format.')
-  if (!RE_SIG.test(p.sig as string))          throw new PayloadDecodeError('Invalid signature format (expected 65-byte EIP-712 sig).')
+  if (!RE_SIG.test(p.sig as string))          throw new PayloadDecodeError('Invalid signature format.')
 
   // 8. Time sanity: validUntil must be > validAfter
   const vAfter = BigInt(p.validAfter as string)
   const vUntil = BigInt(p.validUntil as string)
+  const MAX_TS = 253402300799n // year 9999, the largest date the UI will ever display
+  if (vAfter > MAX_TS || vUntil > MAX_TS) throw new PayloadDecodeError('Invalid time window: timestamp out of range.')
   if (vUntil <= vAfter) throw new PayloadDecodeError('Invalid time window: validUntil must be after validAfter.')
 
   // 9. Validate contract / chainId match current deployment

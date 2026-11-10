@@ -38,10 +38,8 @@ import {
   ACTIVE_CHAIN_ID,
   NETWORK_LABEL,
 } from '@/contract'
-import {
-  useEventCount,
-  useEventsBatch,
-} from '@/hooks/useEvents'
+import { useEventsBatch } from '@/hooks/useEvents'
+import { useMyReservationIds } from '@/hooks/useMyLogs'
 import { computeEventPhase } from '@/types'
 import type { EventInfo, ReservationInfo } from '@/types'
 import { formatUsdc, formatDateTime, parseOnchainError, shortAddress } from '@/utils/format'
@@ -59,40 +57,16 @@ export function MyReservations({ onViewEvent }: MyReservationsProps) {
   const { switchChain } = useSwitchChain()
   const wrongChain = isConnected && chainId !== ACTIVE_CHAIN_ID
 
-  const { data: count, isLoading: countLoading } = useEventCount()
-  const total = count ?? 0n
-  const ids: bigint[] = []
-  for (let i = total - 1n; i >= 0n && ids.length < 100; i--) {
-    ids.push(i)
-  }
-
-  // Load all events to get activeReservationId per event
-  const { data: eventsData, isLoading: eventsLoading, refetch: refetchEvents } = useEventsBatch(ids)
-
-  // Load activeReservationId for the connected wallet per event
-  const { data: activeResIds, isLoading: resLoading, refetch: refetchResIds } = useReadContracts({
-    contracts: address
-      ? ids.map((id) => ({
-          address: (SEATBACK_ADDRESS ?? undefined),
-          abi: SEATBACK_ABI,
-          functionName: 'getActiveReservation' as const,
-          args: [id, address] as const,
-          chainId: ACTIVE_CHAIN_ID,
-        }))
-      : [],
-    query: { enabled: !!SEATBACK_ADDRESS && !!address && ids.length > 0 },
-  })
-
-  // Collect unique non-zero reservation IDs (active per event)
-  const resIdSet = new Set<bigint>()
-  if (activeResIds) {
-    for (const r of activeResIds) {
-      if (r?.status === 'success' && (r.result) > 0n) {
-        resIdSet.add(r.result)
-      }
-    }
-  }
-  const resIds = Array.from(resIdSet)
+  // Every reservation this wallet ever made, found from indexed logs. The contract clears
+  // its "active reservation" pointer after a cancel or check-in, so that pointer alone would
+  // hide refundable reservations.
+  const {
+    data: resIdsData,
+    isLoading: idsLoading,
+    error: idsError,
+    refetch: refetchIds,
+  } = useMyReservationIds(address)
+  const resIds = resIdsData ?? []
 
   // Load full reservation details
   const { data: reservationData, isLoading: reservationLoading, refetch: refetchReservations } = useReadContracts({
@@ -105,6 +79,16 @@ export function MyReservations({ onViewEvent }: MyReservationsProps) {
     })),
     query: { enabled: !!SEATBACK_ADDRESS && resIds.length > 0 },
   })
+
+  // Unique events referenced by those reservations
+  const eventIdList: bigint[] = []
+  for (let i = 0; i < resIds.length; i++) {
+    const r = reservationData?.[i]
+    if (r?.status === 'success' && r.result && !eventIdList.includes(r.result.eventId)) {
+      eventIdList.push(r.result.eventId)
+    }
+  }
+  const { data: eventsData, isLoading: eventsLoading, refetch: refetchEvents } = useEventsBatch(eventIdList)
 
   // Build list of (reservationId, reservation, eventId, event) tuples
   const items: Array<{
@@ -119,13 +103,15 @@ export function MyReservations({ onViewEvent }: MyReservationsProps) {
     if (resResult?.status !== 'success' || !resResult.result) continue
     const reservation = resResult.result
     const eventId = reservation.eventId
-    const eventIdx = ids.findIndex((id) => id === eventId)
+    const eventIdx = eventIdList.findIndex((id) => id === eventId)
     if (eventIdx === -1) continue
     const eventResult = eventsData?.[eventIdx]
     if (eventResult?.status !== 'success' || !eventResult.result) continue
     const event = eventResult.result
     items.push({ reservationId: resIds[i], reservation, eventId, event })
   }
+
+  const refetchResIds = refetchIds
 
   if (!isConnected) {
     return (
@@ -137,13 +123,24 @@ export function MyReservations({ onViewEvent }: MyReservationsProps) {
     )
   }
 
-  const isLoading = countLoading || eventsLoading || resLoading || reservationLoading
+  const isLoading = idsLoading || (resIds.length > 0 && (reservationLoading || eventsLoading))
 
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-16 gap-2 text-[var(--muted)]">
         <Loader2 size={20} className="animate-spin" />
         Loading your reservations…
+      </div>
+    )
+  }
+
+  if (idsError) {
+    return (
+      <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface-muted)] p-8 text-center flex flex-col gap-3">
+        <AlertTriangle size={28} className="mx-auto text-[var(--warning)]" />
+        <p className="font-semibold text-[var(--ink)]">Could not load your reservations</p>
+        <p className="text-sm text-[var(--muted)]">The network did not return your reservation history. Your deposits are safe onchain.</p>
+        <button type="button" onClick={() => { void refetchIds() }} className="mx-auto text-sm font-semibold text-[var(--accent)] underline">Try again</button>
       </div>
     )
   }

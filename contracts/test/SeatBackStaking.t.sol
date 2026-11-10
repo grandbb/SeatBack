@@ -562,4 +562,143 @@ contract SeatBackStakingTest is Test {
         staking.acceptOwnership();
         assertEq(staking.owner(), alice);
     }
+
+    // =========================================================================
+    // 16. SOLVENCY — pending rewards never exceed funds
+    // =========================================================================
+
+    SeatBackStaking internal sv;
+    MockERC20 internal svSbk;
+    address[3] internal svUsers;
+    uint256 internal svDeposited;
+    uint256 internal svPaid;
+
+    function _svSetup() internal {
+        svSbk = new MockERC20("Solv SBK", "SSBK", 18);
+        sv = new SeatBackStaking(address(svSbk), address(usdc), address(this), address(this));
+        svUsers = [alice, bob, makeAddr("carol")];
+        for (uint256 i = 0; i < 3; i++) {
+            svSbk.mint(svUsers[i], 1_000_000e18);
+            vm.prank(svUsers[i]);
+            svSbk.approve(address(sv), type(uint256).max);
+        }
+    }
+
+    /// @dev Core solvency properties, checked after every single step.
+    function _svCheck(string memory step) internal view {
+        uint256 pendingSum;
+        for (uint256 i = 0; i < 3; i++) {
+            pendingSum += sv.pendingReward(svUsers[i]);
+        }
+        assertLe(svPaid + pendingSum, svDeposited, string.concat("paid + pending > deposited @ ", step));
+        assertGe(usdc.balanceOf(address(sv)), pendingSum, string.concat("balance < pending @ ", step));
+        assertEq(usdc.balanceOf(address(sv)), svDeposited - svPaid, string.concat("balance != deposited - paid @ ", step));
+    }
+
+    function _svDeposit(uint256 amt) internal {
+        usdc.mint(address(sv), amt);
+        sv.receiveProceeds(amt);
+        svDeposited += amt;
+        _svCheck("deposit");
+    }
+
+    function _svStake(uint256 u, uint256 amt) internal {
+        vm.prank(svUsers[u]);
+        sv.stake(amt);
+        _svCheck("stake");
+    }
+
+    function _svOutOfCooldown(address u) internal {
+        if (sv.isInCooldown(u)) vm.warp(sv.stakeTimestamp(u) + sv.STAKE_COOLDOWN_SECONDS());
+    }
+
+    function _svUnstake(uint256 u, uint256 amt) internal {
+        address who = svUsers[u];
+        _svOutOfCooldown(who);
+        vm.prank(who);
+        sv.unstake(amt);
+        _svCheck("unstake");
+    }
+
+    function _svClaim(uint256 u) internal {
+        address who = svUsers[u];
+        _svOutOfCooldown(who);
+        if (sv.pendingReward(who) == 0) return;
+        uint256 before = usdc.balanceOf(who);
+        vm.prank(who);
+        sv.claimReward();
+        svPaid += usdc.balanceOf(who) - before;
+        _svCheck("claim");
+    }
+
+    function test_pendingRewardNeverExceedsFunds() public {
+        _svSetup();
+
+        // Deposit with no stakers goes to ownerReserve: funded, but not owed to stakers.
+        _svDeposit(777_777);
+
+        _svStake(0, 3e18);
+        _svDeposit(1_000_001);
+        _svStake(1, 7_777_777_777_777_777_777); // ~7.78 SBK
+        _svDeposit(999_999_999);
+        _svStake(2, 123e18 + 1);
+        _svDeposit(7);
+        _svDeposit(1);
+
+        vm.warp(block.timestamp + 1 days + 1);
+        _svDeposit(12_345_678);
+        _svClaim(0);
+        _svStake(0, 41e18 + 3); // top-up resets alice's cooldown, harvests pending
+        _svDeposit(3_333_333);
+        _svUnstake(1, 1e18);
+        _svDeposit(5);
+        _svClaim(1);
+        _svDeposit(100_000_007);
+        _svClaim(2);
+        _svStake(1, 333_333_333_333_333_333);
+        _svDeposit(2_000_003);
+        _svUnstake(2, 100e18);
+        _svDeposit(9_999_999);
+        _svClaim(0);
+        _svClaim(1);
+        _svClaim(2);
+        _svUnstake(0, 3e18); // partial unstake (alice holds 44e18 + 3)
+        _svDeposit(987_654_321);
+
+        // Everyone exits: stake and all remaining rewards.
+        for (uint256 i = 0; i < 3; i++) {
+            _svOutOfCooldown(svUsers[i]);
+            uint256 before = usdc.balanceOf(svUsers[i]);
+            vm.prank(svUsers[i]);
+            sv.exit();
+            svPaid += usdc.balanceOf(svUsers[i]) - before;
+            _svCheck("exit");
+        }
+        assertEq(sv.totalStaked(), 0);
+        // Owner reserve is still funded (plus any rounding dust is only ever left in the contract).
+        assertGe(usdc.balanceOf(address(sv)), sv.ownerReserve());
+        assertLe(svPaid, svDeposited);
+    }
+
+    /// @dev Randomised op sequence with the same solvency properties.
+    function testFuzz_pendingRewardNeverExceedsFunds(uint256 seed) public {
+        _svSetup();
+        for (uint256 step = 0; step < 24; step++) {
+            seed = uint256(keccak256(abi.encode(seed, step)));
+            uint256 op = seed % 4;
+            uint256 u = (seed >> 8) % 3;
+            uint256 amt = (seed >> 16);
+            if (op == 0) {
+                _svStake(u, bound(amt, 1e18, 1_000e18));
+            } else if (op == 1) {
+                _svDeposit(bound(amt, 1, 1_000_000_000));
+            } else if (op == 2) {
+                uint256 staked = sv.stakedBalance(svUsers[u]);
+                if (staked > 0) _svUnstake(u, bound(amt, 1, staked));
+            } else {
+                _svClaim(u);
+            }
+            vm.warp(block.timestamp + (seed >> 40) % 2 days);
+        }
+    }
 }

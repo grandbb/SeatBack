@@ -2,13 +2,14 @@
  * Full event view: details, refund policy, booking/cancellation actions for attendees.
  */
 import { useState, useEffect } from 'react'
-import { useAccount, useWriteContract, useWaitForTransactionReceipt, useSwitchChain, useReadContract } from 'wagmi'
+import { useAccount, useWriteContract, useWaitForTransactionReceipt, useSwitchChain, useReadContract, useReadContracts } from 'wagmi'
 import { erc20Abi } from 'viem'
 import { ArrowLeft, Share2, Check, MapPin, Clock, Users, Ticket, AlertTriangle, Info, CheckCircle2, XCircle } from 'lucide-react'
 import { SEATBACK_ABI, SEATBACK_ADDRESS, ACTIVE_CHAIN_ID, USDC_ADDRESS, NETWORK_LABEL } from '@/contract'
-import { formatUsdc, formatDateTime, parseOnchainError, shortAddress } from '@/utils/format'
+import { formatUsdc, formatDateTime, parseOnchainError, shortAddress, nowSeconds } from '@/utils/format'
 import { buildEventUrl } from '@/utils/url'
 import { useEvent, useActiveReservationId, useReservation, useReservedSeats } from '@/hooks/useEvents'
+import { useMyReservationIds } from '@/hooks/useMyLogs'
 import type { EventInfo } from '@/types'
 import { computeEventPhase } from '@/types'
 import { TxButton } from './TxButton'
@@ -30,9 +31,31 @@ export function EventDetail({ eventId, onBack }: EventDetailProps) {
     eventId,
     address,
   )
-  const { data: reservation, refetch: refetchRes } = useReservation(
-    activeResId && activeResId > 0n ? activeResId : null,
-  )
+  // Older reservations of this wallet for this event (cancelled or checked in). The contract
+  // clears the "active" pointer for those, but their deposit may still be waiting to be claimed.
+  const { data: myResIds, refetch: refetchMyResIds } = useMyReservationIds(address, eventId)
+  const { data: myResData, refetch: refetchMyRes } = useReadContracts({
+    contracts: (myResIds ?? []).map((id) => ({
+      address: SEATBACK_ADDRESS ?? undefined,
+      abi: SEATBACK_ABI,
+      functionName: 'getReservation' as const,
+      args: [id] as const,
+      chainId: ACTIVE_CHAIN_ID,
+    })),
+    query: { enabled: !!SEATBACK_ADDRESS && (myResIds?.length ?? 0) > 0 },
+  })
+  let claimableResId: bigint | null = null
+  const myIdList = myResIds ?? []
+  for (let i = 0; i < myIdList.length; i++) {
+    const r = myResData?.[i]
+    if (r?.status === 'success' && r.result && r.result.refundable && !r.result.refundClaimed) {
+      claimableResId = myIdList[i]
+      break
+    }
+  }
+  // The reservation we show/act on: the active one, otherwise one with an unclaimed refund.
+  const shownResId: bigint | null = activeResId && activeResId > 0n ? activeResId : claimableResId
+  const { data: reservation, refetch: refetchRes } = useReservation(shownResId)
 
   // USDC balance and allowance
   const { data: usdcBalance } = useReadContract({
@@ -101,8 +124,16 @@ export function EventDetail({ eventId, onBack }: EventDetailProps) {
     void refetchSeats()
     void refetchResId()
     void refetchRes()
+    void refetchMyResIds()
+    void refetchMyRes()
     void refetchAllowance()
   }
+
+  // Refresh once reserve / cancel / claim is actually mined, not when the wallet returns a hash
+  useEffect(() => {
+    if (reserveSuccess || cancelResSuccess || claimSuccess) refetchAll()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [reserveSuccess, cancelResSuccess, claimSuccess])
 
   if (isLoading) {
     return (
@@ -162,7 +193,7 @@ export function EventDetail({ eventId, onBack }: EventDetailProps) {
       chainId: ACTIVE_CHAIN_ID,
     }, {
       onError: (e) => setTxError(parseOnchainError(e)),
-      onSuccess: () => { toast.success('Reservation confirmed!'); refetchAll() },
+      onSuccess: () => { toast.success('Reservation sent. Waiting for confirmation…') },
     })
   }
 
@@ -177,13 +208,13 @@ export function EventDetail({ eventId, onBack }: EventDetailProps) {
       chainId: ACTIVE_CHAIN_ID,
     }, {
       onError: (e) => setTxError(parseOnchainError(e)),
-      onSuccess: () => { toast.success('Reservation cancelled — refund available to claim.'); refetchAll() },
+      onSuccess: () => { toast.success('Cancellation sent. Waiting for confirmation…') },
     })
   }
 
   const handleClaimRefund = () => {
     if (!SEATBACK_ADDRESS) return
-    const resId = activeResId && activeResId > 0n ? activeResId : null
+    const resId = shownResId
     if (!resId) return
     setTxError(null)
     claimRefund({
@@ -194,7 +225,7 @@ export function EventDetail({ eventId, onBack }: EventDetailProps) {
       chainId: ACTIVE_CHAIN_ID,
     }, {
       onError: (e) => setTxError(parseOnchainError(e)),
-      onSuccess: () => { toast.success('Refund claimed — USDC sent to your wallet.'); refetchAll() },
+      onSuccess: () => { toast.success('Refund transaction sent. Waiting for confirmation…') },
     })
   }
 
@@ -205,7 +236,7 @@ export function EventDetail({ eventId, onBack }: EventDetailProps) {
     !reservation?.refundable &&
     !reservation?.refundClaimed &&
     !evt.cancelled &&
-    phase === 'booking_open'
+    nowSeconds() < evt.refundCutoff
 
   // No-show: active reservation, check-in was opened, event is over, but no check-in recorded
   const isNoShow =
@@ -216,9 +247,10 @@ export function EventDetail({ eventId, onBack }: EventDetailProps) {
     (evt.finalized || phase === 'check_in_closed')
 
   const canClaimRefund =
-    hasActiveReservation &&
+    shownResId !== null &&
     !isNoShow &&
-    (reservation?.refundable || evt.cancelled || phase === 'finalized' || phase === 'check_in_closed') &&
+    (reservation?.refundable ||
+      (hasActiveReservation && (evt.cancelled || phase === 'finalized' || phase === 'check_in_closed'))) &&
     !reservation?.refundClaimed
 
   return (
@@ -284,6 +316,7 @@ export function EventDetail({ eventId, onBack }: EventDetailProps) {
           phase={phase}
           event={evt}
           hasActiveReservation={hasActiveReservation}
+          hasReservationRecord={hasActiveReservation || shownResId !== null}
           reservation={reservation}
           canCancel={canCancel}
           canClaimRefund={canClaimRefund}
@@ -388,6 +421,7 @@ interface AttendeeActionsProps {
   phase: string
   event: EventInfo
   hasActiveReservation: boolean
+  hasReservationRecord: boolean
   reservation: { active: boolean; refundable: boolean; refundClaimed: boolean } | undefined
   canCancel: boolean
   canClaimRefund: boolean
@@ -425,6 +459,7 @@ function AttendeeActions({
   phase,
   event,
   hasActiveReservation,
+  hasReservationRecord,
   reservation,
   canCancel,
   canClaimRefund,
@@ -476,7 +511,7 @@ function AttendeeActions({
       )}
 
       {/* Current status */}
-      {hasActiveReservation && (
+      {hasReservationRecord && (
         <div className="rounded-xl bg-teal-50 border border-teal-200 p-3 text-sm text-teal-800 flex items-center gap-2">
           <CheckCircle2 size={15} />
           {reservation?.refundClaimed

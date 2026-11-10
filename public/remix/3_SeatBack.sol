@@ -3190,7 +3190,7 @@ contract SeatBack is ReentrancyGuard {
     address public stakingPool;
 
     /// @notice Numerator of the staker share (out of 100). Default 50 (50% stakers / 50% organiser).
-    uint256 public stakerShareBps = 50;
+    uint256 public constant stakerShareBps = 50;
 
     /// @notice Owner / deployer who can set the staking pool address once.
     address public immutable admin;
@@ -3277,6 +3277,7 @@ contract SeatBack is ReentrancyGuard {
     event StakerCreditAccrued(uint256 indexed eventId, address indexed pool, uint256 amount);
     event StakerCreditReclaimed(uint256 indexed eventId, address indexed pool, uint256 amount);
     event NoShowSettled(uint256 indexed eventId, uint256 organiserAmount, uint256 stakerAmount);
+    event PayoutWalletUpdated(uint256 indexed eventId, address indexed oldWallet, address indexed newWallet);
 
     // ─── Constructor ──────────────────────────────────────────────────────────
 
@@ -3320,7 +3321,7 @@ contract SeatBack is ReentrancyGuard {
         // Events must not exist before the staking pool is bound, otherwise the
         // staker share of their no-show proceeds would silently go to the organiser.
         if (stakingPool == address(0)) revert StakingPoolNotSet();
-        if (p.payoutWallet == address(0)) revert InvalidAddress();
+        if (p.payoutWallet == address(0) || p.payoutWallet == address(this)) revert InvalidAddress();
         if (p.capacity == 0) revert InvalidCapacity();
         if (p.depositAmount == 0) revert InvalidDeposit();
 
@@ -3493,7 +3494,7 @@ contract SeatBack is ReentrancyGuard {
      *  - Domain binds to this contract address and chain ID — cross-chain / cross-contract replays are rejected.
      *  - reservationId binds the QR to one booking instance — stale QRs from cancelled/rebooked reservations are rejected.
      *  - nonce is consumed on first use — replay within the same reservation is rejected.
-     *  - validAfter / validUntil limit the window (max MAX_QR_VALIDITY = 5 min, capped to checkInEnd).
+     *  - validAfter / validUntil limit the window (max MAX_QR_VALIDITY = 10 min, capped to checkInEnd).
      *  - attendee field in the payload is matched against reservation.attendee — wallet substitution is rejected.
      *  - Supports EOA (ECDSA) and smart-contract wallets that implement ERC-1271.
      *
@@ -3701,6 +3702,19 @@ contract SeatBack is ReentrancyGuard {
         }
     }
 
+    /**
+     * @notice Organiser changes where this event's proceeds are paid, e.g. if the original
+     *         payout wallet can no longer receive USDC. Organiser-only; the admin has no say.
+     */
+    function updatePayoutWallet(uint256 eventId, address newWallet) external {
+        if (eventId >= eventCount) revert EventNotFound();
+        EventInfo storage evt = events[eventId];
+        if (msg.sender != evt.organizer) revert NotOrganizer();
+        if (newWallet == address(0) || newWallet == address(this)) revert InvalidAddress();
+        emit PayoutWalletUpdated(eventId, evt.payoutWallet, newWallet);
+        evt.payoutWallet = newWallet;
+    }
+
     function withdrawOrganizerCredit(uint256 eventId) external nonReentrant {
         if (eventId >= eventCount) revert EventNotFound();
 
@@ -3716,7 +3730,9 @@ contract SeatBack is ReentrancyGuard {
         acc.organizerCredit = 0;
         acc.organizerPaid += amount;
 
-        address recipient = msg.sender == evt.organizer ? msg.sender : evt.payoutWallet;
+        // Funds always go to the payout wallet the organiser nominated at creation,
+        // whichever of the two authorised parties triggers the withdrawal.
+        address recipient = evt.payoutWallet;
         usdc.safeTransfer(recipient, amount);
 
         emit ProceedsWithdrawn(eventId, recipient, amount);
@@ -3732,7 +3748,7 @@ contract SeatBack is ReentrancyGuard {
     /**
      * @notice Retry delivering a failed staker share to the pool snapshotted for
      *         this event. Permissionless; reverts (and changes nothing) if delivery
-     *         fails again, so it cannot be used to misroute funds.
+     *         fails again. The destination can never change: no admin can redirect it.
      */
     function retryStakerCredit(uint256 eventId) external nonReentrant {
         uint256 amount = unclaimedStakerCredit[eventId];
@@ -3743,27 +3759,6 @@ contract SeatBack is ReentrancyGuard {
         unclaimedStakerCredit[eventId] = 0;
         try this._routeStakerProceeds(eventId, pool, amount) {
             emit StakerCreditReclaimed(eventId, pool, amount);
-        } catch {
-            unclaimedStakerCredit[eventId] = amount;
-            revert StakerCreditTransferFailed();
-        }
-    }
-
-    /**
-     * @notice Emergency only: admin delivers a stuck staker share to another
-     *         genuine pool (same escrow, same USDC) if the snapshotted pool can no
-     *         longer receive funds. Prefer retryStakerCredit when the pool still works.
-     */
-    function reclaimStakerCredit(uint256 eventId, address newPool) external nonReentrant {
-        if (msg.sender != admin) revert NotAdmin();
-        uint256 amount = unclaimedStakerCredit[eventId];
-        if (amount == 0) revert NoProceeds();
-        _validateStakingPool(newPool);
-
-        unclaimedStakerCredit[eventId] = 0;
-
-        try this._routeStakerProceeds(eventId, newPool, amount) {
-            emit StakerCreditReclaimed(eventId, newPool, amount);
         } catch {
             unclaimedStakerCredit[eventId] = amount;
             revert StakerCreditTransferFailed();

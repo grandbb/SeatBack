@@ -3,11 +3,12 @@
  * Allows: openCheckIn, checkIn via QR scanner, checkIn via address, cancelEvent,
  *         withdrawNoShowProceeds, finalizeEvent.
  */
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { useAccount, useWriteContract, useWaitForTransactionReceipt, useSwitchChain } from 'wagmi'
 import { XCircle, AlertTriangle, ChevronDown, ChevronUp, Loader2, QrCode } from 'lucide-react'
 import { SEATBACK_ABI, SEATBACK_ADDRESS, ACTIVE_CHAIN_ID, NETWORK_LABEL } from '@/contract'
-import { useEventCount, useEventsBatch } from '@/hooks/useEvents'
+import { useEventsBatch } from '@/hooks/useEvents'
+import { useMyOrganizedEventIds } from '@/hooks/useMyLogs'
 import { useReadContracts } from 'wagmi'
 import { formatUsdc, formatDateTime, parseOnchainError, shortAddress } from '@/utils/format'
 import { computeEventPhase } from '@/types'
@@ -21,29 +22,23 @@ export function OrganizerDashboard() {
   const { switchChain } = useSwitchChain()
   const wrongChain = isConnected && chainId !== ACTIVE_CHAIN_ID
 
-  const { data: count, isLoading: countLoading } = useEventCount()
-  const total = count ?? 0n
-  const limit = 50n
-  const start = total > limit ? total - limit : 0n
-  const ids: bigint[] = []
-  for (let i = total - 1n; i >= start; i--) {
-    ids.push(i)
-    if (ids.length >= 50) break
-  }
+  // Events this wallet created, found from indexed logs so older events never fall
+  // out of a "newest N" window.
+  const {
+    data: organizedIds,
+    isLoading: idsLoading,
+    error: idsError,
+    refetch: refetchIds,
+  } = useMyOrganizedEventIds(address)
+  const ids = organizedIds ?? []
 
-  const { data: eventsData, isLoading: eventsLoading, refetch: refetchEvents } = useEventsBatch(ids)
+  const { data: eventsData, isLoading: eventsLoading, refetch: refetchEventsRaw } = useEventsBatch(ids)
+  const refetchEvents = async () => { await refetchIds(); await refetchEventsRaw() }
 
-  // Filter to only events where organizer === address
-  const myEventIds = ids.filter((id, i) => {
+  const myEvents = ids.flatMap((id, i) => {
     const r = eventsData?.[i]
-    if (r?.status !== 'success' || !r.result) return false
-    return (r.result).organizer.toLowerCase() === address?.toLowerCase()
-  })
-
-  const myEvents = myEventIds.map((id) => {
-    const idx = ids.indexOf(id)
-    const r = eventsData?.[idx]
-    return { id, event: r?.result as EventInfo }
+    if (r?.status !== 'success' || !r.result) return []
+    return [{ id, event: r.result }]
   })
 
   if (!isConnected) {
@@ -54,11 +49,21 @@ export function OrganizerDashboard() {
     )
   }
 
-  if (countLoading || eventsLoading) {
+  if (idsLoading || (ids.length > 0 && eventsLoading)) {
     return (
       <div className="flex items-center justify-center py-16 gap-2 text-[var(--muted)]">
         <Loader2 size={20} className="animate-spin" />
         Loading your events…
+      </div>
+    )
+  }
+
+  if (idsError) {
+    return (
+      <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface-muted)] p-8 text-center flex flex-col gap-2">
+        <p className="font-semibold text-[var(--ink)]">Could not load your events</p>
+        <p className="text-sm text-[var(--muted)]">The network did not return your event history. Nothing was lost onchain.</p>
+        <button type="button" onClick={() => { void refetchIds() }} className="mx-auto text-sm font-semibold text-[var(--accent)] underline">Try again</button>
       </div>
     )
   }
@@ -108,16 +113,26 @@ function OrganizerEventPanel({ eventId, event, wrongChain, onSwitchChain, onRefe
 
   // Load accounting
   const { data: accountingRaw, refetch: refetchAccounting } = useReadContracts({
-    contracts: [{
-      address: (SEATBACK_ADDRESS ?? undefined),
-      abi: SEATBACK_ABI,
-      functionName: 'getAccounting' as const,
-      args: [eventId] as const,
-      chainId: ACTIVE_CHAIN_ID,
-    }],
+    contracts: [
+      {
+        address: (SEATBACK_ADDRESS ?? undefined),
+        abi: SEATBACK_ABI,
+        functionName: 'getAccounting' as const,
+        args: [eventId] as const,
+        chainId: ACTIVE_CHAIN_ID,
+      },
+      {
+        address: (SEATBACK_ADDRESS ?? undefined),
+        abi: SEATBACK_ABI,
+        functionName: 'unclaimedStakerCredit' as const,
+        args: [eventId] as const,
+        chainId: ACTIVE_CHAIN_ID,
+      },
+    ],
     query: { enabled: !!SEATBACK_ADDRESS },
   })
   const accounting = accountingRaw?.[0]?.result
+  const failedStakerCredit = (accountingRaw?.[1]?.result) ?? 0n
 
   // Reserved seats
   const { data: seatsRaw } = useReadContracts({
@@ -156,6 +171,18 @@ function OrganizerEventPanel({ eventId, event, wrongChain, onSwitchChain, onRefe
   const { writeContract: withdraw, data: withdrawHash, isPending: withdrawPending } = useWriteContract()
   const { isLoading: withdrawConfirming, isSuccess: withdrawSuccess } = useWaitForTransactionReceipt({ hash: withdrawHash })
 
+  // Step 3 (only if delivery to the staking pool failed): anyone can retry
+  const { writeContract: retryStaker, data: retryHash, isPending: retryPending } = useWriteContract()
+  const { isLoading: retryConfirming, isSuccess: retrySuccess } = useWaitForTransactionReceipt({ hash: retryHash })
+
+  // Refresh once a transaction is actually mined (a wallet returning a hash is not a confirmation)
+  useEffect(() => {
+    if (openCISuccess || checkInSuccess || cancelSuccess || finalizeSuccess || settleSuccess || withdrawSuccess || retrySuccess) {
+      void refetchAccounting()
+      onRefetchEvents()
+    }
+  }, [openCISuccess, checkInSuccess, cancelSuccess, finalizeSuccess, settleSuccess, withdrawSuccess, retrySuccess, refetchAccounting, onRefetchEvents])
+
   const call = (fn: () => void) => {
     setTxError(null)
     fn()
@@ -169,7 +196,7 @@ function OrganizerEventPanel({ eventId, event, wrongChain, onSwitchChain, onRefe
       functionName: 'openCheckIn',
       args: [eventId],
       chainId: ACTIVE_CHAIN_ID,
-    }, { onError: (e) => setTxError(parseOnchainError(e)), onSuccess: () => { toast.success('Check-in opened!'); void refetchAccounting(); void onRefetchEvents() } }))
+    }, { onError: (e) => setTxError(parseOnchainError(e)), onSuccess: () => { toast.success('Check-in transaction sent.') } }))
   }
 
   const handleCheckIn = () => {
@@ -196,7 +223,7 @@ function OrganizerEventPanel({ eventId, event, wrongChain, onSwitchChain, onRefe
       functionName: 'cancelEvent',
       args: [eventId],
       chainId: ACTIVE_CHAIN_ID,
-    }, { onError: (e) => setTxError(parseOnchainError(e)), onSuccess: () => { toast.success('Event cancelled.'); void refetchAccounting(); void onRefetchEvents() } }))
+    }, { onError: (e) => setTxError(parseOnchainError(e)), onSuccess: () => { toast.success('Cancel transaction sent.') } }))
   }, [confirmPending, cancelEvt, eventId, refetchAccounting, onRefetchEvents])
 
   const handleFinalize = useCallback(() => {
@@ -209,7 +236,7 @@ function OrganizerEventPanel({ eventId, event, wrongChain, onSwitchChain, onRefe
       functionName: 'finalizeEvent',
       args: [eventId],
       chainId: ACTIVE_CHAIN_ID,
-    }, { onError: (e) => setTxError(parseOnchainError(e)), onSuccess: () => { toast.success('Event finalized.'); void refetchAccounting(); void onRefetchEvents() } }))
+    }, { onError: (e) => setTxError(parseOnchainError(e)), onSuccess: () => { toast.success('Finalize transaction sent.') } }))
   }, [confirmPending, finalize, eventId, refetchAccounting, onRefetchEvents])
 
   const handleSettle = () => {
@@ -220,7 +247,18 @@ function OrganizerEventPanel({ eventId, event, wrongChain, onSwitchChain, onRefe
       functionName: 'withdrawNoShowProceeds',
       args: [eventId],
       chainId: ACTIVE_CHAIN_ID,
-    }, { onError: (e) => setTxError(parseOnchainError(e)), onSuccess: () => { toast.success('No-show proceeds split. You can now withdraw your share.'); void refetchAccounting() } }))
+    }, { onError: (e) => setTxError(parseOnchainError(e)), onSuccess: () => { toast.success('Settlement transaction sent.') } }))
+  }
+
+  const handleRetryStaker = () => {
+    if (!SEATBACK_ADDRESS) return
+    call(() => retryStaker({
+      address: SEATBACK_ADDRESS,
+      abi: SEATBACK_ABI,
+      functionName: 'retryStakerCredit',
+      args: [eventId],
+      chainId: ACTIVE_CHAIN_ID,
+    }, { onError: (e) => setTxError(parseOnchainError(e)) }))
   }
 
   const handleWithdraw = () => {
@@ -231,7 +269,7 @@ function OrganizerEventPanel({ eventId, event, wrongChain, onSwitchChain, onRefe
       functionName: 'withdrawOrganizerCredit',
       args: [eventId],
       chainId: ACTIVE_CHAIN_ID,
-    }, { onError: (e) => setTxError(parseOnchainError(e)), onSuccess: () => { toast.success('Proceeds sent to your payout wallet!'); void refetchAccounting() } }))
+    }, { onError: (e) => setTxError(parseOnchainError(e)), onSuccess: () => { toast.success('Withdrawal transaction sent.') } }))
   }
 
   // phase === 'check_in_open' means now is in checkIn window (may or may not be opened by organizer)
@@ -285,6 +323,7 @@ function OrganizerEventPanel({ eventId, event, wrongChain, onSwitchChain, onRefe
               <AccountingRow label="Organiser credit" value={accounting.organizerCredit} />
               <AccountingRow label="Refunds paid" value={accounting.refundsPaid} />
               <AccountingRow label="Proceeds paid" value={accounting.organizerPaid} />
+              <AccountingRow label="Paid to stakers" value={accounting.stakerPaid} />
               <div className="flex flex-col">
                 <span className="text-[var(--subtle)] text-xs">Payout wallet</span>
                 <span className="mono text-xs text-[var(--ink)]">{shortAddress(event.payoutWallet)}</span>
@@ -406,6 +445,21 @@ function OrganizerEventPanel({ eventId, event, wrongChain, onSwitchChain, onRefe
               />
             )}
 
+            {failedStakerCredit > 0n && (
+              <div className="rounded-xl p-3 text-sm flex flex-col gap-2" style={{ background: 'var(--warning-bg)', color: 'var(--warning)', border: '1px solid var(--accent-muted)' }}>
+                <span>{formatUsdc(failedStakerCredit)} USDC of the stakers' share could not be delivered to the staking pool. Anyone can retry delivery.</span>
+                <TxButton
+                  onClick={handleRetryStaker}
+                  isPending={retryPending}
+                  isConfirming={retryConfirming}
+                  isSuccess={retrySuccess}
+                  disabled={wrongChain}
+                  label="Retry delivery to stakers"
+                  className="w-full"
+                />
+              </div>
+            )}
+
             {canWithdraw && (
               <TxButton
                 onClick={handleWithdraw}
@@ -413,7 +467,7 @@ function OrganizerEventPanel({ eventId, event, wrongChain, onSwitchChain, onRefe
                 isConfirming={withdrawConfirming}
                 isSuccess={withdrawSuccess}
                 disabled={wrongChain}
-                label={`Withdraw ${formatUsdc(accounting?.organizerCredit ?? 0n)} USDC Proceeds`}
+                label={`Withdraw ${formatUsdc(accounting?.organizerCredit ?? 0n)} USDC to ${shortAddress(event.payoutWallet)}`}
                 className="w-full"
               />
             )}

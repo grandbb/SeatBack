@@ -12,20 +12,26 @@ export function formatUsdc(raw: bigint): string {
 }
 
 /** Parse a user input string like "5" or "5.50" into raw USDC bigint.
- *  Uses pure BigInt arithmetic — no floating-point rounding. */
+ *  Strict: only an unsigned plain decimal with at most 6 fractional digits is accepted.
+ *  Anything else (signs, exponents like "1e3", extra dots, letters) returns 0n, so the
+ *  amount a user sees is always the amount that is sent. Pure BigInt, no floating point. */
 export function parseUsdc(input: string): bigint {
-  const cleaned = input.replace(/[^0-9.]/g, '')
-  if (!cleaned || cleaned === '.') return 0n
-  const [wholePart, fracPart = ''] = cleaned.split('.')
-  // Guard: reject if more than one decimal point was in the original
-  if (cleaned.split('.').length > 2) return 0n
-  try {
-    const whole = wholePart ? BigInt(wholePart) : 0n
-    const frac = fracPart.slice(0, USDC_DECIMALS).padEnd(USDC_DECIMALS, '0')
-    return whole * BigInt(10 ** USDC_DECIMALS) + BigInt(frac)
-  } catch {
-    return 0n
-  }
+  const v = input.trim()
+  if (!/^(\d+\.?\d{0,6}|\.\d{1,6})$/.test(v)) return 0n
+  const [wholePart, fracPart = ''] = v.split('.')
+  const whole = wholePart ? BigInt(wholePart) : 0n
+  const frac = fracPart.padEnd(USDC_DECIMALS, '0')
+  return whole * BigInt(10 ** USDC_DECIMALS) + BigInt(frac)
+}
+
+/** Largest instant a JavaScript Date can represent, in ms. */
+const MAX_DATE_MS = 8.64e15
+
+/** Seconds to ms, or null when the value cannot be shown as a date (untrusted onchain data). */
+function safeMs(ts: bigint | number): number | null {
+  const ms = (typeof ts === 'bigint' ? Number(ts) : ts) * 1000
+  if (!Number.isFinite(ms) || Math.abs(ms) > MAX_DATE_MS) return null
+  return ms
 }
 
 /**
@@ -34,7 +40,8 @@ export function parseUsdc(input: string): bigint {
  * The timezone abbreviation (e.g. "GMT+7", "EST") is shown automatically.
  */
 export function formatDateTime(ts: bigint | number): string {
-  const ms = typeof ts === 'bigint' ? Number(ts) * 1000 : ts * 1000
+  const ms = safeMs(ts)
+  if (ms === null) return 'Invalid date'
   return new Intl.DateTimeFormat('en-US', {
     weekday: 'short',
     month: 'short',
@@ -52,7 +59,8 @@ export function formatDateTime(ts: bigint | number): string {
  * in a single unambiguous timezone.
  */
 export function formatDateTimeUTC(ts: bigint | number): string {
-  const ms = typeof ts === 'bigint' ? Number(ts) * 1000 : ts * 1000
+  const ms = safeMs(ts)
+  if (ms === null) return 'Invalid date'
   return new Intl.DateTimeFormat('en-US', {
     weekday: 'short',
     month: 'short',
@@ -88,7 +96,8 @@ export function unixToUtcInput(ts: number): string {
 
 /** Short date only, local timezone */
 export function formatDate(ts: bigint | number): string {
-  const ms = typeof ts === 'bigint' ? Number(ts) * 1000 : ts * 1000
+  const ms = safeMs(ts)
+  if (ms === null) return 'Invalid date'
   return new Intl.DateTimeFormat('en-US', {
     month: 'short',
     day: 'numeric',
@@ -138,4 +147,9 @@ export function parseOnchainError(error: unknown): string {
   }
   if (msg.includes('network') || msg.includes('timeout')) return 'Network issue. Please retry.'
   return 'Something went wrong. Please try again.'
+}
+
+/** Current wall-clock time in whole seconds (kept out of component bodies for render purity). */
+export function nowSeconds(): bigint {
+  return BigInt(Math.floor(Date.now() / 1000))
 }

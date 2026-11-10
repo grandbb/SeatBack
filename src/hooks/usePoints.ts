@@ -33,7 +33,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { createPublicClient, http, parseAbiItem } from 'viem'
 import { arc, arcTestnet } from 'viem/chains'
-import { SEATBACK_ADDRESS, ACTIVE_CHAIN_ID } from '@/contract'
+import { SEATBACK_ADDRESS, ACTIVE_CHAIN_ID, DEPLOY_BLOCK } from '@/contract'
 
 // ─── Campaign & Rule Constants (exported for Docs) ───────────────────────────
 
@@ -62,13 +62,6 @@ export const POINTS_RULES = {
 } as const
 
 const POLL_INTERVAL = 60_000
-
-/**
- * Block number at which SeatBack v3 was deployed on Arc Mainnet.
- * Used as the lower bound for all log queries to avoid scanning from genesis.
- * Update this after each mainnet deployment.
- */
-const DEPLOY_BLOCK = 0n
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 

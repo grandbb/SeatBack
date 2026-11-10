@@ -28,6 +28,12 @@ export const SEATBACK_ADDRESS: `0x${string}` = '0x6Fdb06A9Ce387937C2261F489E502e
 /** SeatBackStaking v2 — deployed 2026-10-21, with 24h cooldown + MIN_STAKE */
 export const STAKING_ADDRESS: `0x${string}` = '0x4ae8f1dA7699f3a78a12f8fD28C83F159c84F177'
 
+/**
+ * Block at which SeatBack was deployed. Lower bound for all log queries
+ * (reservations, organiser events, points). UPDATE after every deployment.
+ */
+export const DEPLOY_BLOCK = 0n
+
 /** SeatBackToken (SBK) — 100M fixed supply */
 export const SBK_ADDRESS: `0x${string}` = '0x6AB94508cB97756873316f6819F258BCE444363f'
 
@@ -99,6 +105,14 @@ export const SEATBACK_ABI = [
       { name: 'eventId', type: 'uint256', indexed: true },
       { name: 'payoutWallet', type: 'address', indexed: true },
       { name: 'amount', type: 'uint256', indexed: false },
+    ],
+  },
+  {
+    type: 'event', name: 'NoShowSettled',
+    inputs: [
+      { name: 'eventId', type: 'uint256', indexed: true },
+      { name: 'organiserAmount', type: 'uint256', indexed: false },
+      { name: 'stakerAmount', type: 'uint256', indexed: false },
     ],
   },
   {
@@ -298,13 +312,8 @@ export const SEATBACK_ABI = [
   { type: 'function', name: 'claimRefund', inputs: [{ name: 'reservationId', type: 'uint256' }], outputs: [], stateMutability: 'nonpayable' },
   { type: 'function', name: 'withdrawNoShowProceeds', inputs: [{ name: 'eventId', type: 'uint256' }], outputs: [], stateMutability: 'nonpayable' },
   { type: 'function', name: 'withdrawOrganizerCredit', inputs: [{ name: 'eventId', type: 'uint256' }], outputs: [], stateMutability: 'nonpayable' },
+  { type: 'function', name: 'updatePayoutWallet', inputs: [{ name: 'eventId', type: 'uint256' }, { name: 'newWallet', type: 'address' }], outputs: [], stateMutability: 'nonpayable' },
   { type: 'function', name: 'retryStakerCredit', inputs: [{ name: 'eventId', type: 'uint256' }], outputs: [], stateMutability: 'nonpayable' },
-  {
-    type: 'function', name: 'reclaimStakerCredit',
-    inputs: [{ name: 'eventId', type: 'uint256' }, { name: 'newPool', type: 'address' }],
-    outputs: [],
-    stateMutability: 'nonpayable',
-  },
   {
     type: 'function', name: 'unclaimedStakerCredit',
     inputs: [{ name: 'eventId', type: 'uint256' }],
@@ -358,6 +367,7 @@ export const STAKING_ABI = [
   { type: 'function', name: 'unstake', inputs: [{ name: 'amount', type: 'uint256' }], outputs: [], stateMutability: 'nonpayable' },
   { type: 'function', name: 'claimReward', inputs: [], outputs: [], stateMutability: 'nonpayable' },
   { type: 'function', name: 'exit', inputs: [], outputs: [], stateMutability: 'nonpayable' },
+  { type: 'function', name: 'stakeTimestamp', inputs: [{ name: 'user', type: 'address' }], outputs: [{ type: 'uint256' }], stateMutability: 'view' },
   { type: 'function', name: 'isInCooldown', inputs: [{ name: 'user', type: 'address' }], outputs: [{ type: 'bool' }], stateMutability: 'view' },
   { type: 'error', name: 'StillInCooldown', inputs: [] },
   { type: 'function', name: 'receiveProceeds',   inputs: [{ name: 'amount', type: 'uint256' }], outputs: [], stateMutability: 'nonpayable' },

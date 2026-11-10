@@ -18,6 +18,7 @@ const PRIMARY_TABS = [
   { id: 'create',       label: 'Create' },
   { id: 'reservations', label: 'My Tickets' },
   { id: 'organizer',    label: 'Organiser' },
+  { id: 'staking',      label: 'Stake' },
 ]
 
 // Secondary tabs — live in hamburger menu

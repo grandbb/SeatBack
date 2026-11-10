@@ -86,7 +86,8 @@ SEATBACK_ADDRESS points to v3: `0x6Fdb06A9Ce387937C2261F489E502e53cA1F0Bbc`.
 | Round 4 | `9387f5f` | withdrawNoShowProceeds settled flag, formatUsdc BigInt, clipboard, TxButton, circular import, getLogs parallel, chainId, CSS vars |
 | Pentest | `df28a9a` | CSP unsafe-inline removed, parseUsdc BigInt, capacity cap, QR pre-validate, event-not-found, confirmation dialogs |
 | Round 5 | `6a6ed51` | Cooldown gate moved to claim/unstake, isInCooldown view, Staking UI lockout |
-| Round 6 | current | Organizer split bypass (Critical), reward double-count (Critical), permissionless settlement, one-time pool, 29 tests. See docs/pre-deploy-audit-round5.md |
+| Round 6 | `0791534` | Organizer split bypass (Critical), reward double-count (Critical), permissionless settlement, one-time pool, 29 tests. See docs/pre-deploy-audit-round5.md |
+| Round 7 | current | Payout wallet fix + updatePayoutWallet, reclaimStakerCredit removed, Stake tab mounted, reservation/event discovery via logs, safe dates, strict USDC parsing, 53 tests |
 
 ## Cooldown Design Note
 
@@ -100,12 +101,12 @@ Files ready: `public/remix/2_SeatBackStaking.sol` and `public/remix/3_SeatBack.s
 Deploy order (important):
 1. Deploy `3_SeatBack.sol` (usdc, admin) -> address A
 2. Deploy `2_SeatBackStaking.sol` (sbk, usdc, A, owner) -> address B
-3. Admin calls `SeatBack.setStakingPool(B)`. This works only once and cannot be undone, so double-check B first.
+3. Admin calls `SeatBack.setStakingPool(B)` (verify the address first). This works only once and cannot be undone, so double-check B first.
 4. Only then create events (createEvent reverts until the pool is set).
 5. Update addresses in `src/contract.ts` and set `DEPLOY_BLOCK` in `src/hooks/usePoints.ts`.
 
 Settlement flow: finalize, then anyone calls `withdrawNoShowProceeds(eventId)` once (splits 50/50),
-then the organizer calls `withdrawOrganizerCredit(eventId)`. Failed pool deliveries: anyone calls `retryStakerCredit`.
+then the organizer calls `withdrawOrganizerCredit(eventId)`. Failed pool deliveries: anyone calls `retryStakerCredit`. Organiser proceeds always go to the event's payout wallet; the organiser can change it with `updatePayoutWallet`.
 
 ## To Run
 

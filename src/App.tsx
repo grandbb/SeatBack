@@ -1,7 +1,7 @@
 /**
  * SeatBack — root routing component.
  *
- * Tabs: Home | Events | Create | My Reservations | Organiser
+ * Tabs: Home | Events | Create | My Reservations | Organiser | Stake
  * Deep-link: ?event=<id> opens that event detail directly and is kept in sync
  * with the URL so share links work.
  */
@@ -17,8 +17,10 @@ import { OrganizerDashboard } from './components/OrganizerDashboard'
 import { Footer } from './components/Footer'
 import { Docs } from './components/Docs'
 import { Demo } from './components/Demo'
+import { Staking } from './components/Staking'
+import { ErrorBoundary } from './components/ErrorBoundary'
 
-export type AppTab = 'home' | 'events' | 'create' | 'reservations' | 'organizer' | 'docs' | 'demo'
+export type AppTab = 'home' | 'events' | 'create' | 'reservations' | 'organizer' | 'staking' | 'docs' | 'demo'
 
 export { buildEventUrl } from '@/utils/url'
 
@@ -74,6 +76,7 @@ export default function App() {
       <Header activeTab={activeTab} onTabChange={handleTabChange} />
 
       <main className="flex-1 max-w-5xl mx-auto w-full px-4 py-8">
+        <ErrorBoundary key={`${activeTab}-${selectedEventId ?? "none"}`}>
         {/* Event detail — shown when an event is selected (from any tab or share link) */}
         {activeTab === 'events' && selectedEventId !== null ? (
           <EventDetail
@@ -101,6 +104,9 @@ export default function App() {
             {activeTab === 'organizer' && (
               <OrganizerDashboard />
             )}
+            {activeTab === 'staking' && (
+              <Staking />
+            )}
             {activeTab === 'docs' && (
               <Docs />
             )}
@@ -109,6 +115,7 @@ export default function App() {
             )}
           </>
         )}
+        </ErrorBoundary>
       </main>
       <Footer />
     </div>
