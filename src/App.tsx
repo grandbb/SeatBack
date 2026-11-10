@@ -1,13 +1,14 @@
 /**
  * SeatBack — root routing component.
  *
- * Tabs: Events | Create | My Reservations | Organiser | Stake
+ * Home is the landing page (click the logo). Tabs: Events | Create | My Reservations | Organiser | Stake
  * Deep-link: ?event=<id> opens that event detail directly and is kept in sync
  * with the URL so share links work.
  */
 import { useState, useEffect, useCallback } from 'react'
 import { useTheme } from './hooks/useTheme'
 import { Header } from './components/Header'
+import { Home } from './components/Home'
 import { EventList } from './components/EventList'
 import { EventDetail } from './components/EventDetail'
 import { CreateEvent } from './components/CreateEvent'
@@ -19,7 +20,7 @@ import { Demo } from './components/Demo'
 import { Staking } from './components/Staking'
 import { ErrorBoundary } from './components/ErrorBoundary'
 
-export type AppTab = 'events' | 'create' | 'reservations' | 'organizer' | 'staking' | 'docs' | 'demo'
+export type AppTab = 'home' | 'events' | 'create' | 'reservations' | 'organizer' | 'staking' | 'docs' | 'demo'
 
 export { buildEventUrl } from '@/utils/url'
 
@@ -45,7 +46,9 @@ export default function App() {
   useTheme()
 
   // Initialise from URL so a shared ?event= link opens the right detail directly
-  const [activeTab, setActiveTab] = useState<AppTab>('events')
+  const [activeTab, setActiveTab] = useState<AppTab>(() =>
+    readEventParam() !== null ? 'events' : 'home'
+  )
   const [selectedEventId, setSelectedEventId] = useState<bigint | null>(readEventParam)
 
   // Keep URL in sync whenever selectedEventId changes
@@ -82,6 +85,13 @@ export default function App() {
           />
         ) : (
           <>
+            {activeTab === 'home' && (
+              <Home
+                onExplore={() => handleTabChange('events')}
+                onCreateEvent={() => handleTabChange('create')}
+                onSelectEvent={handleSelectEvent}
+              />
+            )}
             {activeTab === 'events' && (
               <EventList onSelectEvent={handleSelectEvent} />
             )}

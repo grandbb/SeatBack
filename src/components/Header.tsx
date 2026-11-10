@@ -80,9 +80,9 @@ export function Header({ activeTab, onTabChange }: HeaderProps) {
 
         {/* Logo */}
         <button
-          onClick={() => navigate('events')}
+          onClick={() => navigate('home')}
           className="flex-shrink-0 focus-visible:outline-none"
-          aria-label="Go to events"
+          aria-label="Go to home"
         >
           <Logo size="sm" />
         </button>
