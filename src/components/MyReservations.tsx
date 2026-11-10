@@ -39,7 +39,7 @@ import {
   NETWORK_LABEL,
 } from '@/contract'
 import { useEventsBatch } from '@/hooks/useEvents'
-import { useMyReservationIds, useMyCheckedInReservationIds } from '@/hooks/useMyLogs'
+import { useMyReservationIds } from '@/hooks/useMyChainData'
 import { computeEventPhase } from '@/types'
 import type { EventInfo, ReservationInfo } from '@/types'
 import { formatUsdc, formatDateTime, parseOnchainError, shortAddress } from '@/utils/format'
@@ -67,8 +67,6 @@ export function MyReservations({ onViewEvent }: MyReservationsProps) {
     refetch: refetchIds,
   } = useMyReservationIds(address)
   const resIds = resIdsData ?? []
-  const { data: checkedInData } = useMyCheckedInReservationIds(address)
-  const checkedInIds = new Set((checkedInData ?? []).map((i) => i.toString()))
 
   // Load full reservation details
   const { data: reservationData, isLoading: reservationLoading, refetch: refetchReservations } = useReadContracts({
@@ -174,7 +172,6 @@ export function MyReservations({ onViewEvent }: MyReservationsProps) {
           reservation={reservation}
           eventId={eventId}
           event={event}
-          wasCheckedIn={checkedInIds.has(reservationId.toString())}
           wrongChain={wrongChain}
           onViewEvent={onViewEvent}
           onRefetch={() => { void refetchResIds(); void refetchReservations(); void refetchEvents() }}
@@ -191,7 +188,6 @@ interface ReservationCardProps {
   reservation: ReservationInfo
   eventId: bigint
   event: EventInfo
-  wasCheckedIn: boolean
   wrongChain: boolean
   onViewEvent: (eventId: bigint) => void
   onRefetch: () => void
@@ -202,7 +198,6 @@ function ReservationCard({
   reservation,
   eventId,
   event,
-  wasCheckedIn,
   wrongChain,
   onViewEvent,
   onRefetch,
@@ -274,7 +269,6 @@ function ReservationCard({
           <p className="text-xs text-[var(--muted)]">{event.venue}</p>
         </div>
         <ReservationStatusBadge
-          wasCheckedIn={wasCheckedIn}
           reservation={reservation}
           event={event}
           isNoShow={isNoShow}
@@ -324,9 +318,7 @@ function ReservationCard({
         {!reservation.active && reservation.refundable && !reservation.refundClaimed && !isNoShow && (
           <div className="rounded-xl bg-teal-50 border border-teal-200 p-3 text-sm text-teal-800 flex items-center gap-2">
             <CheckCircle2 size={15} />
-            {wasCheckedIn
-              ? 'The organiser confirmed your attendance. You are eligible for a full refund.'
-              : 'You cancelled this reservation. You are eligible for a full refund.'}
+            Refund available: you cancelled in time or the organiser checked you in. Claim your full deposit below.
           </div>
         )}
 
@@ -441,13 +433,11 @@ function InfoCell({
 }
 
 function ReservationStatusBadge({
-  wasCheckedIn,
   reservation,
   event,
   isNoShow,
   phase,
 }: {
-  wasCheckedIn: boolean
   reservation: ReservationInfo
   event: EventInfo
   isNoShow: boolean
@@ -463,9 +453,7 @@ function ReservationStatusBadge({
     return <Badge label="No-show" className="badge-navy" />
   }
   if (!reservation.active && reservation.refundable) {
-    return wasCheckedIn
-      ? <Badge label="Checked in" className="bg-blue-50 text-blue-700 border-blue-200" />
-      : <Badge label="Cancelled · refund available" className="badge-navy" />
+    return <Badge label="Refund available" className="bg-blue-50 text-blue-700 border-blue-200" />
   }
   if (event.cancelled && reservation.active) {
     return <Badge label="Event cancelled" className="bg-red-50 text-red-600 border-red-200" />

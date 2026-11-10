@@ -8,7 +8,7 @@ import { useAccount, useWriteContract, useWaitForTransactionReceipt, useSwitchCh
 import { XCircle, AlertTriangle, ChevronDown, ChevronUp, Loader2, QrCode } from 'lucide-react'
 import { SEATBACK_ABI, SEATBACK_ADDRESS, ACTIVE_CHAIN_ID, NETWORK_LABEL } from '@/contract'
 import { useEventsBatch } from '@/hooks/useEvents'
-import { useMyOrganizedEventIds } from '@/hooks/useMyLogs'
+import { useMyOrganizedEventIds } from '@/hooks/useMyChainData'
 import { useReadContracts } from 'wagmi'
 import { formatUsdc, formatDateTime, parseOnchainError, shortAddress } from '@/utils/format'
 import { computeEventPhase } from '@/types'

@@ -59,3 +59,8 @@ React + Vite + TypeScript, Tailwind, wagmi v2 + viem + ConnectKit, Sonner. Contr
 bun install
 bun run dev
 ```
+
+## RPC constraints (important)
+- The public Arc RPC rejects `eth_getLogs` over ~10,000 blocks and rate-limits bursts. Arc makes ~2 blocks/second.
+- My Tickets, Organiser and Event detail therefore read contract state via multicall (`src/hooks/useMyChainData.ts`), never logs.
+- Points need logs: `src/utils/logScan.ts` walks the chain in 8,000-block chunks, only when the wallet menu is opened. This gets slower as the chain grows (about 20 requests per day of history). Replace it with an indexer if usage grows.

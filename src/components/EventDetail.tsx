@@ -9,7 +9,7 @@ import { SEATBACK_ABI, SEATBACK_ADDRESS, ACTIVE_CHAIN_ID, USDC_ADDRESS, NETWORK_
 import { formatUsdc, formatDateTime, parseOnchainError, shortAddress, nowSeconds } from '@/utils/format'
 import { buildEventUrl } from '@/utils/url'
 import { useEvent, useActiveReservationId, useReservation, useReservedSeats } from '@/hooks/useEvents'
-import { useMyReservationIds } from '@/hooks/useMyLogs'
+import { useMyReservationIds } from '@/hooks/useMyChainData'
 import type { EventInfo } from '@/types'
 import { computeEventPhase } from '@/types'
 import { TxButton } from './TxButton'

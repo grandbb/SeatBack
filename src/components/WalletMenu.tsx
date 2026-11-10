@@ -10,7 +10,7 @@ export function WalletMenu() {
   const { setOpen } = useModal()
   const [open, setMenuOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
-  const { breakdown, loading, lastFetched, refresh, error: pointsError } = usePoints(address)
+  const { breakdown, loading, lastFetched, refresh, error: pointsError } = usePoints(address, open)
 
   useEffect(() => {
     function handler(e: MouseEvent) {

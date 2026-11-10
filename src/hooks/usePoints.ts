@@ -22,10 +22,16 @@
  * The airdrop these points are meant to feed is PLANNED: nothing is distributed yet.
  */
 
-import { useEffect, useState, useCallback, useRef } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { createPublicClient, http, parseAbiItem } from 'viem'
 import { arc } from 'viem/chains'
 import { SEATBACK_ADDRESS, DEPLOY_BLOCK } from '@/contract'
+import { getLogsChunked } from '@/utils/logScan'
+
+/** Minimal shape of a decoded log used by the points rules. */
+interface LogLike {
+  args: { eventId?: bigint; reservationId?: bigint; attendee?: string; organizer?: string }
+}
 
 // ─── Campaign & Rule Constants (exported for Docs) ───────────────────────────
 
@@ -59,7 +65,6 @@ export const POINTS_RULES = {
   CHECK_IN: 300,      // attendee who checked in — event must be finalised
 } as const
 
-const POLL_INTERVAL = 60_000
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -114,7 +119,7 @@ const EVENT_CANCELLED = parseAbiItem(
 
 // ─── Hook ─────────────────────────────────────────────────────────────────────
 
-export function usePoints(address: `0x${string}` | undefined) {
+export function usePoints(address: `0x${string}` | undefined, enabled = true) {
   const [breakdown, setBreakdown] = useState<PointsBreakdown>({
     total: 0, pending: 0,
     createEvent: 0, reserve: 0, checkIn: 0,
@@ -124,44 +129,32 @@ export function usePoints(address: `0x${string}` | undefined) {
   const [loading, setLoading] = useState(false)
   const [lastFetched, setLastFetched] = useState<Date | null>(null)
   const [fetchError, setFetchError] = useState<string | null>(null)
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   const fetchPoints = useCallback(async () => {
     if (!address) return
     setLoading(true)
     try {
-      // ── Fetch all event logs in parallel ──────────────────────────────────
-      // All 7 queries run in parallel — allCheckedIn (no address filter) merged here
-      // to avoid a serial 7th call that would timeout on mainnet with DEPLOY_BLOCK=0.
-      const [
-        created,
-        reserved,
-        checkedIn,
-        cancelled,
-        finalized,
-        eventCancelled,
-        allCheckedIn,
-        allReserved,
-      ] = await Promise.all([
-        client.getLogs({ address: SEATBACK_ADDRESS, event: EVENT_CREATED,
-          args: { organizer: address }, fromBlock: DEPLOY_BLOCK, toBlock: 'latest' }),
-        client.getLogs({ address: SEATBACK_ADDRESS, event: RESERVED,
-          args: { attendee: address }, fromBlock: DEPLOY_BLOCK, toBlock: 'latest' }),
-        client.getLogs({ address: SEATBACK_ADDRESS, event: CHECKED_IN,
-          args: { attendee: address }, fromBlock: DEPLOY_BLOCK, toBlock: 'latest' }),
-        client.getLogs({ address: SEATBACK_ADDRESS, event: RESERVATION_CANCELLED,
-          args: { attendee: address }, fromBlock: DEPLOY_BLOCK, toBlock: 'latest' }),
-        client.getLogs({ address: SEATBACK_ADDRESS, event: EVENT_FINALIZED,
-          fromBlock: DEPLOY_BLOCK, toBlock: 'latest' }),
-        client.getLogs({ address: SEATBACK_ADDRESS, event: EVENT_CANCELLED,
-          fromBlock: DEPLOY_BLOCK, toBlock: 'latest' }),
-        // Global CheckedIn — no address filter, used for per-event check-in counts
-        client.getLogs({ address: SEATBACK_ADDRESS, event: CHECKED_IN,
-          fromBlock: DEPLOY_BLOCK, toBlock: 'latest' }),
-        // Global Reserved — used to find the first EARLY_ADOPTER_WALLETS distinct wallets
-        client.getLogs({ address: SEATBACK_ADDRESS, event: RESERVED,
-          fromBlock: DEPLOY_BLOCK, toBlock: 'latest' }),
-      ])
+      // One chunked scan for every event type (the public RPC caps the block range and rate-limits),
+      // then split client-side. Logs are returned in chain order.
+      const logs = await getLogsChunked(
+        client,
+        SEATBACK_ADDRESS,
+        [EVENT_CREATED, RESERVED, CHECKED_IN, RESERVATION_CANCELLED, EVENT_FINALIZED, EVENT_CANCELLED],
+        DEPLOY_BLOCK,
+      )
+      const me0 = address.toLowerCase()
+      const named = (name: string): LogLike[] =>
+        logs.filter((l) => l.eventName === name).map((l) => ({ args: l.args as LogLike['args'] }))
+      const lower = (v: unknown) => (typeof v === 'string' ? v.toLowerCase() : undefined)
+
+      const created = named('EventCreated').filter((l) => lower(l.args.organizer) === me0)
+      const allReserved = named('Reserved')
+      const reserved = allReserved.filter((l) => lower(l.args.attendee) === me0)
+      const allCheckedIn = named('CheckedIn')
+      const checkedIn = allCheckedIn.filter((l) => lower(l.args.attendee) === me0)
+      const cancelled = named('ReservationCancelled').filter((l) => lower(l.args.attendee) === me0)
+      const finalized = named('EventFinalized')
+      const eventCancelled = named('EventCancelled')
 
       // Early adopter: among the first N distinct wallets to ever reserve (logs are in chain order)
       const earliestWallets = new Set<string>()
@@ -327,15 +320,13 @@ export function usePoints(address: `0x${string}` | undefined) {
     }
   }, [address])
 
+  // Fetch once when the points panel is first opened for a wallet (no background polling:
+  // the scan walks the chain in chunks and the public RPC is rate limited). Use refresh to update.
   // oxlint-disable-next-line react/set-state-in-effect -- async fetch pattern
   useEffect(() => {
-    if (!address) return
+    if (!address || !enabled) return
     void fetchPoints()
-    timerRef.current = setInterval(() => { void fetchPoints() }, POLL_INTERVAL)
-    return () => {
-      if (timerRef.current) clearInterval(timerRef.current)
-    }
-  }, [address, fetchPoints])
+  }, [address, enabled, fetchPoints])
 
   return { breakdown, loading, lastFetched, refresh: fetchPoints, error: fetchError }
 }
