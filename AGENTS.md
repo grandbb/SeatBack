@@ -98,7 +98,7 @@ SeatBackStaking cooldown (24h) **gates claim and unstake** — stakers cannot cl
 Round 6 fixed two Critical bugs, so ALL earlier deployments of SeatBack and SeatBackStaking are unsafe. Do not use them.
 Files ready: `public/remix/2_SeatBackStaking.sol` and `public/remix/3_SeatBack.sol`.
 
-Remix compiler settings (required, same as foundry.toml): Solidity 0.8.28, optimizer ON with 200 runs, via-IR ON (without it SeatBack fails with 'Stack too deep'), EVM version paris.
+Remix compiler settings: Solidity 0.8.28. No special config needed: the files compile with Remix defaults (verified with optimizer on/off and EVM paris/cancun, no via-IR). The public `events` getter was made internal to avoid 'Stack too deep'; read events with `getEvent`.
 
 Deploy order (important):
 1. Deploy `3_SeatBack.sol` (usdc, admin) -> address A

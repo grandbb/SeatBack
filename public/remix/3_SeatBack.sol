@@ -3237,7 +3237,9 @@ contract SeatBack is ReentrancyGuard {
     }
 
     uint256 public eventCount;
-    mapping(uint256 => EventInfo) public events;
+    /// @dev internal on purpose: a public getter for this 16-field struct (3 strings) makes the
+    ///      contract fail to compile without via-IR. Read events with getEvent().
+    mapping(uint256 => EventInfo) internal events;
 
     mapping(uint256 => ReservationInfo) public reservations;
     uint256 public reservationCount;
