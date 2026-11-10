@@ -172,16 +172,16 @@ export function Docs() {
         <Section id="how" title="How it works" icon={<QrCode size={18} className="text-[var(--accent)]" />}>
           <P>The full lifecycle of a seat, from booking to payout:</P>
           <div className="flex flex-col gap-3 mt-1">
-            <Step n={1} title="Organiser creates an event">Sets deposit amount, capacity, booking deadline, refund cutoff, and check-in window. All rules are locked onchain at creation.</Step>
+            <Step n={1} title="Organiser creates an event">Sets deposit amount, capacity, booking deadline, refund cutoff, check-in window, and a payout wallet. The deposit, capacity and all deadlines are locked onchain at creation.</Step>
             <Step n={2} title="Attendee reserves a seat">Sends USDC deposit to the escrow contract. Funds stay in the contract — the organiser cannot touch them.</Step>
             <Step n={3} title="Attendee generates a QR at the door">Signs a message with their wallet (no gas). The QR is valid for 10 minutes. If it expires, generate a new one.</Step>
             <Step n={4} title="Organiser scans the QR">Verifies the signature and submits a check-in transaction onchain. This marks the attendee as present.</Step>
-            <Step n={5} title="Organiser finalises the event">After the check-in window closes, anyone can trigger finalisation. No-show deposits are routed to the organiser and staking pool.</Step>
-            <Step n={6} title="Everyone claims what they are owed">Checked-in attendees claim their refund. Organiser withdraws proceeds. SBK stakers claim their USDC share.</Step>
+            <Step n={5} title="Event is finalised and settled">After the check-in window closes, anyone can finalise the event and settle its no-show deposits (one transaction, once per event). The contract splits them 50% to the staking pool and 50% to the organiser.</Step>
+            <Step n={6} title="Everyone collects what they are owed">Checked-in attendees claim their refund (available as soon as they are checked in). The organiser withdraws their 50% to the event payout wallet. SBK stakers claim their USDC share once their 24 h lock has passed.</Step>
           </div>
           <Callout type="warn">
             <strong>Trust model:</strong> Only the organiser can submit a check-in transaction — there is no self-service check-in.
-            If the organiser refuses to scan a valid QR, you may be marked as a no-show.
+            The organiser alone decides who attended: if they open check-in and do not check you in, your deposit is treated as a no-show and there is no dispute process.
             Only attend events from organisers you trust.
           </Callout>
         </Section>
@@ -193,9 +193,9 @@ export function Docs() {
           </P>
           <div className="flex flex-col gap-3 mt-1">
             <Step n={1} title="Browse and reserve">Go to Events → pick an event → click Reserve. Approve the USDC deposit and confirm. Your seat is held; deposit goes into escrow.</Step>
-            <Step n={2} title="Cancel if plans change">Open My Tickets and cancel before the event's refund cutoff. After the cutoff, cancellation is not allowed — your deposit stays locked.</Step>
+            <Step n={2} title="Cancel if plans change">Open the event page and cancel before the refund cutoff. After the cutoff you can no longer cancel: you only get your deposit back if you are checked in.</Step>
             <Step n={3} title="Show up and get scanned">During the check-in window, open My Tickets → your event → Generate QR. Sign with your wallet (free). Show the QR to the organiser within 10 minutes.</Step>
-            <Step n={4} title="Claim your refund">After finalisation, go to My Tickets and click Claim Refund. USDC is sent to your wallet.</Step>
+            <Step n={4} title="Claim your refund">Once you are checked in or have cancelled, go to My Tickets (or the event page) and click Claim Refund. USDC is sent to your wallet. If the organiser never opened check-in, everyone can claim a full refund after the check-in window ends.</Step>
           </div>
         </Section>
 
@@ -217,7 +217,7 @@ export function Docs() {
                   ['①', 'Booking Closes',   'Last moment attendees can reserve'],
                   ['②', 'Refund Cutoff',    'Last moment attendees can cancel for a refund (≥ ①)'],
                   ['③', 'Check-In Opens',   'QR scans are accepted from this time (≥ ②) — set to event start'],
-                  ['④', 'Check-In Closes',  'QR scans stop; no-shows are locked; finalization available (> ③)'],
+                  ['④', 'Check-In Closes',  'QR scans stop; no-shows are locked; finalisation available (at least 5 minutes after ③)'],
                 ].map(([s, f, m]) => (
                   <tr key={f} style={{ background: 'var(--surface)' }}>
                     <td className="px-4 py-2.5 font-bold text-[var(--accent)] text-sm">{s}</td>
@@ -228,18 +228,18 @@ export function Docs() {
               </tbody>
             </table>
           </div>
-          <Callout type="warn">All rules are permanently locked onchain at creation. Double-check everything before confirming.</Callout>
+          <Callout type="warn">Deposit, capacity and deadlines are permanently locked onchain at creation, and Booking Closes must be on or before the event start. Only the payout wallet can be changed later, by you as organiser. Double-check everything before confirming.</Callout>
 
           <H3>Running the event</H3>
           <div className="flex flex-col gap-3 mt-1">
             <Step n={1} title="Open check-in">Organiser → your event → Open Check-In. QR scans are not accepted before this.</Step>
             <Step n={2} title="Scan attendee QRs">Use the Scan QR tab. Allow camera access, or paste the payload manually. Review the attendee details, then confirm to submit onchain.</Step>
-            <Step n={3} title="Finalise and withdraw">After Check-In Closes, click Finalise Event. Then click Withdraw Proceeds to receive no-show funds.</Step>
+            <Step n={3} title="Finalise, settle and withdraw">After Check-In Closes: click Finalise Event, then Settle No-Show Proceeds (this splits the forfeited deposits 50/50 with stakers; anyone can do it, once). Finally click Withdraw to send your 50% to the event payout wallet. If delivery to the staking pool ever fails, a Retry button appears and anyone can press it.</Step>
           </div>
 
           <H3>Cancelling an event</H3>
           <P>
-            You can cancel before the check-in window closes. All deposits immediately become claimable by attendees.
+            You can cancel before the check-in window closes. All deposits become claimable by attendees, including those already checked in.
             You receive no proceeds from a cancelled event.
           </P>
         </Section>
@@ -259,7 +259,7 @@ export function Docs() {
                 {[
                   ['Checked in',                        'Full refund',  'Nothing from this seat'],
                   ['Cancelled before cutoff',            'Full refund',  'Nothing from this seat'],
-                  ['No-show (check-in was opened)',      'No refund',    '50% of deposit'],
+                  ['No-show (check-in was opened)',      'No refund',    '50% of deposit (the other 50% goes to SBK stakers)'],
                   ['No-show (check-in never opened)',    'Full refund',  'Nothing'],
                   ['Organiser cancels event',            'Full refund',  'Nothing'],
                 ].map(([s, a, o]) => (
@@ -295,6 +295,7 @@ export function Docs() {
                 'No-show split: 50% organiser · 50% staking pool',
                 'EIP-712 QR signatures — chain-bound, event-bound, single-use',
                 'Admin can set the staking pool exactly once — it can never be changed, and the admin cannot move anyone\'s funds',
+                'Organiser proceeds always go to the event payout wallet, which only the organiser can change',
                 'No upgrade proxy — deployed code is permanent',
               ]}
               addr={SEATBACK_ADDRESS ?? ''}
@@ -305,7 +306,9 @@ export function Docs() {
               desc="SBK holders stake here to earn USDC from every event's no-show proceeds."
               bullets={[
                 'Minimum stake: 1 SBK · Claim and unstake unlock 24 h after your last stake',
-                'Receives 50% of no-show USDC from SeatBack at each finalisation',
+                'Receives 50% of no-show USDC from SeatBack when an event is settled',
+                'If nobody is staking at that moment, that share is held as an owner reserve that only the staking owner can withdraw. It is not given to later stakers',
+                'The owner cannot touch staked SBK or rewards already earned by stakers',
                 'Reward = your staked SBK ÷ total staked × pool amount for that event',
                 'Rounding remainders carry forward exactly once, so rewards are always fully backed by deposited USDC',
               ]}
@@ -456,8 +459,9 @@ export function Docs() {
                   ['Total supply',  '100,000,000 SBK', 'Fixed forever — no minting ever'],
                   ['Decimals',      '18',               'Standard ERC-20'],
                   ['Standard',      'ERC-20 + Permit',  'Gasless approvals via EIP-2612'],
-                  ['Minimum stake', '1 SBK',            'Below this, no rewards'],
-                  ['Unstake delay', '7,200 blocks',     '~24 hours on Arc'],
+                  ['Minimum stake', '1 SBK',            'Your total stake must be at least 1 SBK'],
+                  ['Lock period',   '24 hours',         'Claim and unstake unlock 24 h after your last stake; staking again restarts the timer'],
+                  ['Current holder','Deployer wallet',  'All 100,000,000 SBK is currently held by the deployer wallet'],
                   ['Yield asset',   'USDC',             "50% of each event's no-show proceeds"],
                 ].map(([k, v, n]) => (
                   <tr key={k} style={{ background: 'var(--surface)' }}>
@@ -470,12 +474,15 @@ export function Docs() {
             </table>
           </div>
 
-          <H3>Token allocation</H3>
+          <H3>Planned token allocation</H3>
+          <Callout type="warn">
+            This is the planned split. It is not enforced onchain yet: no airdrop, vesting or treasury contract exists today, and all SBK is still in the deployer wallet.
+          </Callout>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {[
               { label: 'Community airdrop',  pct: '30%', amount: '30,000,000 SBK', desc: 'Early users — see Points & Airdrop section', color: 'var(--accent)' },
               { label: 'Ecosystem & growth', pct: '25%', amount: '25,000,000 SBK', desc: 'Grants, partnerships, liquidity, integrations', color: '#8b5cf6' },
-              { label: 'Team',               pct: '20%', amount: '20,000,000 SBK', desc: '4-year linear vest with 1-year cliff', color: '#f59e0b' },
+              { label: 'Team',               pct: '20%', amount: '20,000,000 SBK', desc: 'Planned: 4-year linear vest with 1-year cliff (no vesting contract yet)', color: '#f59e0b' },
               { label: 'Treasury reserve',   pct: '15%', amount: '15,000,000 SBK', desc: 'Future upgrades, audits, emergencies', color: '#10b981' },
               { label: 'Staking bootstrap',  pct: '10%', amount: '10,000,000 SBK', desc: 'Extra rewards for early stakers while USDC volume grows', color: '#ef4444' },
             ].map(({ label, pct, amount, desc, color }) => (
@@ -500,9 +507,12 @@ export function Docs() {
           {[
             { q: 'What wallet do I need?', a: 'Any EVM wallet on Arc Mainnet (chain ID 5042): MetaMask, Coinbase Wallet, Rainbow, etc. Smart-contract wallets (Safe, Argent) that implement ERC-1271 also work for check-in.' },
             { q: 'Can I book two seats at the same event?', a: 'No. One active reservation per wallet per event. Cancel your existing one first if you need to rebook.' },
-            { q: 'What happens if I miss the refund cutoff?', a: 'Cancellation is not allowed after the cutoff. Your deposit stays in escrow. If you are not checked in and check-in was opened, it becomes no-show proceeds after finalisation.' },
-            { q: 'What if the organiser never finalises?', a: 'Anyone can call finalizeEvent once the check-in window ends. The app does this automatically when you try to claim your refund.' },
-            { q: 'Can the organiser change the rules after I book?', a: 'No. Deposit amount, capacity, and all deadlines are permanently locked onchain at creation.' },
+            { q: 'What happens if I miss the refund cutoff?', a: 'Cancellation is not allowed after the cutoff. Your deposit stays in escrow. If you are checked in you get it back; if check-in was opened and you are not checked in, it becomes no-show proceeds after finalisation.' },
+            { q: 'What if the organiser never finalises?', a: 'You do not need them to. Anyone can finalise once the check-in window ends, and claiming a refund after that point finalises the event automatically. If check-in was never opened, every attendee can claim a full refund.' },
+            { q: 'Who decides whether I attended?', a: 'The organiser. Only they can check attendees in, and there is no dispute process. This is the main trust assumption: only book events from organisers you trust.' },
+            { q: 'Can the organiser change the rules after I book?', a: 'No. Deposit amount, capacity, and all deadlines are permanently locked onchain at creation. The organiser can only change the wallet their own proceeds are paid to.' },
+            { q: 'Can the developer or admin take the deposits?', a: 'No. Deposits can only go back to attendees, to the event payout wallet, or to the staking pool. The admin can set the staking pool once and nothing else. One caveat: if an event settles while nobody is staking, the staker half is held as an owner reserve that the staking owner can withdraw.' },
+            { q: 'Has this been audited?', a: 'The contracts are open source, covered by automated tests and have been through repeated internal security reviews. They have not had an independent third-party audit yet. Use amounts you are comfortable with.' },
             { q: 'What is SBK and do I need it to attend events?', a: 'SBK is optional — you do not need it to attend events or claim refunds. It is only useful if you want to earn USDC by staking and receiving a share of no-show proceeds.' },
             { q: 'Does splitting across wallets increase my airdrop?', a: 'No. Allocation is proportional across all wallets — splitting gives the same total as keeping everything in one wallet.' },
           ].map(({ q, a }) => (

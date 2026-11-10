@@ -182,8 +182,8 @@ export function Demo() {
             },
             {
               icon: <ShieldCheck size={18} />, delay: 240,
-              title: 'No transparent audit trail',
-              body: 'Organisers control attendance records. Disputes over refunds have no neutral third party to appeal to.',
+              title: 'No verifiable record',
+              body: 'Deposits and attendance live in private spreadsheets or payment apps, so nobody can independently verify who paid, who showed up, or where the money went.',
             },
           ].map((p) => (
             <Reveal key={p.title} delay={p.delay}>
@@ -202,7 +202,7 @@ export function Demo() {
           </h2>
           <p className="text-sm mt-1" style={{ color: 'var(--muted)' }}>
             SeatBack replaces trust with code. Every reservation locks a USDC deposit in an
-            audited smart contract. Show up and get it back. Ghost the event and it funds
+            open-source smart contract on Arc. Show up and get it back. Ghost the event and it funds
             the organiser and SBK stakers.
           </p>
         </Reveal>
@@ -216,7 +216,7 @@ export function Demo() {
               <ArrowRight size={16} style={{ color: 'var(--muted)' }} />
               <FlowBox icon={<ScanLine size={20} />} label="Check-in" sub="Organiser scans" />
               <ArrowRight size={16} style={{ color: 'var(--muted)' }} />
-              <FlowBox icon={<BadgeCheck size={20} />} label="Finalise" sub="Funds released" />
+              <FlowBox icon={<BadgeCheck size={20} />} label="Settle" sub="Funds released" />
             </div>
 
             <div className="mt-5 grid sm:grid-cols-3 gap-3">
@@ -249,8 +249,8 @@ export function Demo() {
           {
             number: 1, role: 'organiser' as const, icon: <CalendarCheck size={16} />,
             title: 'Organiser creates an event',
-            body: 'Sets event name, capacity, deposit amount, booking deadline, refund cutoff, and check-in window. All parameters are written to the contract at creation — nothing can change afterwards.',
-            note: 'Timeline enforced onchain: ① Booking Closes ≤ ② Refund Cutoff ≤ ③ Check-In Opens < ④ Check-In Closes',
+            body: 'Sets event name, capacity, deposit amount, booking deadline, refund cutoff, and check-in window. The deposit, capacity and deadlines are written to the contract at creation and cannot change afterwards. Only the payout wallet can be updated, by the organiser.',
+            note: 'Timeline enforced onchain: ① Booking Closes ≤ ② Refund Cutoff ≤ ③ Check-In Opens < ④ Check-In Closes (at least 5 minutes), and ① must be on or before the event start.',
           },
           {
             number: 2, role: 'attendee' as const, icon: <Ticket size={16} />,
@@ -267,23 +267,23 @@ export function Demo() {
           {
             number: 4, role: 'organiser' as const, icon: <ScanLine size={16} />,
             title: 'Organiser scans the QR',
-            body: 'Opens Organiser → QR Scanner. Camera reads the code, verifies the signature off-chain, then submits a checkIn() transaction to the contract.',
-            note: 'Only the organiser can attest attendance. There is no self-service check-in.',
+            body: 'Opens Organiser → QR Scanner. Camera reads the code, then submits a checkInWithSig() transaction. The contract verifies the attendee signature onchain.',
+            note: 'Only the organiser can attest attendance. There is no self-service check-in and no dispute process.',
           },
           {
             number: 5, role: 'both' as const, icon: <BadgeCheck size={16} />,
             title: 'Event is finalised',
-            body: 'After the check-in window closes, anyone can call finalise(). The contract calculates no-shows and routes unclaimed deposits: 50% to the organiser wallet set at creation, 50% to the SBK staking pool.',
-            note: 'Checked-in attendees can now claim their refund.',
+            body: 'After the check-in window closes, anyone can finalise the event. The contract works out who did not show up. If check-in was never opened, everyone is refunded in full.',
+            note: 'Checked-in and cancelled attendees can claim their refund at any time, even before this step.',
           },
           {
             number: 6, role: 'attendee' as const, icon: <Coins size={16} />,
             title: 'Attendee claims refund',
-            body: 'Checked-in attendees call claimRefund() to receive their full deposit back. Cancelled reservations (before refund cutoff) are also refundable.',
+            body: 'Checked-in attendees call claimRefund() to receive their full deposit back as soon as they are checked in. Cancelled reservations (before the refund cutoff) are also refundable. There is no deadline to claim.',
           },
           {
-            number: 7, role: 'organiser' as const, icon: <Wallet size={16} />,
-            title: 'Organiser withdraws no-show proceeds',
+            number: 7, role: 'both' as const, icon: <Wallet size={16} />,
+            title: 'No-show proceeds are settled and paid out',
             body: 'After finalisation, anyone can settle the forfeited deposits of an event: 50% goes to the staking contract and 50% becomes the organiser credit. The organiser then withdraws their 50% to the payout wallet.',
           },
         ].map((step, i) => (
@@ -311,15 +311,15 @@ export function Demo() {
             {[
               {
                 title: 'Fixed supply', value: '100,000,000 SBK',
-                body: 'Minted once at deployment. No inflation, no admin mint function.',
+                body: 'Minted once at deployment. No inflation, no mint function. All of it is currently held by the deployer wallet.',
               },
               {
                 title: 'Staking yield', value: '50% of no-show fees',
-                body: 'Pro-rata to staked amount. Distributed every time a SeatBack event is finalised.',
+                body: 'Pro-rata to staked amount, added every time an event is settled. Claim and unstake unlock 24 h after your last stake. If nobody is staking at that moment, the share goes to an owner reserve instead.',
               },
               {
                 title: 'Airdrop allocation', value: '30,000,000 SBK',
-                body: 'Reserved for early users. Points are earned by creating events, reserving, and checking in.',
+                body: 'Planned for early users, not yet distributed. Points are earned by creating events, reserving, and checking in.',
               },
             ].map((c, i) => (
               <Reveal key={c.title} delay={i * 80}>
@@ -364,7 +364,7 @@ export function Demo() {
         <Reveal>
           <SectionLabel>Live on Arc Mainnet</SectionLabel>
           <h2 className="text-2xl font-bold" style={{ color: 'var(--ink)' }}>
-            Fully audited, fully transparent
+            Open source and verifiable onchain
           </h2>
         </Reveal>
 
@@ -426,13 +426,13 @@ export function Demo() {
             Built entirely with Arc Studio
           </h3>
           <p className="text-sm max-w-md mx-auto" style={{ color: 'var(--muted)' }}>
-            Smart contracts, frontend, security audits, tokenomics, and deployment — all created
+            Smart contracts, frontend, security reviews, tests and deployment scripts — all created
             through natural conversation on{' '}
             <a href="https://studio.arc.io" target="_blank" rel="noopener noreferrer"
               className="font-semibold underline underline-offset-2" style={{ color: 'var(--accent)' }}>
               studio.arc.io
             </a>.
-            No backend servers. No admin keys. 100% onchain.
+            No backend holds user funds, and the contracts have no upgrade proxy. The admin can set the staking pool once and cannot move anyone's funds.
           </p>
           <a
             href="https://studio.arc.io"
