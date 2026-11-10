@@ -8,6 +8,7 @@ import { Info, AlertTriangle } from 'lucide-react'
 import { SEATBACK_ABI, SEATBACK_ADDRESS, ACTIVE_CHAIN_ID, NETWORK_LABEL } from '@/contract'
 import { parseUsdc, parseOnchainError, utcInputToUnix } from '@/utils/format'
 import { TxButton } from './TxButton'
+import { AdminSetup } from './AdminSetup'
 import { toast } from 'sonner'
 
 interface CreateEventProps {
@@ -167,6 +168,8 @@ export function CreateEvent({ onCreated }: CreateEventProps) {
           All fields are stored on-chain and are permanent after creation. A material change requires cancelling and creating a new event.
         </p>
       </div>
+
+      <AdminSetup />
 
       {!isConnected && (
         <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface-muted)] p-5 text-center text-sm text-[var(--muted)]">
