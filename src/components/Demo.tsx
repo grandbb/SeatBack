@@ -168,7 +168,7 @@ export function Demo() {
             {
               icon: <AlertTriangle size={18} />, delay: 0,
               title: 'No-show epidemic',
-              body: 'Events routinely see 30–60% no-show rates when booking is free. Capacity planning becomes impossible.',
+              body: 'Free bookings are easy to abandon, so organisers cannot predict who will actually show up.',
             },
             {
               icon: <Users size={18} />, delay: 80,
@@ -201,7 +201,7 @@ export function Demo() {
             Escrow-backed commitments on Arc
           </h2>
           <p className="text-sm mt-1" style={{ color: 'var(--muted)' }}>
-            SeatBack replaces trust with code. Every reservation locks a USDC deposit in an
+            SeatBack holds deposits in code, but you still trust the organiser to record attendance honestly. Every reservation locks a USDC deposit in an
             open-source smart contract on Arc. Show up and get it back. Ghost the event and it funds
             the organiser and SBK stakers.
           </p>
@@ -261,7 +261,7 @@ export function Demo() {
           {
             number: 3, role: 'attendee' as const, icon: <QrCode size={16} />,
             title: 'Attendee generates a QR at the door',
-            body: 'Opens My Tickets → Check In. The wallet signs an EIP-712 message (no gas). A QR code is generated valid for 10 minutes. If it expires, generate a new one.',
+            body: 'Opens My Tickets → Show Check-In QR → Generate Check-In QR. The wallet signs an EIP-712 message (no gas). A QR code is generated valid for 10 minutes. If it expires, generate a new one.',
             note: 'Signing proves wallet control. No transaction is sent at this step.',
           },
           {
@@ -314,7 +314,7 @@ export function Demo() {
                 body: 'Minted once at deployment. No inflation, no mint function. All of it is currently held by the deployer wallet.',
               },
               {
-                title: 'Staking yield', value: '50% of no-show fees',
+                title: 'Staking yield', value: '50% of no-show deposits',
                 body: 'Pro-rata to staked amount, added every time an event is settled. Claim and unstake unlock 24 h after your last stake. If nobody is staking at that moment, the share goes to an owner reserve instead.',
               },
               {
@@ -336,7 +336,7 @@ export function Demo() {
         <Reveal delay={160}>
           <div className="card p-5">
             <p className="text-sm font-semibold mb-3" style={{ color: 'var(--ink)' }}>
-              Points — earn your airdrop allocation
+              Points — the planned basis for the airdrop
             </p>
             <div className="grid grid-cols-3 gap-3 text-center text-sm">
               {[
@@ -352,8 +352,7 @@ export function Demo() {
               ))}
             </div>
             <p className="text-xs mt-3" style={{ color: 'var(--muted)' }}>
-              Points become claimable after the snapshot. Campaign rules and Merkle root will be
-              published at least 14 days before the snapshot date.
+              Points are tracked for a planned airdrop. Nothing is distributed or claimable yet.
             </p>
           </div>
         </Reveal>
@@ -378,7 +377,7 @@ export function Demo() {
               },
               {
                 name: 'SeatBackStaking v3',
-                role: 'Staking pool — receives 50% of no-show fees, distributes USDC to SBK stakers',
+                role: 'Staking pool — receives 50% of no-show deposits, distributes USDC to SBK stakers',
                 address: '0xa9442b3d23DDAA65D5cE7cc766ABbCb1f7720099',
               },
               {

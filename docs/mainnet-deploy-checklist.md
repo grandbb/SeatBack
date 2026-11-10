@@ -1,3 +1,5 @@
+> **Historical document.** Written for earlier contract versions (v1 to v3). Addresses, functions and findings here may be outdated or refer to code that was removed. The current review is `docs/pre-deploy-audit-round5.md`.
+
 # SeatBack — Mainnet Deployment Checklist
 
 > Arc Studio does not deploy or sign mainnet transactions on your behalf.

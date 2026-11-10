@@ -136,7 +136,7 @@ export function WalletMenu() {
                   border: '1px solid var(--warning-bg)',
                 }}
               >
-                ⚠️ Repeated reservations detected — points may be reviewed before snapshot.
+                ⚠️ Repeated reservations detected — points may be reviewed.
               </div>
             )}
 
@@ -182,6 +182,15 @@ export function WalletMenu() {
                 pts={breakdown.checkIn}
                 each={POINTS_RULES.CHECK_IN}
               />
+              {breakdown.earlyAdopter && (
+                <>
+                  <div className="border-t" style={{ borderColor: 'var(--border)' }} />
+                  <div className="flex items-center justify-between text-xs">
+                    <span>⭐ Early adopter ×2 (first 500 wallets)</span>
+                    <span className="font-semibold" style={{ color: 'var(--accent)' }}>+{breakdown.bonus.toLocaleString()}</span>
+                  </div>
+                </>
+              )}
             </div>
 
             {/* Footer */}
@@ -206,7 +215,7 @@ export function WalletMenu() {
               }}
             >
               <LogOut size={15} />
-              Sign Out
+              Disconnect
             </button>
           </div>
         </div>

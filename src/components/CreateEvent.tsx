@@ -61,8 +61,9 @@ export function CreateEvent({ onCreated }: CreateEventProps) {
     if (!description.trim() || bytes(description) > 500) return 'Description is required (max 500 bytes; non-English characters use up to 3 bytes each).'
     if (!venue.trim() || bytes(venue) > 200) return 'Venue is required (max 200 bytes; non-English characters use up to 3 bytes each).'
     if (parseUsdc(depositInput) === 0n) return 'Enter a deposit as a plain number such as 5 or 5.50 (max 6 decimals).'
+    if (!/^\d+$/.test(capacityInput.trim())) return 'Capacity must be a whole number.'
     const cap = parseInt(capacityInput, 10)
-    if (isNaN(cap) || cap <= 0) return 'Capacity must be at least 1.'
+    if (cap <= 0) return 'Capacity must be at least 1.'
     if (cap > 10000) return 'Capacity cannot exceed 10,000.'
     if (!eventStartInput || !eventEndInput || !bookingCloseInput || !refundCutoffInput || !checkInStartInput || !checkInEndInput)
       return 'All date/time fields are required.'
@@ -75,6 +76,7 @@ export function CreateEvent({ onCreated }: CreateEventProps) {
     const now = Math.floor(Date.now() / 1000)
     const TWO_YEARS = 2 * 365 * 24 * 3600
     if (tEventEnd > now + TWO_YEARS) return 'Event End must be within 2 years from now.'
+    if (tCheckInEnd > now + TWO_YEARS) return 'Check-In Closes must be within 2 years from now.'
     if (tBookingClose <= now) return '① Booking Closes must be in the future.'
     if (tBookingClose > tEventStart) return '① Booking Closes must be on or before Event Start.'
     if (tBookingClose > tRefundCutoff) return '① Booking Closes must be ≤ ② Refund Cutoff.'
@@ -143,7 +145,7 @@ export function CreateEvent({ onCreated }: CreateEventProps) {
           Event created!
         </h2>
         <p className="text-sm text-teal-700">
-          Your event has been published on {NETWORK_LABEL}. Switch to the Events tab to see it and manage check-in from My Events.
+          Your event has been published on {NETWORK_LABEL}. Switch to the Events tab to see it and manage check-in from the Organiser tab.
         </p>
         <button
           onClick={() => onCreated(0n)}
@@ -165,7 +167,7 @@ export function CreateEvent({ onCreated }: CreateEventProps) {
           Create an Event
         </h1>
         <p className="text-sm text-[var(--muted)] mt-1">
-          All fields are stored on-chain and are permanent after creation. A material change requires cancelling and creating a new event.
+          Title, description, venue, dates, capacity and deposit are permanent after creation. Only the payout wallet can be changed later, by the organiser. A material change requires cancelling and creating a new event.
         </p>
       </div>
 
@@ -191,7 +193,7 @@ export function CreateEvent({ onCreated }: CreateEventProps) {
         <fieldset className="rounded-2xl border border-[var(--border)] p-5 flex flex-col gap-4" style={{ background: 'var(--surface-strong)' }}>
           <legend className="font-semibold text-[var(--ink)] px-1">Event Details</legend>
 
-          <Field label="Title" required hint="Max 120 characters · shown publicly">
+          <Field label="Title" required hint="Max 120 bytes (about 120 English characters) · shown publicly">
             <input
               type="text"
               value={title}
@@ -203,7 +205,7 @@ export function CreateEvent({ onCreated }: CreateEventProps) {
             />
           </Field>
 
-          <Field label="Description" required hint="Max 500 characters · shown publicly">
+          <Field label="Description" required hint="Max 500 bytes (about 500 English characters) · shown publicly">
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
@@ -215,7 +217,7 @@ export function CreateEvent({ onCreated }: CreateEventProps) {
             />
           </Field>
 
-          <Field label="Venue" required hint="Public venue name · max 200 chars">
+          <Field label="Venue" required hint="Public venue name · max 200 bytes">
             <input
               type="text"
               value={venue}
@@ -237,19 +239,19 @@ export function CreateEvent({ onCreated }: CreateEventProps) {
             <p className="font-semibold text-[var(--ink-2)] mb-2">Timeline (must be in this order):</p>
             <ol className="flex flex-col gap-1 pl-1">
               <li className="flex items-center gap-2"><span className="w-5 h-5 rounded-full bg-[var(--accent)] text-white flex items-center justify-center font-bold text-[10px]">1</span><span><strong>Booking Closes</strong> — last moment to reserve a seat</span></li>
-              <li className="flex items-center gap-2"><span className="w-5 h-5 rounded-full bg-[var(--accent)] text-white flex items-center justify-center font-bold text-[10px]">2</span><span><strong>Refund Cutoff</strong> — after this, cancellations forfeit the deposit (≥ step 1)</span></li>
-              <li className="flex items-center gap-2"><span className="w-5 h-5 rounded-full bg-[var(--accent)] text-white flex items-center justify-center font-bold text-[10px]">3</span><span><strong>Check-In Opens</strong> — QR scanner activates; set to event start time (≥ step 2)</span></li>
-              <li className="flex items-center gap-2"><span className="w-5 h-5 rounded-full bg-[var(--accent)] text-white flex items-center justify-center font-bold text-[10px]">4</span><span><strong>Check-In Closes</strong> — no-shows decided; finalization unlocks after this (&gt; step 3)</span></li>
+              <li className="flex items-center gap-2"><span className="w-5 h-5 rounded-full bg-[var(--accent)] text-white flex items-center justify-center font-bold text-[10px]">2</span><span><strong>Refund Cutoff</strong> — after this, attendees can no longer cancel (they can still attend and get a refund) (≥ step 1)</span></li>
+              <li className="flex items-center gap-2"><span className="w-5 h-5 rounded-full bg-[var(--accent)] text-white flex items-center justify-center font-bold text-[10px]">3</span><span><strong>Check-In Opens</strong> — earliest time you can open check-in; set to event start time (≥ step 2)</span></li>
+              <li className="flex items-center gap-2"><span className="w-5 h-5 rounded-full bg-[var(--accent)] text-white flex items-center justify-center font-bold text-[10px]">4</span><span><strong>Check-In Closes</strong> — no-shows decided; finalization unlocks after this (at least 5 minutes after step 3)</span></li>
             </ol>
-            <p className="mt-2 text-[var(--subtle)]">Event Start/End are for display only — they do not affect on-chain logic.</p>
+            <p className="mt-2 text-[var(--subtle)]">Event Start/End are shown to attendees. The contract only requires Event Start before Event End, and Booking Closes on or before Event Start.</p>
             <p className="mt-1 font-medium" style={{ color: 'var(--warning)' }}>All times on this form are UTC (GMT+0). Enter times as UTC regardless of your local timezone.</p>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
-            <Field label="Event Start (UTC)" required hint="Display only — enter as UTC/GMT+0">
+            <Field label="Event Start (UTC)" required hint="Shown to attendees · enter as UTC/GMT+0">
               <input type="datetime-local" value={eventStartInput} onChange={(e) => setEventStartInput(e.target.value)} className={inputCls} aria-required="true" />
             </Field>
-            <Field label="Event End (UTC)" required hint="Display only — enter as UTC/GMT+0">
+            <Field label="Event End (UTC)" required hint="Shown to attendees · enter as UTC/GMT+0">
               <input type="datetime-local" value={eventEndInput} onChange={(e) => setEventEndInput(e.target.value)} className={inputCls} aria-required="true" />
             </Field>
           </div>
@@ -260,7 +262,7 @@ export function CreateEvent({ onCreated }: CreateEventProps) {
               <Field label="① Booking Closes (UTC)" required hint="Last moment to reserve">
                 <input type="datetime-local" value={bookingCloseInput} onChange={(e) => setBookingCloseInput(e.target.value)} className={inputCls} aria-required="true" />
               </Field>
-              <Field label="② Refund Cutoff (UTC)" required hint="After this, cancellations forfeit deposit">
+              <Field label="② Refund Cutoff (UTC)" required hint="Last moment attendees can cancel for a refund">
                 <input type="datetime-local" value={refundCutoffInput} onChange={(e) => setRefundCutoffInput(e.target.value)} className={inputCls} aria-required="true" />
               </Field>
             </div>
@@ -280,7 +282,7 @@ export function CreateEvent({ onCreated }: CreateEventProps) {
           <legend className="font-semibold text-[var(--ink)] px-1">Seats & Deposit</legend>
 
           <div className="grid grid-cols-2 gap-3">
-            <Field label="Capacity" required hint="Max attendees">
+            <Field label="Capacity" required hint="Max attendees (1 to 10,000)">
               <input
                 type="number"
                 min={1}
@@ -292,7 +294,7 @@ export function CreateEvent({ onCreated }: CreateEventProps) {
                 aria-required="true"
               />
             </Field>
-            <Field label="Deposit (USDC)" required hint="Per attendee, fully refundable">
+            <Field label="Deposit (USDC)" required hint="Per attendee; refunded if they attend or cancel in time">
               <input
                 type="text"
                 inputMode="decimal"
@@ -309,7 +311,7 @@ export function CreateEvent({ onCreated }: CreateEventProps) {
         {/* Payout wallet */}
         <fieldset className="rounded-2xl border border-[var(--border)] p-5 flex flex-col gap-4" style={{ background: 'var(--surface-strong)' }}>
           <legend className="font-semibold text-[var(--ink)] px-1">Payout Wallet</legend>
-          <Field label="No-show proceeds sent to" required hint="Immutable after creation — double-check this address">
+          <Field label="No-show proceeds sent to" required hint="You can change this later as organiser, but double-check it now">
             <input
               type="text"
               value={effectivePayoutWallet}
@@ -321,7 +323,7 @@ export function CreateEvent({ onCreated }: CreateEventProps) {
           </Field>
           <p className="text-xs text-[var(--subtle)] flex items-center gap-1.5">
             <AlertTriangle size={12} />
-            Only no-show deposits are paid out to this address. Attendee refunds always return to the original reserving wallet.
+            Only the organiser half (50%) of no-show deposits is paid to this address; the other 50% goes to SBK stakers. Attendee refunds always return to the original reserving wallet.
           </p>
         </fieldset>
 

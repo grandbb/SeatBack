@@ -75,7 +75,7 @@ export function Home({ onExplore, onCreateEvent, onSelectEvent }: HomeProps) {
           </h1>
           <p className="text-lg text-[var(--muted)] text-pretty max-w-md">
             Reserve a seat with USDC. Attend and get it back.
-            Cancel in time — same result. Miss it and the organiser earns it.
+            Cancel in time — same result. Miss it and your deposit is forfeited: half goes to SBK stakers, half to the organiser.
           </p>
         </div>
 
@@ -100,7 +100,7 @@ export function Home({ onExplore, onCreateEvent, onSelectEvent }: HomeProps) {
           </span>
           <span className="flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-full bg-[var(--accent)]" />
-            Instant refunds
+            Claim your refund yourself
           </span>
         </div>
       </section>
@@ -118,7 +118,7 @@ export function Home({ onExplore, onCreateEvent, onSelectEvent }: HomeProps) {
             icon={<Ticket size={22} className="text-[var(--accent)]" />}
             step="1"
             title="Reserve with USDC"
-            body="Pay a refundable deposit to hold your seat. The contract holds it in escrow — no middlemen."
+            body="Pay a refundable deposit to hold your seat. The contract holds it in escrow, not the organiser."
           />
           <StepCard
             icon={<QrCode size={22} className="text-[var(--accent)]" />}
@@ -130,7 +130,7 @@ export function Home({ onExplore, onCreateEvent, onSelectEvent }: HomeProps) {
             icon={<Coins size={22} className="text-[var(--accent)]" />}
             step="3"
             title="Claim your refund"
-            body="Attended or cancelled on time? Claim your full deposit back. No-show? The deposit goes to the organiser."
+            body="Attended or cancelled on time? Claim your full deposit back. No-show? Your deposit is split: 50% to SBK stakers, 50% to the organiser."
           />
         </div>
       </section>
@@ -146,7 +146,7 @@ export function Home({ onExplore, onCreateEvent, onSelectEvent }: HomeProps) {
         <p className="font-semibold text-[var(--ink)] mb-2">Before booking</p>
         <p>
           Your deposit is refundable after organiser-confirmed check-in or cancellation before the stated deadline.
-          If you do not check in, the organiser may receive your deposit.
+          If you do not check in, your deposit is forfeited: 50% goes to SBK stakers and 50% to the organiser. (If nobody is staking when the event settles, the staker half is held in an owner reserve instead.)
           Network fees are separate and non-refundable.
         </p>
         <ul className="mt-2 ml-4 list-disc space-y-1">

@@ -406,7 +406,7 @@ function RefundPolicy({ event }: { event: EventInfo }) {
         </li>
         <li className="flex items-start gap-2">
           <XCircle size={15} className="text-[var(--danger)] mt-0.5 flex-shrink-0" />
-          No-shows (attended event, check-in was opened, but not verified) forfeit their deposit to the organiser.
+          No-shows (check-in was opened but you were not checked in) forfeit their deposit: 50% goes to SBK stakers and 50% to the organiser. If nobody is staking when the event settles, the staker half is held in an owner reserve.
         </li>
       </ul>
       <div className="mt-3 pt-3 border-t border-[var(--border)] text-xs text-[var(--subtle)]">
@@ -540,7 +540,7 @@ function AttendeeActions({
           {!hasFunds && (
             <div className="rounded-xl bg-red-50 border border-red-200 p-3 text-sm text-red-700 flex items-center gap-2">
               <AlertTriangle size={14} />
-              Insufficient USDC. Use "Get test USDC" in the sidebar to top up.
+              Insufficient USDC balance. Add USDC to your wallet on Arc Mainnet to continue.
             </div>
           )}
           {/* Step 1: Approve, Step 2: Reserve */}
@@ -607,8 +607,10 @@ function AttendeeActions({
       )}
 
       {/* Generic closed state */}
-      {!hasActiveReservation && phase !== 'booking_open' && (
-        <p className="text-sm text-center text-[var(--muted)]">Booking is closed for this event.</p>
+      {!hasReservationRecord && phase !== 'booking_open' && (
+        <p className="text-sm text-center text-[var(--muted)]">
+          {event.cancelled ? 'This event was cancelled.' : 'Booking is closed for this event.'}
+        </p>
       )}
 
       {/* Error */}

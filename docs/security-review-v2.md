@@ -1,3 +1,5 @@
+> **Historical document.** Written for earlier contract versions (v1 to v3). Addresses, functions and findings here may be outdated or refer to code that was removed. The current review is `docs/pre-deploy-audit-round5.md`.
+
 # SeatBack Security Review — Round 2
 **Date:** November 1, 2026  
 **Contracts audited:** SeatBack.sol v3, SeatBackStaking.sol v2, SeatBackToken.sol  

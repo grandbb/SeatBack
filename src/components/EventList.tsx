@@ -110,7 +110,7 @@ export function EventList({ onSelectEvent }: EventListProps) {
       <div className="flex flex-col items-center justify-center py-16 gap-3 text-center">
         <CalendarX size={40} className="text-[var(--subtle)]" />
         <p className="font-semibold text-[var(--ink)]">No events yet</p>
-        <p className="text-sm text-[var(--muted)]">Create the first event using the Create Event tab.</p>
+        <p className="text-sm text-[var(--muted)]">Create the first event using the Create tab.</p>
       </div>
     )
   }
@@ -158,6 +158,9 @@ export function EventList({ onSelectEvent }: EventListProps) {
           )
         })}
       </div>
+      {total > BigInt(ids.length) && (
+        <p className="text-xs text-[var(--subtle)]">Showing the newest {ids.length} of {String(total)} events.</p>
+      )}
 
       {/* Event cards */}
       {filtered.length === 0 ? (

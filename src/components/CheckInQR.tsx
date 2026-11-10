@@ -11,7 +11,7 @@
  */
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useAccount, useWalletClient } from 'wagmi'
-import { QrCode, RefreshCw, AlertTriangle, CheckCircle2, Clock, Loader2 } from 'lucide-react'
+import { QrCode, RefreshCw, AlertTriangle, Clock, Loader2 } from 'lucide-react'
 import {
   signCheckInAuth,
   encodePayload,
@@ -126,32 +126,8 @@ export function CheckInQR({ eventId, reservationId, event, reservation }: CheckI
   // Use computeEventPhase to avoid Date.now() in render (React Compiler purity)
   const evtPhase = computeEventPhase(event)
   const checkInLive = event.checkInOpened && evtPhase === 'check_in_open'
-  // alreadyCheckedIn: active=false + refundable=true after check-in window opened.
-  // Must require checkInOpened to avoid false-positive for early-cancelled reservations
-  // (which also have active=false, refundable=true but were cancelled before check-in).
-  const alreadyCheckedIn =
-    event.checkInOpened &&
-    !reservation.active &&
-    reservation.refundable &&
-    !reservation.refundClaimed
-
   // If wallet disconnects after mount, hide gracefully
   if (!walletClient) return null
-
-  if (alreadyCheckedIn) {
-    return (
-      <div className="rounded-2xl border border-teal-200 bg-teal-50 p-5 flex items-center gap-3">
-        <CheckCircle2 size={20} className="text-teal-600 flex-shrink-0" />
-        <div>
-          <p className="font-semibold text-teal-800 text-sm">Checked in</p>
-          <p className="text-xs text-teal-700 mt-0.5">
-            Your attendance has been confirmed by the organiser.
-            Claim your refund from the main reservation panel.
-          </p>
-        </div>
-      </div>
-    )
-  }
 
   if (!reservation.active) {
     return null

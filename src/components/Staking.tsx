@@ -1,10 +1,8 @@
 /**
  * Staking — SBK token staking UI.
- * Stake SBK to earn USDC from no-show proceeds (80% of event no-shows).
+ * Stake SBK to earn USDC from no-show proceeds (50% of event no-show deposits).
  *
- * NOTE: SBK and Staking contracts are not yet deployed on mainnet.
- *       This UI reads from .env addresses and shows a "not deployed" state
- *       when they are absent.
+ * Contracts: SBK and SeatBackStaking on Arc Mainnet (addresses come from @/contract).
  */
 import { useState, useCallback, useEffect } from 'react'
 import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi'
@@ -13,7 +11,7 @@ import { Layers, Lock, Unlock, Coins, TrendingUp, AlertTriangle, ExternalLink, R
 import { ACTIVE_CHAIN_ID, NETWORK_LABEL, SBK_ADDRESS, STAKING_ADDRESS, STAKING_ABI, SBK_ABI } from '@/contract'
 import { formatDateTime } from '@/utils/format'
 
-const EXPLORER = ACTIVE_CHAIN_ID === 5042 ? 'https://explorer.arc.io' : 'https://explorer.testnet.arc.io'
+const EXPLORER = 'https://explorer.arc.io'
 
 // ─── Minimal subset ABIs used by this component ───────────────────────────────
 
@@ -244,6 +242,20 @@ export function Staking() {
         <button onClick={refetchAll} className="ml-auto p-2 rounded-lg hover:bg-[var(--surface-muted)] text-[var(--muted)]" title="Refresh">
           <RefreshCw size={15} />
         </button>
+      </div>
+
+      {/* Risk and rules */}
+      <div className="rounded-xl p-4 text-xs leading-relaxed" style={{ background: 'var(--warning-bg)', color: 'var(--warning)', border: '1px solid var(--accent-muted)' }}>
+        <p className="font-semibold mb-1">Before you stake</p>
+        <ul className="list-disc list-inside space-y-0.5">
+          <li>Rewards come only from forfeited no-show deposits. They are not guaranteed and can be zero.</li>
+          <li>If nobody is staking when an event settles, that event&apos;s staker share goes to an owner reserve, not to later stakers.</li>
+          <li>Staking more restarts the 24-hour lock on your whole stake. Claim and unstake unlock 24 hours after your last stake.</li>
+          <li>The contracts have not had an independent third-party audit.</li>
+        </ul>
+        <a href={`${EXPLORER}/address/${SBK_ADDRESS}`} target="_blank" rel="noopener noreferrer" className="inline-block mt-2 underline">
+          SBK token on the explorer
+        </a>
       </div>
 
       {/* Chain warning */}

@@ -1,39 +1,31 @@
 /**
- * usePoints — read-only Points calculation from onchain events
+ * usePoints — read-only Points calculation from onchain events (computed in the browser).
  *
- * Rules (v2):
+ * Rules:
  * 1. PENDING vs CONFIRMED
- *    - Points are "confirmed" only from events that have finalised or been cancelled.
- *    - Events not yet closed = pending (shown separately, not counted in total).
- *    - Cancelled reservations (ReservationCancelled) = 0 pts.
- *    - No-shows (Reserved but no CheckedIn, event finalised) = 0 pts.
+ *    - Points are confirmed only once the event is finalised. Events still running = pending.
+ *    - Cancelled events and cancelled reservations = 0 pts. No-shows = 0 pts.
  *
  * 2. Organiser earn condition
- *    - Event must pass the campaign allowlist (CAMPAIGN_ALLOWLIST) — set by admin in early phase.
- *    - Event must have >= MIN_CHECKED_IN_FOR_ORGANISER real check-ins.
+ *    - Event must be finalised and have >= MIN_CHECKED_IN_FOR_ORGANISER check-ins from
+ *      distinct wallets other than the organiser.
  *
- * 3. Per-event cap + per-wallet cap
- *    - Reserve: max 1 per event per wallet.
- *    - Check-in: max 1 per event per wallet.
- *    - Create: 1 per event (must be the organiser in EventCreated log).
- *    - Per-wallet total cap: MAX_POINTS_PER_WALLET.
+ * 3. Per-event and per-wallet caps
+ *    - Reserve, check-in and create each count once per event.
+ *    - Early adopters (first EARLY_ADOPTER_WALLETS distinct wallets to reserve) get x2.
+ *    - Per-wallet total cap (after the multiplier): MAX_POINTS_PER_WALLET.
  *
- * 4. Campaign allowlist
- *    - Early phase: list approved eventIds in CAMPAIGN_ALLOWLIST.
- *    - [] = open to all events (disable allowlist for production).
+ * 4. Campaign allowlist is empty, so every event qualifies. (The hook supports an allowlist.)
  *
- * 5. Suspicious behaviour detection (informational — snapshot processor handles final decision)
- *    - Flags wallets but does NOT automatically disqualify.
- *    - Flagged if: same wallet reserves the same event > REPEAT_BOOKING_THRESHOLD times.
+ * 5. Suspicious behaviour is flagged for review only; it never disqualifies automatically.
  *
- * 6. Rules published before snapshot
- *    - All exported constants here are read directly by Docs for transparency.
+ * The airdrop these points are meant to feed is PLANNED: nothing is distributed yet.
  */
 
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { createPublicClient, http, parseAbiItem } from 'viem'
-import { arc, arcTestnet } from 'viem/chains'
-import { SEATBACK_ADDRESS, ACTIVE_CHAIN_ID, DEPLOY_BLOCK } from '@/contract'
+import { arc } from 'viem/chains'
+import { SEATBACK_ADDRESS, DEPLOY_BLOCK } from '@/contract'
 
 // ─── Campaign & Rule Constants (exported for Docs) ───────────────────────────
 
@@ -42,6 +34,12 @@ export const CAMPAIGN_ALLOWLIST: bigint[] = []
 
 /** Minimum real check-ins an event must have for the organiser to earn points. */
 export const MIN_CHECKED_IN_FOR_ORGANISER = 5
+
+/** The first N distinct wallets to ever reserve on SeatBack are early adopters. */
+export const EARLY_ADOPTER_WALLETS = 500
+
+/** All of an early adopter's points are multiplied by this (before the per-wallet cap). */
+export const EARLY_ADOPTER_MULTIPLIER = 2
 
 /** Maximum total points per wallet (basic Sybil resistance). */
 export const MAX_POINTS_PER_WALLET = 50_000
@@ -80,14 +78,17 @@ export interface PointsBreakdown {
   pendingEvents: number
   /** True when a suspicious reservation pattern was detected. */
   suspiciousFlag: boolean
+  /** True when this wallet is among the first EARLY_ADOPTER_WALLETS to reserve. */
+  earlyAdopter: boolean
+  /** Extra confirmed points from the early-adopter multiplier (already included in total). */
+  bonus: number
 }
 
 // ─── Client ───────────────────────────────────────────────────────────────────
 
-const IS_MAINNET = ACTIVE_CHAIN_ID === 5042
 const client = createPublicClient({
-  chain: IS_MAINNET ? arc : arcTestnet,
-  transport: http(IS_MAINNET ? 'https://rpc.mainnet.arc.io' : 'https://rpc.testnet.arc.io'),
+  chain: arc,
+  transport: http('https://rpc.mainnet.arc.io'),
 })
 
 // ─── ABI items ────────────────────────────────────────────────────────────────
@@ -118,7 +119,7 @@ export function usePoints(address: `0x${string}` | undefined) {
     total: 0, pending: 0,
     createEvent: 0, reserve: 0, checkIn: 0,
     eventCount: 0, reserveCount: 0, checkInCount: 0,
-    pendingEvents: 0, suspiciousFlag: false,
+    pendingEvents: 0, suspiciousFlag: false, earlyAdopter: false, bonus: 0,
   })
   const [loading, setLoading] = useState(false)
   const [lastFetched, setLastFetched] = useState<Date | null>(null)
@@ -140,6 +141,7 @@ export function usePoints(address: `0x${string}` | undefined) {
         finalized,
         eventCancelled,
         allCheckedIn,
+        allReserved,
       ] = await Promise.all([
         client.getLogs({ address: SEATBACK_ADDRESS, event: EVENT_CREATED,
           args: { organizer: address }, fromBlock: DEPLOY_BLOCK, toBlock: 'latest' }),
@@ -156,21 +158,38 @@ export function usePoints(address: `0x${string}` | undefined) {
         // Global CheckedIn — no address filter, used for per-event check-in counts
         client.getLogs({ address: SEATBACK_ADDRESS, event: CHECKED_IN,
           fromBlock: DEPLOY_BLOCK, toBlock: 'latest' }),
+        // Global Reserved — used to find the first EARLY_ADOPTER_WALLETS distinct wallets
+        client.getLogs({ address: SEATBACK_ADDRESS, event: RESERVED,
+          fromBlock: DEPLOY_BLOCK, toBlock: 'latest' }),
       ])
-      const eventCheckInCount = new Map<string, number>()
+
+      // Early adopter: among the first N distinct wallets to ever reserve (logs are in chain order)
+      const earliestWallets = new Set<string>()
+      for (const log of allReserved) {
+        const w = log.args.attendee?.toLowerCase()
+        if (w && earliestWallets.size < EARLY_ADOPTER_WALLETS) earliestWallets.add(w)
+      }
+      const earlyAdopter = earliestWallets.has(address.toLowerCase())
+
+      // "Real" check-ins for the organiser rule: distinct attendee wallets other than the organiser
+      const me = address.toLowerCase()
+      const eventCheckInWallets = new Map<string, Set<string>>()
       for (const log of allCheckedIn) {
         const eid = String(log.args.eventId)
-        eventCheckInCount.set(eid, (eventCheckInCount.get(eid) ?? 0) + 1)
+        const w = log.args.attendee?.toLowerCase()
+        if (!w || w === me) continue
+        const set = eventCheckInWallets.get(eid) ?? new Set<string>()
+        set.add(w)
+        eventCheckInWallets.set(eid, set)
       }
 
-      /** eventIds that are finalised or cancelled = closed */
+      /** Confirmed only once an event is finalised. Cancelled events earn nothing. */
       const finalizedIds = new Set<string>(
         finalized.map(l => String(l.args.eventId))
       )
       const cancelledIds = new Set<string>(
         eventCancelled.map(l => String(l.args.eventId))
       )
-      const closedIds = new Set<string>([...finalizedIds, ...cancelledIds])
 
       /** Returns true if eventId passes the campaign allowlist (empty = all events qualify). */
       const inAllowlist = (eid: bigint) =>
@@ -212,10 +231,11 @@ export function usePoints(address: `0x${string}` | undefined) {
         const rid = `${eid}-${log.args.reservationId}`
         if (seenReserveEvents.has(eid)) continue // per-event cap
         if (cancelledReservations.has(rid)) continue // cancelled = 0 pts
+        if (cancelledIds.has(eid)) continue // cancelled event = 0 pts
         if (!inAllowlist(log.args.eventId!)) continue
         seenReserveEvents.add(eid)
         reserveCount++
-        if (closedIds.has(eid)) {
+        if (finalizedIds.has(eid)) {
           // Closed event: only award points if the attendee was actually checked in
           if (!checkedInKeys.has(rid)) continue
           confirmedReserve += POINTS_RULES.RESERVE
@@ -236,10 +256,11 @@ export function usePoints(address: `0x${string}` | undefined) {
       for (const log of checkedIn) {
         const eid = String(log.args.eventId)
         if (seenCheckInEvents.has(eid)) continue
+        if (cancelledIds.has(eid)) continue // cancelled event = 0 pts
         if (!inAllowlist(log.args.eventId!)) continue
         seenCheckInEvents.add(eid)
         checkInCount++
-        if (closedIds.has(eid)) {
+        if (finalizedIds.has(eid)) {
           confirmedCheckIn += POINTS_RULES.CHECK_IN
         } else {
           pendingCheckIn += POINTS_RULES.CHECK_IN
@@ -257,14 +278,15 @@ export function usePoints(address: `0x${string}` | undefined) {
 
       for (const log of created) {
         const eid = String(log.args.eventId)
+        if (cancelledIds.has(eid)) continue // cancelled event = 0 pts
         if (!inAllowlist(log.args.eventId!)) continue
-        const checkInTotal = eventCheckInCount.get(eid) ?? 0
+        const checkInTotal = eventCheckInWallets.get(eid)?.size ?? 0
         const meetsThreshold = checkInTotal >= MIN_CHECKED_IN_FOR_ORGANISER
         eventCount++
         if (finalizedIds.has(eid) && meetsThreshold) {
           // closed + meets threshold = confirmed
           confirmedCreate += POINTS_RULES.CREATE_EVENT
-        } else if (!closedIds.has(eid)) {
+        } else if (!finalizedIds.has(eid)) {
           // still open = pending
           pendingCreate += POINTS_RULES.CREATE_EVENT
           pendingEvents++
@@ -273,9 +295,14 @@ export function usePoints(address: `0x${string}` | undefined) {
       }
 
       // ── Totals ────────────────────────────────────────────────────────────
-      const rawTotal = confirmedCreate + confirmedReserve + confirmedCheckIn
-      const total = Math.min(rawTotal, MAX_POINTS_PER_WALLET)
-      const pending = pendingCreate + pendingReserve + pendingCheckIn
+      const baseConfirmed = confirmedCreate + confirmedReserve + confirmedCheckIn
+      const multiplier = earlyAdopter ? EARLY_ADOPTER_MULTIPLIER : 1
+      const total = Math.min(baseConfirmed * multiplier, MAX_POINTS_PER_WALLET)
+      const bonus = total - Math.min(baseConfirmed, MAX_POINTS_PER_WALLET)
+      const pending = Math.min(
+        (pendingCreate + pendingReserve + pendingCheckIn) * multiplier,
+        Math.max(0, MAX_POINTS_PER_WALLET - total),
+      )
 
       setBreakdown({
         total,
@@ -288,6 +315,8 @@ export function usePoints(address: `0x${string}` | undefined) {
         checkInCount,
         pendingEvents,
         suspiciousFlag,
+        earlyAdopter,
+        bonus,
       })
       setLastFetched(new Date())
       setFetchError(null)

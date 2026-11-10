@@ -320,14 +320,15 @@ function OrganizerEventPanel({ eventId, event, wrongChain, onSwitchChain, onRefe
             <div className="rounded-xl bg-[var(--surface-muted)] p-4 grid grid-cols-2 gap-3 text-sm">
               <AccountingRow label="Active deposits" value={accounting.activeDeposits} />
               <AccountingRow label="Refund liabilities" value={accounting.outstandingRefunds} />
-              <AccountingRow label="Organiser credit" value={accounting.organizerCredit} />
+              <AccountingRow label={accounting.noShowSettled ? 'Organiser credit (withdrawable)' : 'Unsettled no-show proceeds (split 50/50 on settle)'} value={accounting.organizerCredit} />
               <AccountingRow label="Refunds paid" value={accounting.refundsPaid} />
-              <AccountingRow label="Proceeds paid" value={accounting.organizerPaid} />
+              <AccountingRow label="Paid to organiser" value={accounting.organizerPaid} />
               <AccountingRow label="Paid to stakers" value={accounting.stakerPaid} />
               <div className="flex flex-col">
                 <span className="text-[var(--subtle)] text-xs">Payout wallet</span>
                 <span className="mono text-xs text-[var(--ink)]">{shortAddress(event.payoutWallet)}</span>
               </div>
+              <PayoutWalletEditor eventId={eventId} wrongChain={wrongChain} onDone={onRefetchEvents} />
             </div>
           )}
 
@@ -544,5 +545,53 @@ function PhasePill({ phase }: { phase: string }) {
     <span className={`text-xs font-medium px-2 py-0.5 rounded-full border ${map[phase] ?? 'badge-navy'}`}>
       {labels[phase] ?? phase}
     </span>
+  )
+}
+
+/** Organiser-only: change where this event's proceeds are paid (for example if the old wallet cannot receive USDC). */
+function PayoutWalletEditor({ eventId, wrongChain, onDone }: { eventId: bigint; wrongChain: boolean; onDone: () => void }) {
+  const [open, setOpen] = useState(false)
+  const [value, setValue] = useState('')
+  const { writeContract, data: hash, isPending, error } = useWriteContract()
+  const { isLoading: confirming, isSuccess, data: receipt } = useWaitForTransactionReceipt({ hash })
+  const valid = /^0x[0-9a-fA-F]{40}$/.test(value.trim())
+  const mined = isSuccess && receipt?.status === 'success'
+
+  useEffect(() => {
+    if (mined) onDone()
+  }, [mined, onDone])
+
+  if (!open) {
+    return (
+      <button type="button" onClick={() => setOpen(true)} className="col-span-2 text-left text-xs font-semibold text-[var(--accent)] underline">
+        Change payout wallet
+      </button>
+    )
+  }
+  return (
+    <div className="col-span-2 flex flex-col gap-2">
+      <input
+        type="text"
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        placeholder="New payout wallet 0x…"
+        className="w-full rounded-xl border border-[var(--border)] bg-[var(--bg)] px-3 py-2 text-xs mono text-[var(--ink)]"
+      />
+      {value && !valid && <p className="text-xs" style={{ color: 'var(--danger)' }}>Enter a valid 0x address.</p>}
+      {error && <p className="text-xs" style={{ color: 'var(--danger)' }}>{parseOnchainError(error)}</p>}
+      <TxButton
+        onClick={() => {
+          if (!SEATBACK_ADDRESS || !valid) return
+          writeContract({ address: SEATBACK_ADDRESS, abi: SEATBACK_ABI, functionName: 'updatePayoutWallet', args: [eventId, value.trim() as `0x${string}`], chainId: ACTIVE_CHAIN_ID })
+        }}
+        isPending={isPending}
+        isConfirming={confirming}
+        isSuccess={mined}
+        disabled={!valid || wrongChain}
+        label="Save new payout wallet"
+        successLabel="Updated"
+        className="w-full"
+      />
+    </div>
   )
 }

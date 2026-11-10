@@ -7,7 +7,9 @@ export function formatUsdc(raw: bigint): string {
   const scale = BigInt(10 ** USDC_DECIMALS)
   const whole = raw / scale
   const frac  = raw % scale
-  const fracStr = frac.toString().padStart(USDC_DECIMALS, '0').slice(0, 2)
+  // Show up to 6 decimals, but never fewer than 2 (so 0.005 USDC is not shown as 0.00)
+  let fracStr = frac.toString().padStart(USDC_DECIMALS, '0').replace(/0+$/, '')
+  fracStr = fracStr.padEnd(2, '0')
   return `${whole.toLocaleString('en-US')}.${fracStr}`
 }
 
@@ -126,7 +128,7 @@ export function countdown(targetTs: bigint): string {
 export function parseOnchainError(error: unknown): string {
   const msg = (error as { message?: string })?.message?.toLowerCase() ?? ''
   if (msg.includes('user rejected') || msg.includes('4001')) return 'Transaction cancelled.'
-  if (msg.includes('insufficient')) return 'Insufficient USDC balance.'
+  if (msg.includes('insufficient')) return 'Insufficient USDC balance (deposit plus network fee).'
   if (msg.includes('stakingpoolnotset')) return 'Event creation is not open yet: the staking pool has not been linked to this contract. Try again later.'
   if (msg.includes('invalidtimestamps')) return 'The dates are not in a valid order. Check Booking Closes, Refund Cutoff, Check-In Opens and Check-In Closes.'
   if (msg.includes('invalideventtimes')) return 'Booking must close on or before the event start, and the event must end after it starts.'
@@ -135,7 +137,7 @@ export function parseOnchainError(error: unknown): string {
   if (msg.includes('invalidcapacity')) return 'Capacity must be at least 1.'
   if (msg.includes('invaliddeposit')) return 'Deposit must be greater than 0.'
   if (msg.includes('invalidaddress')) return 'The payout wallet address is not valid.'
-  if (msg.includes('bookingclosed') || msg.includes('booking closed')) return 'Booking is closed for this event.'
+  if (msg.includes('bookingclosed') || msg.includes('booking closed')) return 'Booking or cancellation is closed (the booking deadline or refund cutoff has passed).'
   if (msg.includes('capacityfull')) return 'This event is now fully booked.'
   if (msg.includes('alreadyreserved')) return 'You already have a reservation for this event.'
   if (msg.includes('notrefundable')) return 'This reservation is not eligible for a refund.'

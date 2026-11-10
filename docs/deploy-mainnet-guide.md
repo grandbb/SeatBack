@@ -1,3 +1,5 @@
+> **Historical document.** Written for earlier contract versions (v1 to v3). Addresses, functions and findings here may be outdated or refer to code that was removed. The current review is `docs/pre-deploy-audit-round5.md`.
+
 # SeatBack — คู่มือ Deploy บน Arc Mainnet (ด้วย Wallet ของคุณ)
 
 > Arc Studio ไม่ได้ deploy mainnet แทนคุณ  

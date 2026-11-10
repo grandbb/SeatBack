@@ -1,12 +1,12 @@
 /**
  * Docs — SeatBack documentation. Each fact appears exactly once.
  */
-import { BookOpen, Ticket, QrCode, Coins, Shield, AlertTriangle, Code2, Calendar, ChevronRight, Layers, Gift, Star } from 'lucide-react'
+import { BookOpen, Ticket, QrCode, Coins, Shield, AlertTriangle, Code2, Calendar, ChevronRight, Layers, Star } from 'lucide-react'
 import { SEATBACK_ADDRESS, STAKING_ADDRESS, SBK_ADDRESS, ACTIVE_CHAIN_ID, NETWORK_LABEL } from '@/contract'
 
 const EXPLORER_URL = ACTIVE_CHAIN_ID === 5042
   ? 'https://explorer.arc.io'
-  : 'https://explorer.testnet.arc.io'
+  : 'https://explorer.arc.io'
 
 // ─── Primitives ───────────────────────────────────────────────────────────────
 
@@ -148,7 +148,7 @@ export function Docs() {
             <strong className="text-[var(--fg)]">SeatBack</strong> solves event no-shows with a USDC deposit.
             Attendees lock a deposit when booking. Show up and get checked in — full refund.
             No-show — deposit is split 50% to the organiser and 50% to SBK stakers.
-            Everything runs on a smart contract on Arc. No middleman. No custody by any individual.
+            Deposits are held by a smart contract on Arc, not by the organiser or the developer. The organiser alone decides who attended.
           </P>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-2">
             {[
@@ -194,7 +194,7 @@ export function Docs() {
           <div className="flex flex-col gap-3 mt-1">
             <Step n={1} title="Browse and reserve">Go to Events → pick an event → click Reserve. Approve the USDC deposit and confirm. Your seat is held; deposit goes into escrow.</Step>
             <Step n={2} title="Cancel if plans change">Open the event page and cancel before the refund cutoff. After the cutoff you can no longer cancel: you only get your deposit back if you are checked in.</Step>
-            <Step n={3} title="Show up and get scanned">During the check-in window, open My Tickets → your event → Generate QR. Sign with your wallet (free). Show the QR to the organiser within 10 minutes.</Step>
+            <Step n={3} title="Show up and get scanned">During the check-in window, open My Tickets → your event → Show Check-In QR → Generate Check-In QR. Sign with your wallet (free). Show the QR to the organiser within 10 minutes.</Step>
             <Step n={4} title="Claim your refund">Once you are checked in or have cancelled, go to My Tickets (or the event page) and click Claim Refund. USDC is sent to your wallet. If the organiser never opened check-in, everyone can claim a full refund after the check-in window ends.</Step>
           </div>
         </Section>
@@ -216,7 +216,7 @@ export function Docs() {
                 {[
                   ['①', 'Booking Closes',   'Last moment attendees can reserve'],
                   ['②', 'Refund Cutoff',    'Last moment attendees can cancel for a refund (≥ ①)'],
-                  ['③', 'Check-In Opens',   'QR scans are accepted from this time (≥ ②) — set to event start'],
+                  ['③', 'Check-In Opens',   'Earliest time the organiser can open check-in (≥ ②) — set to event start'],
                   ['④', 'Check-In Closes',  'QR scans stop; no-shows are locked; finalisation available (at least 5 minutes after ③)'],
                 ].map(([s, f, m]) => (
                   <tr key={f} style={{ background: 'var(--surface)' }}>
@@ -233,8 +233,8 @@ export function Docs() {
           <H3>Running the event</H3>
           <div className="flex flex-col gap-3 mt-1">
             <Step n={1} title="Open check-in">Organiser → your event → Open Check-In. QR scans are not accepted before this.</Step>
-            <Step n={2} title="Scan attendee QRs">Use the Scan QR tab. Allow camera access, or paste the payload manually. Review the attendee details, then confirm to submit onchain.</Step>
-            <Step n={3} title="Finalise, settle and withdraw">After Check-In Closes: click Finalise Event, then Settle No-Show Proceeds (this splits the forfeited deposits 50/50 with stakers; anyone can do it, once). Finally click Withdraw to send your 50% to the event payout wallet. If delivery to the staking pool ever fails, a Retry button appears and anyone can press it.</Step>
+            <Step n={2} title="Scan attendee QRs">Use the QR Scanner mode. Allow camera access (Scan with Camera), or use Paste QR Payload. Review the attendee details, then confirm to submit onchain.</Step>
+            <Step n={3} title="Finalise, settle and withdraw">After Check-In Closes: click Finalize Event, then Settle No-Show Proceeds (this splits the forfeited deposits 50/50 with stakers; anyone can do it, once). Finally click Withdraw to send your 50% to the event payout wallet. If delivery to the staking pool ever fails, a Retry button appears and anyone can press it.</Step>
           </div>
 
           <H3>Cancelling an event</H3>
@@ -285,6 +285,12 @@ export function Docs() {
             <span className="text-[var(--muted)]">Chain ID <span className="font-mono font-semibold text-[var(--fg)]">{ACTIVE_CHAIN_ID}</span></span>
           </div>
 
+          <P>
+            Network: Arc Mainnet (chain ID 5042), RPC <span className="font-mono">https://rpc.mainnet.arc.io</span>, explorer <span className="font-mono">https://explorer.arc.io</span>.
+            USDC is the ERC-20 at <span className="font-mono">0x3600…0000</span> with 6 decimals; network fees are paid in USDC.
+            The Create Event form takes UTC times; everywhere else times are shown in your local timezone with the offset.
+          </P>
+
           <div className="flex flex-col gap-3">
             <ContractCard
               name="SeatBack v4"
@@ -322,7 +328,7 @@ export function Docs() {
                 '100,000,000 SBK fixed supply, minted to deployer at launch',
                 'ERC-20Permit (EIP-2612) — gasless approvals via wallet signature',
                 'Stake to earn USDC; holding without staking earns nothing',
-                '30M SBK allocated to community airdrop (not yet distributed)',
+                'Planned: 30M SBK for a community airdrop (not distributed; no claim contract exists yet)',
               ]}
               addr={SBK_ADDRESS ?? ''}
             />
@@ -334,20 +340,20 @@ export function Docs() {
             <li><strong className="text-[var(--fg)]">SafeERC20</strong> for all USDC transfers.</li>
             <li><strong className="text-[var(--fg)]">ERC-1271</strong> — smart-contract wallets (Safe, Argent) supported for check-in.</li>
             <li><strong className="text-[var(--fg)]">CSP + HSTS headers</strong> on the frontend; QR rendered as PNG, never HTML.</li>
+            <li><strong className="text-[var(--fg)]">Not independently audited.</strong> The contracts are open source, tested and internally reviewed, but have not had a third-party audit. Only use amounts you can afford to lose.</li>
           </ul>
         </Section>
 
         {/* ── 7. Points & Airdrop ── */}
         <Section id="points" title="Points & Airdrop" icon={<Star size={18} className="text-[var(--accent)]" />}>
           <P>
-            Points track your onchain activity on SeatBack and determine your share of the <strong className="text-[var(--fg)]">30,000,000 SBK community airdrop</strong>.
-            They are calculated in real time from onchain events — no server, no account required.
-            Connect your wallet and click it to see your score and breakdown instantly.
+            Points track your onchain activity on SeatBack and are the planned basis for a future community airdrop of <strong className="text-[var(--fg)]">30,000,000 SBK</strong>.
+            They are calculated in your browser from onchain events — no account required.
+            Connect your wallet and open the wallet menu to see your score and breakdown.
           </P>
 
           <Callout type="info">
-            Airdrop not yet distributed. All activity before the snapshot block counts.
-            The snapshot date and claim contract will be announced publicly at least 14 days in advance.
+            The airdrop is planned and not guaranteed. Nothing has been distributed, and no snapshot date, claim contract or final formula has been set.
           </Callout>
 
           <H3>How points are earned</H3>
@@ -364,7 +370,7 @@ export function Docs() {
                 {[
                   ['Reserve a seat',  '+100', 'Event finalised + you were checked in (not cancelled, not no-show)'],
                   ['Check in',        '+300', 'Event finalised — stacks with Reserve points above'],
-                  ['Create an event', '+500', 'Event finalised + ≥5 real check-ins + event on campaign allowlist'],
+                  ['Create an event', '+500', 'Event finalised + at least 5 check-ins from other wallets'],
                   ['Early adopter',   '×2',   'First 500 wallets ever to reserve on SeatBack — all your points doubled'],
                 ].map(([a, p, n]) => (
                   <tr key={a} style={{ background: 'var(--surface)' }}>
@@ -390,7 +396,6 @@ export function Docs() {
               'No-show — 0 pts even if you reserved',
               'Event cancelled before it starts — 0 pts for everyone',
               'Organiser with fewer than 5 real check-ins — 0 pts for create',
-              'Events not on the campaign allowlist (early phase)',
             ].map(t => (
               <div key={t} className="flex items-start gap-2 text-sm">
                 <span className="opacity-40 mt-0.5">✗</span>
@@ -406,7 +411,6 @@ export function Docs() {
                 {[
                   ['Max per wallet',     '50,000 pts',  'Hard cap — extra activity above this earns nothing'],
                   ['Per event',          '1× each',     'Reserve, check-in, and create each count once per event'],
-                  ['Campaign allowlist', 'Early phase', 'Only approved events generate points; opens wider over time'],
                 ].map(([a, b, c]) => (
                   <tr key={a} style={{ background: 'var(--surface)' }}>
                     <td className="px-4 py-3 font-medium text-[var(--fg)] text-sm">{a}</td>
@@ -418,28 +422,20 @@ export function Docs() {
             </table>
           </div>
           <P>
-            Patterns flagged for review (not auto-disqualified): same group of wallets co-appearing across many events,
-            or automated reservation/check-in timing. Flagged wallets see a warning badge and may be reviewed before the snapshot.
-            Appeals via GitHub Issues.
+            Wallets that repeatedly reserve the same event are flagged for review (not automatically disqualified) and see a warning badge.
+            No appeals process has been set up yet.
           </P>
 
           <H3>Airdrop allocation formula</H3>
           <div className="rounded-xl border border-[var(--border)] p-4 text-sm" style={{ background: 'var(--surface)' }}>
+            <p className="text-xs text-[var(--muted)] mb-1">Planned, not final:</p>
             <p className="font-mono text-[var(--accent)] font-semibold mb-1">your SBK = (your confirmed points ÷ total all-wallets points) × 30,000,000</p>
-            <p className="text-[var(--muted)]">Splitting across multiple wallets gives no advantage — allocation is proportional across all wallets.</p>
+            <p className="text-[var(--muted)]">Splitting across wallets is not endorsed and may be flagged. Final airdrop rules are not set.</p>
           </div>
 
           <H3>Claim process</H3>
-          <div className="flex flex-col gap-3 mt-1">
-            <Step n={1} title="Snapshot block">All activity up to this block is final. Rules locked ≥14 days before.</Step>
-            <Step n={2} title="Preliminary totals published">Allocations published publicly. 7-day appeal window before Merkle root is finalised.</Step>
-            <Step n={3} title="Claim contract live">Connect your wallet → see allocation → one transaction to receive SBK.</Step>
-            <Step n={4} title="Stake immediately">SBK in wallet → stake → start earning USDC from future no-show proceeds.</Step>
-          </div>
-
           <Callout type="warn">
-            Unclaimed SBK after 180 days returns to Treasury.
-            Always verify the claim contract address on the official GitHub repo before interacting.
+            To be announced. No claim contract exists yet. Never trust a claim link that is not published on this site and the official GitHub repository.
           </Callout>
         </Section>
 
@@ -483,7 +479,7 @@ export function Docs() {
               { label: 'Community airdrop',  pct: '30%', amount: '30,000,000 SBK', desc: 'Early users — see Points & Airdrop section', color: 'var(--accent)' },
               { label: 'Ecosystem & growth', pct: '25%', amount: '25,000,000 SBK', desc: 'Grants, partnerships, liquidity, integrations', color: '#8b5cf6' },
               { label: 'Team',               pct: '20%', amount: '20,000,000 SBK', desc: 'Planned: 4-year linear vest with 1-year cliff (no vesting contract yet)', color: '#f59e0b' },
-              { label: 'Treasury reserve',   pct: '15%', amount: '15,000,000 SBK', desc: 'Future upgrades, audits, emergencies', color: '#10b981' },
+              { label: 'Treasury reserve',   pct: '15%', amount: '15,000,000 SBK', desc: 'Planned: future contract versions, audits, emergencies', color: '#10b981' },
               { label: 'Staking bootstrap',  pct: '10%', amount: '10,000,000 SBK', desc: 'Extra rewards for early stakers while USDC volume grows', color: '#ef4444' },
             ].map(({ label, pct, amount, desc, color }) => (
               <div key={label} className="rounded-xl p-4 border border-[var(--border)]" style={{ background: 'var(--surface)' }}>
@@ -514,7 +510,7 @@ export function Docs() {
             { q: 'Can the developer or admin take the deposits?', a: 'No. Deposits can only go back to attendees, to the event payout wallet, or to the staking pool. The admin can set the staking pool once and nothing else. One caveat: if an event settles while nobody is staking, the staker half is held as an owner reserve that the staking owner can withdraw.' },
             { q: 'Has this been audited?', a: 'The contracts are open source, covered by automated tests and have been through repeated internal security reviews. They have not had an independent third-party audit yet. Use amounts you are comfortable with.' },
             { q: 'What is SBK and do I need it to attend events?', a: 'SBK is optional — you do not need it to attend events or claim refunds. It is only useful if you want to earn USDC by staking and receiving a share of no-show proceeds.' },
-            { q: 'Does splitting across wallets increase my airdrop?', a: 'No. Allocation is proportional across all wallets — splitting gives the same total as keeping everything in one wallet.' },
+            { q: 'Is the airdrop guaranteed?', a: 'No. It is planned. Nothing has been distributed, no claim contract exists, and the rules are not final. Splitting activity across wallets is not endorsed and may be flagged.' },
           ].map(({ q, a }) => (
             <details key={q} className="group rounded-xl border border-[var(--border)] overflow-hidden" style={{ background: 'var(--surface)' }}>
               <summary className="flex items-center justify-between px-5 py-4 cursor-pointer font-medium text-[var(--fg)] text-sm select-none list-none" style={{ background: 'var(--surface)' }}>
